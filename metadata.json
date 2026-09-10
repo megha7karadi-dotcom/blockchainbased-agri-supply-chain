@@ -1,0 +1,6 @@
+{
+  "name": "AgriTrace - Agricultural Supply-Chain Traceability & Price Transparency",
+  "description": "AgriTrace connects farmers, distributors, retailers, and consumers with transparent produce provenance, pricing history, quality verification, and cryptographic supply-chain records.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
