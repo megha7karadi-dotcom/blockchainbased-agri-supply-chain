@@ -48,8 +48,8 @@ export interface TimelineEvent {
   actorRole: UserRole;
   location: string;
   timestamp: string;
-  blockNumber: number;
-  txHash: string;
+  blockNumber?: number;
+  txHash?: string;
   temperature?: string;
   humidity?: string;
   verified: boolean;
@@ -169,4 +169,29 @@ export interface NotificationItem {
   read: boolean;
   type: 'info' | 'success' | 'warning' | 'alert';
   linkTab?: string;
+}
+
+export interface SystemPolicies {
+  maxRetailMarkupPercent: number;
+  maxColdChainTemp: number;
+  autoQuarantineViolations: boolean;
+  minFarmerSharePercent: number;
+  consensusConfirmations: number;
+  lastUpdated?: string;
+  deployedTxHash?: string;
+}
+
+export interface PredictionModelDetails {
+  id: 'random-forest' | 'xgboost' | 'sarimax' | 'neural-net';
+  name: string;
+  version: string;
+  algorithm: string;
+  bestFitCrops: string[];
+  perishabilityProfile: 'Perishable' | 'Semi-Perishable' | 'Durable Grain' | 'High-Volatility Cash Crop';
+  accuracyRate: number; // e.g. 94.8%
+  r2Score: number;      // e.g. 0.932
+  mae: number;          // Mean absolute error (₹/kg)
+  rmse: number;         // Root mean square error (₹/kg)
+  description: string;
+  selectionRationale: string;
 }

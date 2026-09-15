@@ -44,19 +44,19 @@ export const QRScannerModal: React.FC<Props> = ({ isOpen, onClose }) => {
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
         
         {/* Modal Header */}
-        <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg">
+        <div className="bg-white text-slate-900 p-4 flex items-center justify-between border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
               <Camera className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-sm sm:text-base">Produce QR Scanner</h3>
-              <p className="text-xs text-slate-400">Scan packaging label or enter Batch ID</p>
+              <h3 className="font-bold text-sm sm:text-base text-slate-900">Produce QR Scanner</h3>
+              <p className="text-xs text-slate-500">Scan packaging label or enter Batch ID</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
+            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
           >
             <X className="w-5 h-5" />
           </button>

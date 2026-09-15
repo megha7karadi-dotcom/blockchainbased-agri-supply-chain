@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { 
   Leaf, 
   Target, 
@@ -21,20 +22,33 @@ export const AboutPage: React.FC = () => {
   const { setActiveTab } = useApp();
 
   return (
-    <div className="max-w-5xl mx-auto space-y-12 pb-16">
+    <motion.div 
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="max-w-5xl mx-auto space-y-12 pb-16"
+    >
       
       {/* Hero Header */}
-      <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200 shadow-xs space-y-5">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
-          <Leaf className="w-3.5 h-3.5 text-emerald-600" />
-          <span>About AgriTrace</span>
+      <div className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-xs">
+        <div className="h-64 relative overflow-hidden bg-slate-100">
+          <img 
+            src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80" 
+            alt="Verifiable organic agriculture fields" 
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/50 to-transparent flex items-end p-8 sm:p-12">
+            <div className="space-y-2 text-white">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
+                Rebuilding Trust Across the Global Agricultural Supply Chain
+              </h1>
+              <p className="text-slate-200 text-sm sm:text-base max-w-3xl leading-relaxed">
+                AgriTrace is a digital agricultural infrastructure platform connecting farmers, distributors, retailers, and consumers through verifiable produce provenance, equitable price distribution, and tamper-evident quality records.
+              </p>
+            </div>
+          </div>
         </div>
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-          Rebuilding Trust Across the Global Agricultural Supply Chain
-        </h1>
-        <p className="text-slate-600 text-sm sm:text-base max-w-3xl leading-relaxed">
-          AgriTrace is a digital agricultural infrastructure platform connecting farmers, distributors, retailers, and consumers through verifiable produce provenance, equitable price distribution, and tamper-evident quality records.
-        </p>
       </div>
 
       {/* The Agricultural Supply Chain Crisis */}
@@ -131,29 +145,28 @@ export const AboutPage: React.FC = () => {
       </div>
 
       {/* Measurable Value Delivered */}
-      <div className="bg-slate-900 text-white rounded-3xl p-8 sm:p-10 border border-slate-800 space-y-8">
+      <div className="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-xs space-y-8">
         <div className="max-w-2xl space-y-2">
-          <span className="text-xs font-mono uppercase tracking-wider text-emerald-400 font-bold">Proven Commercial Impact</span>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Driving Measurable Results for Agriculture</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Driving Measurable Results for Agriculture</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="p-5 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-1">
-            <div className="text-3xl sm:text-4xl font-black text-emerald-400">100%</div>
-            <div className="font-bold text-xs sm:text-sm text-white">Full-Chain Traceability</div>
-            <p className="text-xs text-slate-400">Continuous audit trail from farm harvest to retail consumer cart.</p>
+          <div className="p-5 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-1">
+            <div className="text-3xl sm:text-4xl font-black text-emerald-700">100%</div>
+            <div className="font-bold text-xs sm:text-sm text-slate-900">Full-Chain Traceability</div>
+            <p className="text-xs text-slate-600">Continuous audit trail from farm harvest to retail consumer cart.</p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-1">
-            <div className="text-3xl sm:text-4xl font-black text-blue-400">+35%</div>
-            <div className="font-bold text-xs sm:text-sm text-white">Farmer Revenue Uplift</div>
-            <p className="text-xs text-slate-400">Higher farmgate realization through transparent price margin caps.</p>
+          <div className="p-5 rounded-2xl bg-blue-50/50 border border-blue-100 space-y-1">
+            <div className="text-3xl sm:text-4xl font-black text-blue-700">+35%</div>
+            <div className="font-bold text-xs sm:text-sm text-slate-900">Farmer Revenue Uplift</div>
+            <p className="text-xs text-slate-600">Higher farmgate realization through transparent price margin caps.</p>
           </div>
 
-          <div className="p-5 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-1">
-            <div className="text-3xl sm:text-4xl font-black text-purple-400">&lt; 1.2s</div>
-            <div className="font-bold text-xs sm:text-sm text-white">Mobile QR Verification</div>
-            <p className="text-xs text-slate-400">Instant verification on smartphone browser with zero app installation.</p>
+          <div className="p-5 rounded-2xl bg-purple-50/50 border border-purple-100 space-y-1">
+            <div className="text-3xl sm:text-4xl font-black text-purple-700">&lt; 1.2s</div>
+            <div className="font-bold text-xs sm:text-sm text-slate-900">Mobile QR Verification</div>
+            <p className="text-xs text-slate-600">Instant verification on smartphone browser with zero app installation.</p>
           </div>
         </div>
       </div>
@@ -182,6 +195,6 @@ export const AboutPage: React.FC = () => {
         </div>
       </div>
 
-    </div>
+    </motion.div>
   );
 };

@@ -5,7 +5,10 @@ import {
   ProduceBatch, 
   FraudAlert, 
   NotificationItem,
-  TimelineEvent
+  TimelineEvent,
+  SystemPolicies,
+  PriceBreakdown,
+  IoTSensorLog
 } from '../types/produce';
 import { productService, RegisterProductInput } from '../services/productService';
 import { 
@@ -28,6 +31,18 @@ export interface RegisterFormData {
   certificationNumber?: string;
 }
 
+export interface RegisterMobileFormData {
+  phone: string;
+  otp: string;
+  name: string;
+  role: 'farmer' | 'distributor' | 'retailer' | 'consumer';
+  email?: string;
+  organizationName?: string;
+  location?: string;
+  primaryCrops?: string;
+  certificationNumber?: string;
+}
+
 interface AppContextType {
   isAuthenticated: boolean;
   authLoading: boolean;
@@ -36,9 +51,12 @@ interface AppContextType {
   currentUser: UserProfile;
   setCurrentUser: (user: UserProfile) => void;
   currentPath: string;
-  navigate: (path: string) => void;
+  navigate: (path: string, options?: { forceAuth?: boolean }) => void;
   loginUser: (emailOrRole: string, passwordOrEmail?: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   registerUser: (data: RegisterFormData) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string };
+  sendOtp: (phone: string, purpose?: 'login' | 'signup') => Promise<{ success: boolean; error?: string; otp?: string; message?: string; notRegistered?: boolean; alreadyRegistered?: boolean; userName?: string; userRole?: string }>;
+  loginWithOtp: (phone: string, otp: string) => Promise<{ success: boolean; error?: string }>;
+  registerWithOtp: (data: RegisterMobileFormData) => Promise<{ success: boolean; error?: string }>;
   logoutUser: () => void;
   authNotice: string | null;
   setAuthNotice: (notice: string | null) => void;
@@ -61,16 +79,38 @@ interface AppContextType {
   // Actions
   registerNewProduce: (newBatch: Partial<ProduceBatch>) => ProduceBatch;
   registerProductBatch: (input: RegisterProductInput) => Promise<ProduceBatch>;
-  distributorProcureProduce: (batchId: string, logisticsCost: number, margin: number) => void;
-  distributorTransferProduce: (batchId: string, retailerName: string) => void;
+  distributorProcureProduce: (batchId: string, logisticsCost: number, margin: number, vehicleNumber?: string, targetTemp?: string) => void;
+  distributorReceiveProduce: (batchId: string, inspectionNotes?: string, qualityPassed?: boolean) => void;
+  updateDistributorPrice: (batchId: string, logisticsCost: number, margin: number) => void;
+  distributorTransferProduce: (batchId: string, retailerName: string, vehicleNumber?: string, notes?: string) => void;
+  transferToRetailer: (batchId: string, retailerName: string, storeOverhead?: number, retailMargin?: number) => void;
   retailerReceiveProduce: (batchId: string) => void;
   retailerUpdatePrice: (batchId: string, overhead: number, margin: number) => void;
   markBatchSoldToConsumer: (batchId: string, consumerName?: string) => void;
+  
+  // Real-world role lifecycle actions connected to backend API / MongoDB
+  farmerTransferToDistributor: (batchId: string, distributorName: string, distributorId: string, quantity: number, agreedPrice: number) => Promise<ProduceBatch | null>;
+  distributorReceiveBatch: (batchId: string, notes?: string) => Promise<ProduceBatch | null>;
+  distributorSetPrice: (batchId: string, purchasePrice: number, marginPercentage: number, sellingPrice: number) => Promise<ProduceBatch | null>;
+  distributorTransferToRetailer: (batchId: string, retailerName: string, retailerId: string, quantity: number, sellingPrice: number) => Promise<ProduceBatch | null>;
+  retailerReceiveBatch: (batchId: string) => Promise<ProduceBatch | null>;
+  retailerSetFinalPrice: (batchId: string, purchasePrice: number, retailMargin: number, finalSellingPrice: number) => Promise<ProduceBatch | null>;
+  retailerSellProduce: (batchId: string, soldQuantity: number, buyerNote?: string) => Promise<ProduceBatch | null>;
+
   updateUserKYC: (userId: string, status: 'verified' | 'pending' | 'rejected') => void;
   resolveFraudAlert: (alertId: string, resolution: string) => void;
   reportFraudAlert: (batchId: string, description: string, severity?: 'low' | 'medium' | 'high') => void;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
+  
+  // Admin & Smart Contract Governance Actions
+  systemPolicies: SystemPolicies;
+  updateSystemPolicies: (policies: Partial<SystemPolicies>) => void;
+  quarantineBatch: (batchId: string, reason: string) => void;
+  releaseBatchQuarantine: (batchId: string) => void;
+  addStakeholderUser: (user: Partial<UserProfile>) => void;
+  suspendUserAccount: (userId: string, reason: string) => void;
+  reactivateUserAccount: (userId: string) => void;
   
   // Search & Navigation helpers
   searchBatchQuery: string;
@@ -150,7 +190,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const saved = localStorage.getItem(STORAGE_KEY_USERS);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
       }
     } catch {
       // Fallback
@@ -186,7 +229,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const saved = localStorage.getItem(STORAGE_KEY_BATCHES);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
       }
     } catch {
       // Fallback
@@ -199,7 +245,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const saved = localStorage.getItem(STORAGE_KEY_ALERTS);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
       }
     } catch {
       // Fallback
@@ -209,6 +258,179 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Notifications
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+
+  // Regulatory & System Smart Contract Policies
+  const [systemPolicies, setSystemPolicies] = useState<SystemPolicies>(() => {
+    try {
+      const saved = localStorage.getItem('agritrace_system_policies');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return {
+      maxRetailMarkupPercent: 80,
+      maxColdChainTemp: 8.0,
+      autoQuarantineViolations: true,
+      minFarmerSharePercent: 45,
+      consensusConfirmations: 12,
+      lastUpdated: '2026-05-15 10:30 UTC',
+      deployedTxHash: '0x8f2c7a109927b583901bcf5a22d49b109e',
+    };
+  });
+
+  const updateSystemPolicies = (newPolicies: Partial<SystemPolicies>) => {
+    setSystemPolicies(prev => {
+      const updated: SystemPolicies = {
+        ...prev,
+        ...newPolicies,
+        lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC',
+        deployedTxHash: `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+      };
+      try {
+        localStorage.setItem('agritrace_system_policies', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+
+    const notif: NotificationItem = {
+      id: `notif-pol-${Date.now()}`,
+      targetRole: 'all',
+      title: 'Smart Contract Policy Updated',
+      message: `System regulatory policy parameters updated by Regulatory Officer. New governance terms deployed on ledger.`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      read: false,
+      type: 'info',
+    };
+    setNotifications(prev => [notif, ...prev]);
+  };
+
+  // Quarantine Batch
+  const quarantineBatch = (batchId: string, reason: string) => {
+    setBatches(prev => prev.map(b => {
+      if (b.id === batchId || b.batchId === batchId) {
+        return {
+          ...b,
+          status: 'Quarantined / Suspended',
+          blockchain: b.blockchain ? {
+            ...b.blockchain,
+            statusNotice: `REGULATORY QUARANTINE: ${reason} (Trading & transfer frozen)`,
+          } : undefined,
+          timeline: [
+            ...(b.timeline || []),
+            {
+              id: `evt-q-${Date.now()}`,
+              stage: 'Wholesale',
+              title: 'Regulatory Quarantine Imposed',
+              description: `Batch frozen from physical & digital movement by Administrative Authority. Cause: ${reason}`,
+              actorName: currentUserState?.name || 'Regulatory Authority Officer',
+              actorRole: 'admin',
+              location: 'Consortium Governance Node',
+              timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+              blockNumber: (b.blockchain?.blockNumber || 18946000) + 14,
+              txHash: `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+              verified: true,
+            }
+          ]
+        };
+      }
+      return b;
+    }));
+
+    // Create active fraud alert
+    reportFraudAlert(batchId, `Regulatory Quarantine: ${reason}`, 'high');
+
+    // Notify stakeholders
+    const notif: NotificationItem = {
+      id: `notif-q-${Date.now()}`,
+      targetRole: 'all',
+      title: `Batch ${batchId} Quarantined`,
+      message: `Administrative freeze placed on batch ${batchId}. Trading & delivery disabled until audit resolution.`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      read: false,
+      type: 'alert',
+    };
+    setNotifications(prev => [notif, ...prev]);
+  };
+
+  // Release Batch Quarantine
+  const releaseBatchQuarantine = (batchId: string) => {
+    setBatches(prev => prev.map(b => {
+      if (b.id === batchId || b.batchId === batchId) {
+        return {
+          ...b,
+          status: 'In Transit',
+          blockchain: b.blockchain ? {
+            ...b.blockchain,
+            statusNotice: 'Regulatory Clearance Verified: Normal Trading Resumed',
+          } : undefined,
+          timeline: [
+            ...(b.timeline || []),
+            {
+              id: `evt-rel-${Date.now()}`,
+              stage: 'Wholesale',
+              title: 'Regulatory Hold Lifted',
+              description: 'Compliance verification satisfied. Commercial trading rights and custody transfers unlocked.',
+              actorName: currentUserState?.name || 'Regulatory Authority Officer',
+              actorRole: 'admin',
+              location: 'Consortium Governance Node',
+              timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+              blockNumber: (b.blockchain?.blockNumber || 18946000) + 28,
+              txHash: `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+              verified: true,
+            }
+          ]
+        };
+      }
+      return b;
+    }));
+
+    // Resolve any open fraud alerts for this batch
+    setFraudAlerts(prev => prev.map(a => 
+      (a.batchId === batchId && a.status === 'Open')
+        ? { ...a, status: 'Resolved', actionTaken: 'Administrative quarantine lifted following verified audit compliance.' }
+        : a
+    ));
+  };
+
+  // Add Stakeholder User Node
+  const addStakeholderUser = (userData: Partial<UserProfile>) => {
+    const newUser: UserProfile = {
+      id: `usr-node-${Date.now()}`,
+      name: userData.name || 'New Consortium Node',
+      email: userData.email || `node-${Date.now()}@agritrace.org`,
+      role: userData.role || 'farmer',
+      phone: userData.phone || '+91 98000 00000',
+      location: userData.location || 'India',
+      organization: userData.organization || 'Verified Agri Partner',
+      kycStatus: userData.kycStatus || 'verified',
+      trustScore: userData.trustScore ?? 92,
+      registeredDate: new Date().toISOString().split('T')[0],
+      walletAddress: userData.walletAddress || `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+    };
+    setUsers(prev => [newUser, ...prev]);
+  };
+
+  // Suspend User Account
+  const suspendUserAccount = (userId: string, reason: string) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, kycStatus: 'rejected', trustScore: Math.max(0, u.trustScore - 40) } : u));
+    const notif: NotificationItem = {
+      id: `notif-susp-${Date.now()}`,
+      targetRole: 'admin',
+      title: 'Participant Account Suspended',
+      message: `Node account ${userId} suspended. Reason: ${reason}`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      read: false,
+      type: 'warning',
+    };
+    setNotifications(prev => [notif, ...prev]);
+  };
+
+  // Reactivate User Account
+  const reactivateUserAccount = (userId: string) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, kycStatus: 'verified', trustScore: Math.min(100, u.trustScore + 20) } : u));
+  };
 
   // Sync to session storage for auth
   useEffect(() => {
@@ -452,7 +674,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Navigate function: updates path, checks protected routes, pushes browser state
-  const navigate = (path: string) => {
+  const navigate = (path: string, options?: { forceAuth?: boolean }) => {
     let target = path.startsWith('/') ? path : '/' + path;
 
     // Check for batch verification with ID
@@ -471,7 +693,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       target.startsWith('/consumer') ||
       target.startsWith('/admin');
 
-    if (isProtected && !isAuthenticated) {
+    const hasStoredToken = typeof window !== 'undefined' && Boolean(localStorage.getItem(STORAGE_KEY_JWT));
+    const isAuthorized = options?.forceAuth || isAuthenticated || hasStoredToken || Boolean(currentUserState);
+
+    if (isProtected && !isAuthorized) {
       target = '/login';
       setAuthNotice('Please sign in with your verified credentials to access this workspace.');
     }
@@ -627,25 +852,158 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const token = resData.token;
       const apiUser = resData.user;
       localStorage.setItem(STORAGE_KEY_JWT, token);
+      try {
+        sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify({
+          isAuthenticated: true,
+          role: apiUser.role,
+          user: apiUser
+        }));
+      } catch {
+        // ignore
+      }
       setJwtToken(token);
       setIsAuthenticated(true);
       setCurrentRoleState(apiUser.role);
       setCurrentUserState(apiUser);
       setAuthNotice(null);
 
-      // Redirect according to authenticated user's role
-      const targetRole = apiUser.role;
-      if (targetRole === 'farmer') navigate('/farmer/dashboard');
-      else if (targetRole === 'distributor') navigate('/distributor/dashboard');
-      else if (targetRole === 'retailer') navigate('/retailer/dashboard');
-      else if (targetRole === 'consumer') navigate('/consumer/dashboard');
-      else if (targetRole === 'admin') navigate('/admin/dashboard');
-      else navigate('/');
+      // Redirect immediately to authenticated stakeholder's dashboard
+      const targetRole = apiUser.role || 'farmer';
+      const targetDashboard = `/${targetRole}/dashboard`;
+      navigate(targetDashboard, { forceAuth: true });
 
       return { success: true };
     } catch (networkErr: any) {
       console.error('Network call to /api/auth/login failed:', networkErr);
       return { success: false, error: 'Authentication service temporarily unavailable. Please try again.' };
+    }
+  };
+
+  // Mobile OTP Request Dispatcher
+  const sendOtp = async (
+    phone: string, 
+    purpose: 'login' | 'signup' = 'login'
+  ): Promise<{ 
+    success: boolean; 
+    error?: string; 
+    otp?: string; 
+    message?: string; 
+    notRegistered?: boolean; 
+    alreadyRegistered?: boolean;
+    userName?: string;
+    userRole?: string;
+  }> => {
+    try {
+      const response = await fetch('/api/auth/otp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, purpose })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return { 
+          success: false, 
+          error: data.error || 'Failed to dispatch verification code.',
+          notRegistered: data.notRegistered,
+          alreadyRegistered: data.alreadyRegistered
+        };
+      }
+      return { 
+        success: true, 
+        otp: data.otp, 
+        message: data.message,
+        userName: data.userName,
+        userRole: data.userRole
+      };
+    } catch (err: any) {
+      console.error('sendOtp network call failed:', err);
+      return { success: false, error: 'Network error connecting to verification gateway.' };
+    }
+  };
+
+  // Mobile OTP Login Handler
+  const loginWithOtp = async (phone: string, otp: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch('/api/auth/otp/verify-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, otp })
+      });
+      const resData = await response.json();
+      if (!response.ok || !resData.token || !resData.user) {
+        return { success: false, error: resData.error || 'Verification failed.' };
+      }
+
+      const token = resData.token;
+      const apiUser = resData.user;
+      localStorage.setItem(STORAGE_KEY_JWT, token);
+      try {
+        sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify({
+          isAuthenticated: true,
+          role: apiUser.role,
+          user: apiUser
+        }));
+      } catch {
+        // ignore
+      }
+      setJwtToken(token);
+      setIsAuthenticated(true);
+      setCurrentRoleState(apiUser.role);
+      setCurrentUserState(apiUser);
+      setAuthNotice(null);
+
+      // Redirect immediately to authenticated stakeholder's dashboard
+      const targetRole = apiUser.role || 'farmer';
+      const targetDashboard = `/${targetRole}/dashboard`;
+      navigate(targetDashboard, { forceAuth: true });
+
+      return { success: true };
+    } catch (err: any) {
+      console.error('loginWithOtp network call failed:', err);
+      return { success: false, error: 'Authentication service temporarily unavailable.' };
+    }
+  };
+
+  // Mobile OTP Signup Handler
+  const registerWithOtp = async (data: RegisterMobileFormData): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch('/api/auth/otp/verify-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const resData = await response.json();
+      if (!response.ok || !resData.token || !resData.user) {
+        return { success: false, error: resData.error || 'Mobile registration failed.' };
+      }
+
+      const token = resData.token;
+      const apiUser = resData.user;
+      localStorage.setItem(STORAGE_KEY_JWT, token);
+      try {
+        sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify({
+          isAuthenticated: true,
+          role: apiUser.role,
+          user: apiUser
+        }));
+      } catch {
+        // ignore
+      }
+      setJwtToken(token);
+      setIsAuthenticated(true);
+      setCurrentRoleState(apiUser.role);
+      setCurrentUserState(apiUser);
+      setAuthNotice(null);
+
+      // Redirect immediately to authenticated stakeholder's dashboard
+      const targetRole = apiUser.role || 'farmer';
+      const targetDashboard = `/${targetRole}/dashboard`;
+      navigate(targetDashboard, { forceAuth: true });
+
+      return { success: true };
+    } catch (err: any) {
+      console.error('registerWithOtp network call failed:', err);
+      return { success: false, error: 'Unable to connect to authentication server.' };
     }
   };
 
@@ -673,8 +1031,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } else {
       setIsAuthenticated(true);
       const matched = users.find(u => u.role === role);
-      if (matched) setCurrentUserState(matched);
-      navigate(`/${role}/dashboard`);
+      if (matched) {
+        setCurrentUserState(matched);
+        try {
+          sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify({
+            isAuthenticated: true,
+            role,
+            user: matched
+          }));
+        } catch {
+          // ignore
+        }
+      }
+      navigate(`/${role}/dashboard`, { forceAuth: true });
     }
   };
 
@@ -808,48 +1177,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return created;
   };
 
-  const distributorProcureProduce = (batchId: string, logisticsCost: number, margin: number) => {
+  const distributorProcureProduce = (
+    batchId: string, 
+    logisticsCost: number, 
+    margin: number,
+    vehicleNumber: string = 'MH-04-TR-9182',
+    targetTemp: string = '12°C'
+  ) => {
     setBatches(prev => prev.map(batch => {
       if (batch.id !== batchId && batch.batchId !== batchId) return batch;
 
-      const mockBlock = batch.blockchain.blockNumber + 140;
+      const mockBlock = (batch.blockchain?.blockNumber || 7490000) + 140;
       const mockTx = `0x${Math.random().toString(16).substring(2)}${Math.random().toString(16).substring(2)}`.substring(0, 66);
       
       const newEvent: TimelineEvent = {
         id: `tl-${Date.now()}`,
         stage: 'Logistics',
         title: 'Procured by Distributor & Inbound Cold Transit',
-        description: 'Custody transferred to KisanLogix Logistics. Refrigerated fleet initiated with live IoT telemetry.',
+        description: `Custody transferred to KisanLogix Logistics (Vehicle: ${vehicleNumber}, Target Temp: ${targetTemp}). Refrigerated fleet initiated with live IoT telemetry.`,
         actorName: 'Vikram Mehra (Distributor)',
         actorRole: 'distributor',
-        location: 'Central Agro Hub, Pune',
+        location: 'Central Agro Cold Hub, Pune',
         timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
         blockNumber: mockBlock,
         txHash: mockTx,
-        temperature: '12.4°C',
+        temperature: targetTemp,
         humidity: '84%',
         verified: true,
       };
 
-      const updatedPricing = {
-        ...batch.pricing,
+      const updatedPricing: PriceBreakdown = {
+        farmerPrice: batch.pricing?.farmerPrice || batch.farmgatePrice || 40,
         distributorLogisticsCost: logisticsCost,
         distributorMargin: margin,
-        finalConsumerPrice: batch.pricing.farmerPrice + logisticsCost + margin,
+        retailerOverhead: batch.pricing?.retailerOverhead || 0,
+        retailerMargin: batch.pricing?.retailerMargin || 0,
+        finalConsumerPrice: (batch.pricing?.farmerPrice || batch.farmgatePrice || 40) + logisticsCost + margin,
+        currency: '₹',
+        fairPriceCeiling: batch.pricing?.fairPriceCeiling || 120,
+      };
+
+      const newSensorLog: IoTSensorLog = {
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        temperature: parseFloat(targetTemp) || 12.2,
+        humidity: 84,
+        location: `Transit En Route (Reefer ${vehicleNumber})`,
+        status: 'optimal',
       };
 
       return {
         ...batch,
-        status: 'In Transit' as const,
+        status: 'In Transit',
         currentCustodianRole: 'distributor' as const,
         currentCustodianName: 'KisanLogix Agri Cold-Chain Solutions',
         pricing: updatedPricing,
-        timeline: [...batch.timeline, newEvent],
+        timeline: [...(batch.timeline || []), newEvent],
+        sensorLogs: [...(batch.sensorLogs || []), newSensorLog],
         blockchain: {
-          ...batch.blockchain,
+          contractAddress: batch.blockchain?.contractAddress || '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+          tokenId: batch.blockchain?.tokenId || `0x001_DIST`,
           blockNumber: mockBlock,
-          currentOwnerWallet: '0x94B...89D1',
-          statusNotice: 'Verified Smart Contract State: In Distributor Transit',
+          mintTxHash: batch.blockchain?.mintTxHash || mockTx,
+          gasUsed: '84,120 Gwei',
+          consensusMechanism: 'Ethereum Sepolia Network',
+          merkleRootHash: `0x${Math.random().toString(16).substring(2, 34)}`,
+          isTamperEvident: true,
+          currentOwnerWallet: '0x94B73aE8...89D1',
+          statusNotice: 'Verified Smart Contract State: In Distributor Cold Transit',
         },
       };
     }));
@@ -868,18 +1262,130 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ]);
   };
 
-  const distributorTransferProduce = (batchId: string, retailerName: string) => {
+  const distributorReceiveProduce = (batchId: string, inspectionNotes?: string, qualityPassed: boolean = true) => {
     setBatches(prev => prev.map(batch => {
       if (batch.id !== batchId && batch.batchId !== batchId) return batch;
 
-      const mockBlock = batch.blockchain.blockNumber + 210;
+      const mockBlock = (batch.blockchain?.blockNumber || 7490000) + 110;
+      const mockTx = `0x${Math.random().toString(16).substring(2)}${Math.random().toString(16).substring(2)}`.substring(0, 66);
+
+      const intakeEvent: TimelineEvent = {
+        id: `tl-${Date.now()}`,
+        stage: 'Logistics',
+        title: 'Farmgate Intake Inspection Passed',
+        description: inspectionNotes || 'Intake physical inspection verified: Brix sugar content certified, crate tare weight confirmed, pesticide zero-residue seal authenticated.',
+        actorName: 'Vikram Mehra (Distributor Node)',
+        actorRole: 'distributor',
+        location: 'KisanLogix Intake Depot, Pune',
+        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        blockNumber: mockBlock,
+        txHash: mockTx,
+        temperature: '14.1°C',
+        humidity: '79%',
+        verified: qualityPassed,
+      };
+
+      return {
+        ...batch,
+        status: 'At Distributor',
+        currentCustodianRole: 'distributor' as const,
+        currentCustodianName: 'KisanLogix Agri Cold-Chain Solutions',
+        timeline: [...(batch.timeline || []), intakeEvent],
+        blockchain: {
+          ...batch.blockchain,
+          contractAddress: batch.blockchain?.contractAddress || '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+          tokenId: batch.blockchain?.tokenId || `0x001_DIST`,
+          mintTxHash: batch.blockchain?.mintTxHash || mockTx,
+          gasUsed: '76,500 Gwei',
+          consensusMechanism: 'Ethereum Sepolia Network',
+          merkleRootHash: `0x${Math.random().toString(16).substring(2, 34)}`,
+          isTamperEvident: true,
+          blockNumber: mockBlock,
+          currentOwnerWallet: '0x94B73aE8...89D1',
+          statusNotice: 'Verified Smart Contract State: Farmgate Intake Inspected & Received at Cold Hub',
+        },
+      };
+    }));
+  };
+
+  const updateDistributorPrice = (batchId: string, logisticsCost: number, margin: number) => {
+    setBatches(prev => prev.map(batch => {
+      if (batch.id !== batchId && batch.batchId !== batchId) return batch;
+
+      const farmerBase = batch.pricing?.farmerPrice || batch.farmgatePrice || 40;
+      const wholesalePrice = farmerBase + logisticsCost + margin;
+      const fairCeiling = batch.pricing?.fairPriceCeiling || (farmerBase * 2.2);
+
+      if (wholesalePrice > fairCeiling) {
+        setFraudAlerts(alerts => [
+          {
+            id: `alert-${Date.now()}`,
+            batchId: batch.batchId,
+            cropName: batch.name || batch.cropName || 'Produce',
+            severity: 'medium',
+            alertType: 'Excessive Margin',
+            description: `Distributor wholesale quotation ₹${wholesalePrice}/kg exceeds APMC Fair Benchmark ceiling of ₹${fairCeiling}/kg.`,
+            flaggedBy: 'Fair Margin Protocol Auditor',
+            timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }),
+            status: 'Open',
+          },
+          ...alerts,
+        ]);
+      }
+
+      const updatedPricing: PriceBreakdown = {
+        farmerPrice: farmerBase,
+        distributorLogisticsCost: logisticsCost,
+        distributorMargin: margin,
+        retailerOverhead: batch.pricing?.retailerOverhead || 0,
+        retailerMargin: batch.pricing?.retailerMargin || 0,
+        finalConsumerPrice: wholesalePrice + (batch.pricing?.retailerOverhead || 0) + (batch.pricing?.retailerMargin || 0),
+        currency: '₹',
+        fairPriceCeiling: fairCeiling,
+      };
+
+      const mockBlock = (batch.blockchain?.blockNumber || 7490000) + 75;
+      const mockTx = `0x${Math.random().toString(16).substring(2)}${Math.random().toString(16).substring(2)}`.substring(0, 66);
+
+      const priceEvent: TimelineEvent = {
+        id: `tl-${Date.now()}`,
+        stage: 'Wholesale',
+        title: 'Wholesale Price & Margin Updated',
+        description: `Distributor revised logistics cost (₹${logisticsCost}/kg) and margin (₹${margin}/kg). Wholesale price locked at ₹${wholesalePrice}/kg.`,
+        actorName: 'Vikram Mehra (Distributor)',
+        actorRole: 'distributor',
+        location: 'Pune Regional Mandi Node',
+        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        blockNumber: mockBlock,
+        txHash: mockTx,
+        verified: true,
+      };
+
+      return {
+        ...batch,
+        pricing: updatedPricing,
+        timeline: [...(batch.timeline || []), priceEvent],
+      };
+    }));
+  };
+
+  const distributorTransferProduce = (
+    batchId: string, 
+    retailerName: string, 
+    vehicleNumber?: string, 
+    notes?: string
+  ) => {
+    setBatches(prev => prev.map(batch => {
+      if (batch.id !== batchId && batch.batchId !== batchId) return batch;
+
+      const mockBlock = (batch.blockchain?.blockNumber || 7490000) + 210;
       const mockTx = `0x${Math.random().toString(16).substring(2)}${Math.random().toString(16).substring(2)}`.substring(0, 66);
 
       const newEvent: TimelineEvent = {
         id: `tl-${Date.now()}`,
         stage: 'Wholesale',
-        title: 'Dispatched to Retailer Outlet',
-        description: `Delivered to ${retailerName}. Cold-chain seal intact, cryptographic handover initiated.`,
+        title: 'Custody Handed Over to Retailer Hub',
+        description: `Delivered to ${retailerName}${vehicleNumber ? ` via vehicle ${vehicleNumber}` : ''}. ${notes || 'Cold-chain seal intact, tamper-proof QR verified, ownership cryptographic sign-off executed.'}`,
         actorName: 'Vikram Mehra (Distributor)',
         actorRole: 'distributor',
         location: 'Mumbai Regional Logistics Depot',
@@ -893,18 +1399,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return {
         ...batch,
-        status: 'Delivered to Retailer' as const,
+        status: 'Delivered to Retailer',
         currentCustodianRole: 'retailer' as const,
         currentCustodianName: retailerName,
-        timeline: [...batch.timeline, newEvent],
+        timeline: [...(batch.timeline || []), newEvent],
         blockchain: {
-          ...batch.blockchain,
+          contractAddress: batch.blockchain?.contractAddress || '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+          tokenId: batch.blockchain?.tokenId || `0x001_DIST`,
+          mintTxHash: batch.blockchain?.mintTxHash || mockTx,
+          gasUsed: '92,300 Gwei',
+          consensusMechanism: 'Ethereum Sepolia Network',
+          merkleRootHash: `0x${Math.random().toString(16).substring(2, 34)}`,
+          isTamperEvident: true,
           blockNumber: mockBlock,
           currentOwnerWallet: '0x1F2...A4C9',
-          statusNotice: 'Verified Smart Contract State: Arrived at Retail Store',
+          statusNotice: 'Verified Smart Contract State: Delivered to Retail Store',
         },
       };
     }));
+  };
+
+  const transferToRetailer = (
+    batchId: string, 
+    retailerName: string, 
+    storeOverhead: number = 15, 
+    retailMargin: number = 20
+  ) => {
+    distributorTransferProduce(batchId, retailerName);
   };
 
   const retailerReceiveProduce = (batchId: string) => {
@@ -1023,6 +1544,95 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  const farmerTransferToDistributor = async (
+    batchId: string, 
+    distributorName: string, 
+    distributorId: string, 
+    quantity: number, 
+    agreedPrice: number
+  ): Promise<ProduceBatch | null> => {
+    const updated = await productService.transferToDistributor(batchId, distributorName, distributorId, quantity, agreedPrice);
+    if (updated) {
+      setBatches(prev => [updated, ...prev.filter(b => b.id !== updated.id && b.batchId !== updated.batchId)]);
+      return updated;
+    }
+    return null;
+  };
+
+  const distributorReceiveBatch = async (batchId: string, notes?: string): Promise<ProduceBatch | null> => {
+    const updated = await productService.distributorReceive(batchId, notes);
+    if (updated) {
+      setBatches(prev => [updated, ...prev.filter(b => b.id !== updated.id && b.batchId !== updated.batchId)]);
+      return updated;
+    }
+    return null;
+  };
+
+  const distributorSetPrice = async (
+    batchId: string, 
+    purchasePrice: number, 
+    marginPercentage: number, 
+    sellingPrice: number
+  ): Promise<ProduceBatch | null> => {
+    const updated = await productService.distributorUpdatePrice(batchId, purchasePrice, marginPercentage, sellingPrice);
+    if (updated) {
+      setBatches(prev => [updated, ...prev.filter(b => b.id !== updated.id && b.batchId !== updated.batchId)]);
+      return updated;
+    }
+    return null;
+  };
+
+  const distributorTransferToRetailer = async (
+    batchId: string, 
+    retailerName: string, 
+    retailerId: string, 
+    quantity: number, 
+    sellingPrice: number
+  ): Promise<ProduceBatch | null> => {
+    const updated = await productService.transferToRetailer(batchId, retailerName, retailerId, quantity, sellingPrice);
+    if (updated) {
+      setBatches(prev => [updated, ...prev.filter(b => b.id !== updated.id && b.batchId !== updated.batchId)]);
+      return updated;
+    }
+    return null;
+  };
+
+  const retailerReceiveBatch = async (batchId: string): Promise<ProduceBatch | null> => {
+    const updated = await productService.retailerReceive(batchId);
+    if (updated) {
+      setBatches(prev => [updated, ...prev.filter(b => b.id !== updated.id && b.batchId !== updated.batchId)]);
+      return updated;
+    }
+    return null;
+  };
+
+  const retailerSetFinalPrice = async (
+    batchId: string, 
+    purchasePrice: number, 
+    retailMargin: number, 
+    finalSellingPrice: number
+  ): Promise<ProduceBatch | null> => {
+    const updated = await productService.retailerSetPrice(batchId, purchasePrice, retailMargin, finalSellingPrice);
+    if (updated) {
+      setBatches(prev => [updated, ...prev.filter(b => b.id !== updated.id && b.batchId !== updated.batchId)]);
+      return updated;
+    }
+    return null;
+  };
+
+  const retailerSellProduceAction = async (
+    batchId: string, 
+    soldQuantity: number, 
+    buyerNote?: string
+  ): Promise<ProduceBatch | null> => {
+    const updated = await productService.retailerSell(batchId, soldQuantity, buyerNote);
+    if (updated) {
+      setBatches(prev => [updated, ...prev.filter(b => b.id !== updated.id && b.batchId !== updated.batchId)]);
+      return updated;
+    }
+    return null;
+  };
+
   const updateUserKYC = (userId: string, status: 'verified' | 'pending' | 'rejected') => {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, kycStatus: status } : u));
   };
@@ -1088,6 +1698,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         navigate,
         loginUser,
         registerUser,
+        sendOtp,
+        loginWithOtp,
+        registerWithOtp,
         logoutUser,
         authNotice,
         setAuthNotice,
@@ -1106,15 +1719,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         registerNewProduce,
         registerProductBatch,
         distributorProcureProduce,
+        distributorReceiveProduce,
+        updateDistributorPrice,
         distributorTransferProduce,
+        transferToRetailer,
         retailerReceiveProduce,
         retailerUpdatePrice,
         markBatchSoldToConsumer,
+        farmerTransferToDistributor,
+        distributorReceiveBatch,
+        distributorSetPrice,
+        distributorTransferToRetailer,
+        retailerReceiveBatch,
+        retailerSetFinalPrice,
+        retailerSellProduce: retailerSellProduceAction,
         updateUserKYC,
         resolveFraudAlert,
         reportFraudAlert,
         markNotificationRead,
         markAllNotificationsRead,
+        systemPolicies,
+        updateSystemPolicies,
+        quarantineBatch,
+        releaseBatchQuarantine,
+        addStakeholderUser,
+        suspendUserAccount,
+        reactivateUserAccount,
         searchBatchQuery,
         setSearchBatchQuery,
         navigateToVerification,

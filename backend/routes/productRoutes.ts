@@ -556,4 +556,396 @@ router.get('/:batchId', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Helper to find and update a product in MongoDB Atlas or memory
+ */
+async function findAndSaveProduct(batchId: string, updateFn: (prod: any) => void) {
+  const cleanId = (batchId || '').trim();
+  let product: any = null;
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      product = await Product.findOne({
+        $or: [
+          { batchId: cleanId },
+          { batchId: { $regex: new RegExp(`^${cleanId}$`, 'i') } }
+        ]
+      });
+    } catch (e) {
+      console.warn('MongoDB lookup err in findAndSaveProduct:', e);
+    }
+  }
+
+  if (!product) {
+    for (const [key, val] of inMemoryProducts.entries()) {
+      if (key.toLowerCase() === cleanId.toLowerCase() || val.id === cleanId) {
+        product = val;
+        break;
+      }
+    }
+  }
+
+  if (!product) return null;
+
+  updateFn(product);
+
+  if (mongoose.connection.readyState === 1 && typeof product.save === 'function') {
+    try {
+      await product.save();
+    } catch (dbErr) {
+      console.warn('Failed saving updated product to MongoDB:', dbErr);
+    }
+  }
+
+  const plainProduct = typeof product.toObject === 'function' ? product.toObject() : product;
+  inMemoryProducts.set(plainProduct.batchId, plainProduct);
+  return plainProduct;
+}
+
+/**
+ * POST /api/products/:batchId/transfer-to-distributor
+ * Farmer transfers batch to Distributor
+ */
+router.post('/:batchId/transfer-to-distributor', optionalJWT, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { batchId } = req.params;
+    const { distributorName, distributorId, quantity, agreedPrice } = req.body;
+    const user = req.user;
+
+    const numQty = Number(quantity);
+    const numPrice = Number(agreedPrice);
+
+    const updated = await findAndSaveProduct(batchId, (prod) => {
+      prod.status = 'Transferred to Distributor';
+      prod.currentCustodianRole = 'distributor';
+      prod.currentCustodianName = distributorName || 'Partner Distributor';
+      if (numPrice) {
+        prod.pricing = prod.pricing || {};
+        prod.pricing.farmerPrice = numPrice;
+      }
+
+      const timelineEvent = {
+        id: `tl-${Date.now()}`,
+        stage: 'Logistics',
+        title: 'Transferred to Distributor',
+        description: `Farmer transferred ${numQty || prod.quantity} ${prod.unit || 'kg'} to ${distributorName || 'Distributor'} at agreed price ₹${numPrice || prod.farmgatePrice}/${prod.unit || 'kg'}.`,
+        actorName: user?.name || prod.farmerName || 'Farmer',
+        actorRole: 'farmer',
+        location: prod.farmLocation || 'Farm Origin',
+        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        verified: true,
+      };
+
+      prod.timeline = prod.timeline || [];
+      prod.timeline.push(timelineEvent);
+    });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Batch not found.' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Batch successfully transferred to distributor.',
+      product: updated
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: 'Failed to transfer batch to distributor.' });
+  }
+});
+
+/**
+ * POST /api/products/:batchId/distributor-receive
+ * Distributor accepts / receives produce
+ */
+router.post('/:batchId/distributor-receive', optionalJWT, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { batchId } = req.params;
+    const { notes } = req.body;
+    const user = req.user;
+
+    const updated = await findAndSaveProduct(batchId, (prod) => {
+      prod.status = 'At Distributor';
+      prod.currentCustodianRole = 'distributor';
+      if (user?.name) prod.currentCustodianName = user.name;
+
+      const timelineEvent = {
+        id: `tl-${Date.now()}`,
+        stage: 'Logistics',
+        title: 'Shipment Received by Distributor',
+        description: notes || 'Produce quality verified, lot accepted into distributor storage hub.',
+        actorName: user?.name || 'Distributor Logistics',
+        actorRole: 'distributor',
+        location: user?.location || 'Regional Distribution Center',
+        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        verified: true,
+      };
+
+      prod.timeline = prod.timeline || [];
+      prod.timeline.push(timelineEvent);
+    });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Batch not found.' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Shipment accepted into distributor inventory.',
+      product: updated
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: 'Failed to accept produce shipment.' });
+  }
+});
+
+/**
+ * POST /api/products/:batchId/distributor-price
+ * Distributor updates purchase price, margin, and selling price
+ */
+router.post('/:batchId/distributor-price', optionalJWT, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { batchId } = req.params;
+    const { purchasePrice, marginPercentage, sellingPrice } = req.body;
+    const user = req.user;
+
+    const numPurchase = Number(purchasePrice);
+    const numMargin = Number(marginPercentage);
+    const numSelling = Number(sellingPrice);
+
+    const updated = await findAndSaveProduct(batchId, (prod) => {
+      prod.pricing = prod.pricing || {};
+      if (numPurchase) prod.pricing.farmerPrice = numPurchase;
+      prod.pricing.distributorMargin = numMargin;
+      prod.pricing.finalConsumerPrice = numSelling;
+
+      const timelineEvent = {
+        id: `tl-${Date.now()}`,
+        stage: 'Wholesale',
+        title: 'Distributor Pricing Configured',
+        description: `Base purchase: ₹${numPurchase}/${prod.unit || 'kg'}, Margin: ${numMargin}%, Wholesale selling price: ₹${numSelling}/${prod.unit || 'kg'}.`,
+        actorName: user?.name || 'Distributor',
+        actorRole: 'distributor',
+        location: user?.location || 'Distribution Hub',
+        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        verified: true,
+      };
+
+      prod.timeline = prod.timeline || [];
+      prod.timeline.push(timelineEvent);
+    });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Batch not found.' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Distributor price updated successfully.',
+      product: updated
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: 'Failed to update distributor price.' });
+  }
+});
+
+/**
+ * POST /api/products/:batchId/transfer-to-retailer
+ * Distributor transfers batch to Retailer
+ */
+router.post('/:batchId/transfer-to-retailer', optionalJWT, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { batchId } = req.params;
+    const { retailerName, retailerId, quantity, sellingPrice } = req.body;
+    const user = req.user;
+
+    const numQty = Number(quantity);
+    const numSelling = Number(sellingPrice);
+
+    const updated = await findAndSaveProduct(batchId, (prod) => {
+      prod.status = 'In Transit to Retailer';
+      prod.currentCustodianRole = 'retailer';
+      prod.currentCustodianName = retailerName || 'Retail Partner';
+
+      if (numSelling) {
+        prod.pricing = prod.pricing || {};
+        prod.pricing.finalConsumerPrice = numSelling;
+      }
+
+      const timelineEvent = {
+        id: `tl-${Date.now()}`,
+        stage: 'Wholesale',
+        title: 'Dispatched to Retailer',
+        description: `Transferred ${numQty || prod.quantity} ${prod.unit || 'kg'} to ${retailerName || 'Retailer'} at wholesale price ₹${numSelling}/${prod.unit || 'kg'}.`,
+        actorName: user?.name || 'Distributor Logistics',
+        actorRole: 'distributor',
+        location: user?.location || 'Regional Cold Hub',
+        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        verified: true,
+      };
+
+      prod.timeline = prod.timeline || [];
+      prod.timeline.push(timelineEvent);
+    });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Batch not found.' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Batch successfully transferred to retailer.',
+      product: updated
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: 'Failed to transfer batch to retailer.' });
+  }
+});
+
+/**
+ * POST /api/products/:batchId/retailer-receive
+ * Retailer accepts and receives shipment
+ */
+router.post('/:batchId/retailer-receive', optionalJWT, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { batchId } = req.params;
+    const user = req.user;
+
+    const updated = await findAndSaveProduct(batchId, (prod) => {
+      prod.status = 'On Retail Shelf';
+      prod.currentCustodianRole = 'retailer';
+      if (user?.name) prod.currentCustodianName = user.name;
+
+      const timelineEvent = {
+        id: `tl-${Date.now()}`,
+        stage: 'Retail',
+        title: 'Received by Retailer',
+        description: 'Shipment accepted and verified in retail store inventory.',
+        actorName: user?.name || 'Store Manager',
+        actorRole: 'retailer',
+        location: user?.location || 'Retail Store Shelf',
+        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        verified: true,
+      };
+
+      prod.timeline = prod.timeline || [];
+      prod.timeline.push(timelineEvent);
+    });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Batch not found.' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Produce received and placed on retail shelf.',
+      product: updated
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: 'Failed to receive batch as retailer.' });
+  }
+});
+
+/**
+ * POST /api/products/:batchId/retailer-price
+ * Retailer sets retail margin and consumer selling price
+ */
+router.post('/:batchId/retailer-price', optionalJWT, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { batchId } = req.params;
+    const { purchasePrice, retailMargin, finalSellingPrice } = req.body;
+    const user = req.user;
+
+    const numMargin = Number(retailMargin);
+    const numFinal = Number(finalSellingPrice);
+
+    const updated = await findAndSaveProduct(batchId, (prod) => {
+      prod.pricing = prod.pricing || {};
+      prod.pricing.retailerMargin = numMargin;
+      prod.pricing.finalConsumerPrice = numFinal;
+
+      const timelineEvent = {
+        id: `tl-${Date.now()}`,
+        stage: 'Retail',
+        title: 'Retail Selling Price Set',
+        description: `Wholesale cost: ₹${purchasePrice}/${prod.unit || 'kg'}, Retail margin: ${numMargin}%, Final shelf price: ₹${numFinal}/${prod.unit || 'kg'}.`,
+        actorName: user?.name || 'Retailer',
+        actorRole: 'retailer',
+        location: user?.location || 'Retail Store Shelf',
+        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        verified: true,
+      };
+
+      prod.timeline = prod.timeline || [];
+      prod.timeline.push(timelineEvent);
+    });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Batch not found.' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Retail selling price updated.',
+      product: updated
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: 'Failed to set retailer selling price.' });
+  }
+});
+
+/**
+ * POST /api/products/:batchId/retailer-sell
+ * Retailer records a sale and decrements available quantity
+ */
+router.post('/:batchId/retailer-sell', optionalJWT, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { batchId } = req.params;
+    const { soldQuantity, buyerNote } = req.body;
+    const user = req.user;
+
+    const numSold = Number(soldQuantity) || 1;
+
+    const updated = await findAndSaveProduct(batchId, (prod) => {
+      const remaining = Math.max(0, (prod.quantity || 0) - numSold);
+      prod.quantity = remaining;
+      if (prod.quantityKg) {
+        prod.quantityKg = Math.max(0, prod.quantityKg - numSold);
+      }
+
+      if (remaining === 0) {
+        prod.status = 'Sold to Consumer';
+        prod.currentCustodianRole = 'consumer';
+      }
+
+      const timelineEvent = {
+        id: `tl-${Date.now()}`,
+        stage: 'Consumer',
+        title: 'Point of Sale to Consumer',
+        description: `Sold ${numSold} ${prod.unit || 'kg'}${buyerNote ? ` (${buyerNote})` : ''}. ${remaining > 0 ? `${remaining} ${prod.unit || 'kg'} remaining in stock.` : 'Batch lot completely sold.'}`,
+        actorName: user?.name || 'Retail Checkout',
+        actorRole: 'retailer',
+        location: user?.location || 'Retail Store Point of Sale',
+        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        verified: true,
+      };
+
+      prod.timeline = prod.timeline || [];
+      prod.timeline.push(timelineEvent);
+    });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Batch not found.' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Produce sale recorded successfully.',
+      product: updated
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: 'Failed to record sale.' });
+  }
+});
+
 export default router;

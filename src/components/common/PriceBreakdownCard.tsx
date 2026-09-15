@@ -42,7 +42,7 @@ export const PriceBreakdownCard: React.FC<Props> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800">
+            <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
               <TrendingUp className="w-4 h-4" />
             </span>
             <h4 className="font-bold text-slate-900 text-base">
@@ -55,10 +55,8 @@ export const PriceBreakdownCard: React.FC<Props> = ({
         </div>
 
         {showGovBenchmark && (
-          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
-            isWithinFairCeiling 
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
-              : 'bg-amber-50 text-amber-800 border-amber-200'
+          <div className={`flex items-center gap-1.5 text-xs font-semibold ${
+            isWithinFairCeiling ? 'text-emerald-700' : 'text-amber-700'
           }`}>
             {isWithinFairCeiling ? (
               <>
@@ -244,16 +242,16 @@ export const PriceBreakdownCard: React.FC<Props> = ({
         </div>
 
         {/* Total Consumer Price */}
-        <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between">
+        <div className="p-3.5 bg-emerald-50 text-emerald-950 flex items-center justify-between border-t border-emerald-200">
           <div>
-            <span className="font-bold text-sm sm:text-base">Final Transparent Consumer Price</span>
-            <p className="text-slate-400 text-xs">Total payable at retail checkout counter</p>
+            <span className="font-bold text-sm sm:text-base text-slate-900">Final Transparent Consumer Price</span>
+            <p className="text-slate-500 text-xs">Total payable at retail checkout counter</p>
           </div>
           <div className="text-right">
-            <span className="font-extrabold text-emerald-400 text-base sm:text-xl">
+            <span className="font-extrabold text-emerald-700 text-base sm:text-xl">
               {currency}{total.toFixed(2)}
             </span>
-            <span className="text-slate-300 text-xs ml-1">/kg</span>
+            <span className="text-slate-500 text-xs ml-1">/kg</span>
           </div>
         </div>
       </div>

@@ -21,7 +21,10 @@ import {
   Calendar,
   DollarSign,
   Info,
-  ExternalLink
+  ExternalLink,
+  Star,
+  MessageSquare,
+  Heart
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useApp } from '../../context/AppContext';
@@ -33,9 +36,54 @@ import { ProduceBatch } from '../../types/produce';
 export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> = ({ onOpenQRScanner }) => {
   const { batches, currentPath, navigate, selectedBatchId, setSelectedBatchId } = useApp();
   const [searchInput, setSearchInput] = useState('');
-  const [activeSubTab, setActiveSubTab] = useState<'journey' | 'pricing' | 'origin' | 'blockchain' | 'qr'>('journey');
+  const [activeSubTab, setActiveSubTab] = useState<'journey' | 'pricing' | 'origin' | 'blockchain' | 'qr' | 'feedback'>('journey');
   const [showQRModal, setShowQRModal] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
+
+  // Consumer Feedback & Review state
+  const [rating, setRating] = useState(5);
+  const [freshnessRating, setFreshnessRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewerName, setReviewerName] = useState('');
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [reviewsList, setReviewsList] = useState([
+    {
+      id: 'rev-1',
+      name: 'Priya Sharma',
+      rating: 5,
+      freshness: 5,
+      date: 'Yesterday',
+      comment: 'Super crisp and naturally sweet! Glad to see the direct payout to the farmer right here in the price breakdown.'
+    },
+    {
+      id: 'rev-2',
+      name: 'Anand Kumar',
+      rating: 5,
+      freshness: 4,
+      date: '3 days ago',
+      comment: 'Scanned the shelf barcode in-store. Knowing it came straight from Nashik cold storage gives great confidence.'
+    }
+  ]);
+
+  const handleReviewSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewComment.trim()) return;
+
+    const newRev = {
+      id: `rev-${Date.now()}`,
+      name: reviewerName.trim() || 'Verified Consumer',
+      rating,
+      freshness: freshnessRating,
+      date: 'Just now',
+      comment: reviewComment.trim()
+    };
+
+    setReviewsList([newRev, ...reviewsList]);
+    setReviewComment('');
+    setReviewerName('');
+    setReviewSubmitted(true);
+    setTimeout(() => setReviewSubmitted(false), 4000);
+  };
 
   // Extract requested batchId from currentPath, pathname, or search parameters
   const requestedId = useMemo(() => {
@@ -142,10 +190,6 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold mb-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Public Verification Portal</span>
-            </div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
               Verify Agricultural Produce Provenance
             </h1>
@@ -178,7 +222,7 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
           </div>
           <button
             type="submit"
-            className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition cursor-pointer"
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition cursor-pointer shadow-xs"
           >
             Lookup Batch
           </button>
@@ -272,20 +316,15 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
           <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
             
             {/* Header Ribbon */}
-            <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-900 to-slate-900 text-white flex flex-wrap items-center justify-between gap-3">
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-50 via-teal-50/50 to-slate-50 text-slate-900 border-b border-emerald-200/90 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <span className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-emerald-300">
-                  Verified AgriTrace Product
-                </span>
-                <span className="text-slate-400">|</span>
-                <span className="font-mono text-xs font-bold text-white">
+                <span className="font-mono text-sm font-bold text-slate-900">
                   Batch ID: {batch.batchId}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/15 text-emerald-200 border border-white/20">
-                  Current Status: {batch.status || 'Registered'}
+                <span className="font-semibold text-xs text-emerald-800">
+                  Status: {batch.status || 'Registered'}
                 </span>
               </div>
             </div>
@@ -300,7 +339,7 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute top-3 left-3">
-                  <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-white/95 text-emerald-900 shadow-xs">
+                  <span className="px-2 py-0.5 rounded text-xs font-semibold bg-slate-900/80 text-white backdrop-blur">
                     {batch.qualityGrade || batch.quality?.grade || 'Grade A'}
                   </span>
                 </div>
@@ -450,6 +489,7 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
               { id: 'origin' as const, label: 'Quality & Origin', icon: <MapPin className="w-4 h-4" /> },
               { id: 'qr' as const, label: 'Scannable QR Code', icon: <QrCode className="w-4 h-4" /> },
               { id: 'blockchain' as const, label: 'Provenance Record', icon: <ShieldCheck className="w-4 h-4" /> },
+              { id: 'feedback' as const, label: 'Reviews & Feedback', icon: <Star className="w-4 h-4" /> },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -618,7 +658,7 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
                     <button
                       type="button"
                       onClick={() => setShowQRModal(true)}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer shadow-xs"
                     >
                       <QrCode className="w-4 h-4" />
                       <span>View Printable Tag</span>
@@ -640,8 +680,9 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
                   </h3>
                   <p className="text-xs text-slate-500">Tamper-evident record and verification identifiers</p>
                 </div>
-                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  AgriTrace Verified
+                <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>AgriTrace Verified</span>
                 </span>
               </div>
 
@@ -685,6 +726,132 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
                   <strong className="text-emerald-950 font-bold block mb-0.5">Agricultural Provenance Guarantee</strong>
                   This agricultural lot is certified on AgriTrace. Custody transfers, cold-chain temperature logs, and fair farmgate pricing disclosures are sealed with unique batch identifiers.
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 6: Consumer Reviews & Feedback */}
+          {activeSubTab === 'feedback' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <Star className="w-5 h-5 text-amber-500 fill-amber-400" />
+                    <span>Consumer Quality Reviews & Farmer Feedback</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Submit verified feedback after purchasing. Honest consumer reviews directly empower organic farmers and build transparent reputations.
+                  </p>
+                </div>
+
+                {reviewSubmitted && (
+                  <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl text-xs text-emerald-900 flex items-center gap-2 font-medium">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Thank you! Your verified consumer review has been posted and linked to batch {batch.batchId}.</span>
+                  </div>
+                )}
+
+                {/* Review submission form */}
+                <form onSubmit={handleReviewSubmit} className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4 text-xs">
+                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Leave a Verified Review</h4>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">Taste & Produce Quality</label>
+                      <div className="flex items-center gap-1.5">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setRating(star)}
+                            className="p-1 text-amber-400 hover:scale-110 transition cursor-pointer"
+                          >
+                            <Star className={`w-5 h-5 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+                          </button>
+                        ))}
+                        <span className="text-xs font-bold text-slate-700 ml-2">{rating}/5 Stars</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 font-semibold mb-1">Freshness & Packaging</label>
+                      <div className="flex items-center gap-1.5">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setFreshnessRating(star)}
+                            className="p-1 text-teal-600 hover:scale-110 transition cursor-pointer"
+                          >
+                            <Star className={`w-5 h-5 ${star <= freshnessRating ? 'fill-teal-500 text-teal-500' : 'text-slate-300'}`} />
+                          </button>
+                        ))}
+                        <span className="text-xs font-bold text-slate-700 ml-2">{freshnessRating}/5 Fresh</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">Your Name (Optional)</label>
+                    <input
+                      type="text"
+                      value={reviewerName}
+                      onChange={(e) => setReviewerName(e.target.value)}
+                      placeholder="e.g. Meera Patel"
+                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl outline-none text-slate-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1">Review & Experience *</label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      placeholder="Tell us about the freshness, taste, and your experience with this batch..."
+                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl outline-none text-slate-800"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition shadow-xs cursor-pointer flex items-center gap-1.5"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Submit Consumer Review</span>
+                  </button>
+                </form>
+
+                {/* Reviews List */}
+                <div className="space-y-3 pt-2">
+                  <h4 className="font-bold text-slate-900 text-xs">Customer Reviews for this Lot ({reviewsList.length})</h4>
+                  <div className="space-y-3">
+                    {reviewsList.map(rev => (
+                      <div key={rev.id} className="p-4 rounded-2xl bg-white border border-slate-200 space-y-2 text-xs">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900">{rev.name}</span>
+                            <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-semibold px-2 py-0.5 rounded-md">
+                              Verified Purchase
+                            </span>
+                          </div>
+                          <span className="text-slate-400 text-[11px]">{rev.date}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-amber-400">
+                          {[1, 2, 3, 4, 5].map(s => (
+                            <Star key={s} className={`w-3.5 h-3.5 ${s <= rev.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+                          ))}
+                          <span className="text-slate-500 text-[11px] ml-1.5 font-medium">• Freshness {rev.freshness}/5</span>
+                        </div>
+                        <p className="text-slate-600 text-xs leading-relaxed">
+                          "{rev.comment}"
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </div>
             </div>
           )}

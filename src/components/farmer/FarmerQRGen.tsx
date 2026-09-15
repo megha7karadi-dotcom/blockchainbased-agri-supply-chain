@@ -85,7 +85,7 @@ export const FarmerQRGen: React.FC = () => {
           <button
             type="button"
             onClick={handlePrint}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-xs"
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-xs"
           >
             <Printer className="w-4 h-4" />
             <span>Print Physical Label</span>

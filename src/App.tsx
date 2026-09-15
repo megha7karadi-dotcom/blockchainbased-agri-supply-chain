@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Sparkles } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/common/Header';
@@ -25,6 +25,7 @@ import { FarmerDashboard } from './components/farmer/FarmerDashboard';
 import { RegisterProduce } from './components/farmer/RegisterProduce';
 import { MyProduce } from './components/farmer/MyProduce';
 import { PricePrediction } from './components/farmer/PricePrediction';
+import { FarmerTransfers } from './components/farmer/FarmerTransfers';
 import { FarmerTransactions } from './components/farmer/FarmerTransactions';
 import { FarmerTrust } from './components/farmer/FarmerTrust';
 import { FarmerQRGen } from './components/farmer/FarmerQRGen';
@@ -32,12 +33,27 @@ import { FarmerNotifications } from './components/farmer/FarmerNotifications';
 
 // Distributor Views
 import { DistributorDashboard } from './components/distributor/DistributorDashboard';
+import { DistributorIncoming } from './components/distributor/DistributorIncoming';
+import { DistributorInventory } from './components/distributor/DistributorInventory';
 import { AvailableProduce } from './components/distributor/AvailableProduce';
 import { InTransitBatches } from './components/distributor/InTransitBatches';
 import { ColdChainMonitor } from './components/distributor/ColdChainMonitor';
+import { DistributorReceiveProduce } from './components/distributor/DistributorReceiveProduce';
+import { DistributorUpdatePrice } from './components/distributor/DistributorUpdatePrice';
+import { DistributorTransferToRetailer } from './components/distributor/DistributorTransferToRetailer';
+import { DistributorOwnershipTransfer } from './components/distributor/DistributorOwnershipTransfer';
+import { DistributorShipments } from './components/distributor/DistributorShipments';
+import { DistributorTransactions } from './components/distributor/DistributorTransactions';
+import { DistributorHistory } from './components/distributor/DistributorHistory';
 
 // Retailer Views
 import { RetailerDashboard } from './components/retailer/RetailerDashboard';
+import { RetailerIncoming } from './components/retailer/RetailerIncoming';
+import { RetailerInventory } from './components/retailer/RetailerInventory';
+import { RetailerSetPrice } from './components/retailer/RetailerSetPrice';
+import { RetailerSell } from './components/retailer/RetailerSell';
+import { RetailerQRLabels } from './components/retailer/RetailerQRLabels';
+import { RetailerHistory } from './components/retailer/RetailerHistory';
 
 // Consumer Views
 import { ConsumerDashboard } from './components/consumer/ConsumerDashboard';
@@ -61,6 +77,15 @@ const MainLayout: React.FC = () => {
     normalizedPath.startsWith('/retailer') ||
     normalizedPath.startsWith('/consumer') ||
     normalizedPath.startsWith('/admin');
+
+  // If an authenticated user arrives at /login or /signup, instantly guide them to their role dashboard
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && currentRole && currentRole !== 'public') {
+      if (normalizedPath === '/login' || normalizedPath === '/signup') {
+        navigate(`/${currentRole}/dashboard`);
+      }
+    }
+  }, [authLoading, isAuthenticated, currentRole, normalizedPath, navigate]);
 
   // While authLoading is active, do not execute redirects
   if (authLoading) {
@@ -114,9 +139,29 @@ const MainLayout: React.FC = () => {
       return <LandingPage onOpenQRScanner={() => setIsQRScannerOpen(true)} />;
     }
     if (normalizedPath === '/login') {
+      if (isAuthenticated && currentRole && currentRole !== 'public') {
+        return (
+          <div className="min-h-[60vh] flex items-center justify-center">
+            <div className="text-center space-y-3">
+              <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs font-semibold text-slate-500">Redirecting to your dashboard...</p>
+            </div>
+          </div>
+        );
+      }
       return <LoginPage />;
     }
     if (normalizedPath === '/signup') {
+      if (isAuthenticated && currentRole && currentRole !== 'public') {
+        return (
+          <div className="min-h-[60vh] flex items-center justify-center">
+            <div className="text-center space-y-3">
+              <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs font-semibold text-slate-500">Redirecting to your dashboard...</p>
+            </div>
+          </div>
+        );
+      }
       return <RegisterPage />;
     }
     if (normalizedPath === '/trace-products') {
@@ -146,51 +191,36 @@ const MainLayout: React.FC = () => {
 
     // 3. FARMER PARTICIPANT ROUTES
     if (normalizedPath === '/farmer/dashboard') return <FarmerDashboard />;
-    if (normalizedPath === '/farmer/register-produce') return <RegisterProduce />;
+    if (normalizedPath === '/farmer/register-produce' || normalizedPath === '/farmer/add-produce') return <RegisterProduce />;
     if (normalizedPath === '/farmer/my-produce' || normalizedPath === '/farmer/supply-chain') return <MyProduce />;
     if (normalizedPath === '/farmer/price-prediction') return <PricePrediction />;
+    if (normalizedPath === '/farmer/transfers') return <FarmerTransfers />;
     if (normalizedPath === '/farmer/transactions') return <FarmerTransactions />;
     if (normalizedPath === '/farmer/qr-codes') return <FarmerQRGen />;
     if (normalizedPath === '/farmer/trust') return <FarmerTrust />;
     if (normalizedPath === '/farmer/notifications') return <FarmerNotifications />;
     if (normalizedPath === '/farmer/profile') return <ProfilePage />;
-    if (normalizedPath.startsWith('/farmer')) {
-      return (
-        <div className="max-w-lg mx-auto my-16 p-8 bg-white border border-slate-200 rounded-3xl shadow-sm text-center">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="w-6 h-6" />
-          </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Coming Soon</h2>
-          <p className="text-sm text-slate-600 mb-6">
-            This farmer workspace module is currently under development.
-          </p>
-          <button
-            onClick={() => navigate('/farmer/dashboard')}
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition cursor-pointer"
-          >
-            Return to Farmer Dashboard
-          </button>
-        </div>
-      );
-    }
 
     // 4. DISTRIBUTOR PARTICIPANT ROUTES
     if (normalizedPath === '/distributor/dashboard') return <DistributorDashboard />;
+    if (normalizedPath === '/distributor/incoming' || normalizedPath === '/distributor/receive-produce') return <DistributorIncoming />;
+    if (normalizedPath === '/distributor/inventory') return <DistributorInventory />;
     if (normalizedPath === '/distributor/available-produce') return <AvailableProduce />;
-    if (normalizedPath === '/distributor/shipments' || normalizedPath === '/distributor/receive-produce' || normalizedPath === '/distributor/ownership-transfer') {
-      return <InTransitBatches />;
-    }
+    if (normalizedPath === '/distributor/update-price') return <DistributorUpdatePrice />;
+    if (normalizedPath === '/distributor/transfer-to-retailer' || normalizedPath === '/distributor/ownership-transfer') return <DistributorTransferToRetailer />;
+    if (normalizedPath === '/distributor/shipments') return <DistributorShipments />;
     if (normalizedPath === '/distributor/transportation') return <ColdChainMonitor />;
-    if (normalizedPath === '/distributor/update-price') return <DistributorDashboard />;
-    if (normalizedPath === '/distributor/transactions') return <FarmerTransactions />;
+    if (normalizedPath === '/distributor/history' || normalizedPath === '/distributor/transactions') return <DistributorHistory />;
     if (normalizedPath === '/distributor/profile') return <ProfilePage />;
 
     // 5. RETAILER PARTICIPANT ROUTES
-    if (normalizedPath === '/retailer/dashboard' || normalizedPath === '/retailer/inventory' || normalizedPath === '/retailer/receive-produce' || normalizedPath === '/retailer/update-price' || normalizedPath === '/retailer/product-history' || normalizedPath === '/retailer/ownership-transfer') {
-      return <RetailerDashboard />;
-    }
-    if (normalizedPath === '/retailer/transactions') return <FarmerTransactions />;
-    if (normalizedPath === '/retailer/qr-codes') return <FarmerQRGen />;
+    if (normalizedPath === '/retailer/dashboard') return <RetailerDashboard />;
+    if (normalizedPath === '/retailer/incoming' || normalizedPath === '/retailer/receive-produce') return <RetailerIncoming />;
+    if (normalizedPath === '/retailer/inventory') return <RetailerInventory />;
+    if (normalizedPath === '/retailer/set-price' || normalizedPath === '/retailer/update-price') return <RetailerSetPrice />;
+    if (normalizedPath === '/retailer/sell') return <RetailerSell />;
+    if (normalizedPath === '/retailer/qr-labels' || normalizedPath === '/retailer/qr-codes') return <RetailerQRLabels />;
+    if (normalizedPath === '/retailer/history' || normalizedPath === '/retailer/transactions' || normalizedPath === '/retailer/product-history') return <RetailerHistory />;
     if (normalizedPath === '/retailer/profile') return <ProfilePage />;
 
     // 6. CONSUMER PARTICIPANT ROUTES

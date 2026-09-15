@@ -8,6 +8,8 @@ export interface AuthUserPayload {
   email: string;
   role: string;
   name: string;
+  location?: string;
+  organization?: string;
 }
 
 export interface AuthenticatedRequest extends Request {

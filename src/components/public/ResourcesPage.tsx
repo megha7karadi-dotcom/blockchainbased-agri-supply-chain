@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { 
   BookOpen, 
   HelpCircle, 
@@ -42,14 +43,15 @@ export const ResourcesPage: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-12 pb-16">
+    <motion.div 
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="max-w-5xl mx-auto space-y-12 pb-16"
+    >
       
       {/* Header */}
       <div className="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-xs space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
-          <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Knowledge & Compliance Portal</span>
-        </div>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
           AgriTrace Resources & Standards
         </h1>
@@ -154,6 +156,6 @@ export const ResourcesPage: React.FC = () => {
         </div>
       </div>
 
-    </div>
+    </motion.div>
   );
 };

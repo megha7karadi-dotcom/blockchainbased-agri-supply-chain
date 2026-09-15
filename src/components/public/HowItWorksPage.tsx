@@ -127,9 +127,6 @@ export const HowItWorksPage: React.FC = () => {
       
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto space-y-3">
-        <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full">
-          End-to-End Workflow
-        </span>
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
           How the AgriTrace System Works
         </h1>

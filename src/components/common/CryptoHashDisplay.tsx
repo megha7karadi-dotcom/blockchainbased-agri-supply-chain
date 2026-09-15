@@ -2,27 +2,29 @@ import React, { useState } from 'react';
 import { Copy, Check, ExternalLink, ShieldCheck } from 'lucide-react';
 
 interface Props {
-  hash: string;
+  hash?: string | null;
   label?: string;
   truncateLength?: number;
   showBadge?: boolean;
 }
 
 export const CryptoHashDisplay: React.FC<Props> = ({ 
-  hash, 
+  hash = '', 
   label, 
   truncateLength = 10,
   showBadge = true
 }) => {
   const [copied, setCopied] = useState(false);
+  const safeHash = typeof hash === 'string' ? hash : '';
 
-  const displayHash = hash.length > truncateLength * 2 + 4
-    ? `${hash.substring(0, truncateLength)}...${hash.substring(hash.length - truncateLength)}`
-    : hash;
+  const displayHash = safeHash.length > truncateLength * 2 + 4
+    ? `${safeHash.substring(0, truncateLength)}...${safeHash.substring(safeHash.length - truncateLength)}`
+    : (safeHash || '0x—');
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard?.writeText(hash);
+    if (!safeHash) return;
+    navigator.clipboard?.writeText(safeHash);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

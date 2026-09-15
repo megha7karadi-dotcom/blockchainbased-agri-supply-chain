@@ -1,5 +1,9 @@
 import mongoose from 'mongoose';
 
+// Fail fast when MongoDB is offline, don't buffer commands indefinitely
+mongoose.set('bufferCommands', false);
+mongoose.set('strictQuery', false);
+
 export function getMongoURI(): string {
   let envUri = process.env.MONGODB_URI?.trim() || '';
   if (!envUri) return '';
@@ -50,14 +54,24 @@ export async function connectDB(): Promise<boolean> {
   } catch (error: any) {
     isConnected = false;
     connectionError = error?.message || 'Failed to connect to MongoDB Atlas';
-    console.error('⚠️ MongoDB Atlas connection notice:', connectionError);
     
-    // Auto-retry in background every 15 seconds if initial connection failed
-    setTimeout(() => {
-      if (mongoose.connection.readyState !== 1) {
-        connectDB().catch(() => {});
-      }
-    }, 15000);
+    const isAuthError = 
+      connectionError?.toLowerCase().includes('auth') || 
+      connectionError?.toLowerCase().includes('password') ||
+      connectionError?.toLowerCase().includes('credential');
+
+    if (isAuthError) {
+      console.info(`[AgriTrace] MongoDB Atlas credentials notice: ${connectionError}. Seamlessly operating with resilient in-memory storage.`);
+    } else {
+      console.info(`[AgriTrace] MongoDB Atlas notice: ${connectionError}. Operating with resilient in-memory storage.`);
+      
+      // Auto-retry only for transient network disconnects (not invalid credentials)
+      setTimeout(() => {
+        if (mongoose.connection.readyState !== 1) {
+          connectDB().catch(() => {});
+        }
+      }, 30000);
+    }
 
     return false;
   }

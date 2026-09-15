@@ -435,6 +435,394 @@ class ProductService {
     const found = batches.find(b => b.id === idOrBatchId || b.batchId === idOrBatchId);
     return found ? this.normalizeBatch(found) : null;
   }
+
+  private getAuthHeader(): Record<string, string> {
+    const token = typeof window !== 'undefined' 
+      ? (localStorage.getItem('agritrace_jwt_token') || sessionStorage.getItem('agritrace_jwt_token'))
+      : null;
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  }
+
+  /**
+   * Transfer batch from Farmer to Distributor
+   */
+  async transferToDistributor(
+    batchId: string, 
+    distributorName: string, 
+    distributorId: string, 
+    quantity: number, 
+    agreedPrice: number
+  ): Promise<ProduceBatch | null> {
+    try {
+      const response = await fetch(`/api/products/${encodeURIComponent(batchId)}/transfer-to-distributor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeader()
+        },
+        body: JSON.stringify({ distributorName, distributorId, quantity, agreedPrice })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.product) {
+          const normalized = this.normalizeBatch(data.product);
+          this.updateLocalBatch(normalized);
+          return normalized;
+        }
+      }
+    } catch (e) {
+      console.warn('Network call for transferToDistributor failed, updating local state:', e);
+    }
+
+    // Local fallback update
+    const batches = this.getStoredBatches();
+    const idx = batches.findIndex(b => b.id === batchId || b.batchId === batchId);
+    if (idx !== -1) {
+      const b = batches[idx];
+      b.status = 'Transferred to Distributor';
+      b.currentCustodianRole = 'distributor';
+      b.currentCustodianName = distributorName;
+      b.pricing.farmerPrice = agreedPrice;
+      b.timeline.push({
+        id: `tl-${Date.now()}`,
+        stage: 'Logistics',
+        title: 'Transferred to Distributor',
+        description: `Transferred ${quantity} ${b.unit || 'kg'} to ${distributorName} at agreed price ₹${agreedPrice}/${b.unit || 'kg'}.`,
+        actorName: b.farmerName,
+        actorRole: 'farmer',
+        location: b.farmLocation,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        verified: true,
+      });
+      this.saveBatches(batches);
+      return b;
+    }
+    return null;
+  }
+
+  /**
+   * Distributor receives / accepts batch
+   */
+  async distributorReceive(batchId: string, notes?: string): Promise<ProduceBatch | null> {
+    try {
+      const response = await fetch(`/api/products/${encodeURIComponent(batchId)}/distributor-receive`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeader()
+        },
+        body: JSON.stringify({ notes })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.product) {
+          const normalized = this.normalizeBatch(data.product);
+          this.updateLocalBatch(normalized);
+          return normalized;
+        }
+      }
+    } catch (e) {
+      console.warn('Network call for distributorReceive failed, updating local:', e);
+    }
+
+    const batches = this.getStoredBatches();
+    const idx = batches.findIndex(b => b.id === batchId || b.batchId === batchId);
+    if (idx !== -1) {
+      const b = batches[idx];
+      b.status = 'At Distributor';
+      b.currentCustodianRole = 'distributor';
+      b.timeline.push({
+        id: `tl-${Date.now()}`,
+        stage: 'Logistics',
+        title: 'Shipment Received by Distributor',
+        description: notes || 'Produce quality verified, lot accepted into distributor storage hub.',
+        actorName: b.currentCustodianName || 'Distributor Logistics',
+        actorRole: 'distributor',
+        location: 'Regional Distribution Center',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        verified: true,
+      });
+      this.saveBatches(batches);
+      return b;
+    }
+    return null;
+  }
+
+  /**
+   * Distributor updates price and margin
+   */
+  async distributorUpdatePrice(
+    batchId: string, 
+    purchasePrice: number, 
+    marginPercentage: number, 
+    sellingPrice: number
+  ): Promise<ProduceBatch | null> {
+    try {
+      const response = await fetch(`/api/products/${encodeURIComponent(batchId)}/distributor-price`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeader()
+        },
+        body: JSON.stringify({ purchasePrice, marginPercentage, sellingPrice })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.product) {
+          const normalized = this.normalizeBatch(data.product);
+          this.updateLocalBatch(normalized);
+          return normalized;
+        }
+      }
+    } catch (e) {
+      console.warn('Network call for distributorUpdatePrice failed, updating local:', e);
+    }
+
+    const batches = this.getStoredBatches();
+    const idx = batches.findIndex(b => b.id === batchId || b.batchId === batchId);
+    if (idx !== -1) {
+      const b = batches[idx];
+      b.pricing.farmerPrice = purchasePrice;
+      b.pricing.distributorMargin = marginPercentage;
+      b.pricing.finalConsumerPrice = sellingPrice;
+      b.timeline.push({
+        id: `tl-${Date.now()}`,
+        stage: 'Wholesale',
+        title: 'Distributor Pricing Configured',
+        description: `Base purchase: ₹${purchasePrice}/${b.unit || 'kg'}, Margin: ${marginPercentage}%, Wholesale selling price: ₹${sellingPrice}/${b.unit || 'kg'}.`,
+        actorName: b.currentCustodianName || 'Distributor',
+        actorRole: 'distributor',
+        location: 'Distribution Hub',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        verified: true,
+      });
+      this.saveBatches(batches);
+      return b;
+    }
+    return null;
+  }
+
+  /**
+   * Distributor transfers batch to Retailer
+   */
+  async transferToRetailer(
+    batchId: string, 
+    retailerName: string, 
+    retailerId: string, 
+    quantity: number, 
+    sellingPrice: number
+  ): Promise<ProduceBatch | null> {
+    try {
+      const response = await fetch(`/api/products/${encodeURIComponent(batchId)}/transfer-to-retailer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeader()
+        },
+        body: JSON.stringify({ retailerName, retailerId, quantity, sellingPrice })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.product) {
+          const normalized = this.normalizeBatch(data.product);
+          this.updateLocalBatch(normalized);
+          return normalized;
+        }
+      }
+    } catch (e) {
+      console.warn('Network call for transferToRetailer failed, updating local:', e);
+    }
+
+    const batches = this.getStoredBatches();
+    const idx = batches.findIndex(b => b.id === batchId || b.batchId === batchId);
+    if (idx !== -1) {
+      const b = batches[idx];
+      b.status = 'In Transit to Retailer';
+      b.currentCustodianRole = 'retailer';
+      b.currentCustodianName = retailerName;
+      b.pricing.finalConsumerPrice = sellingPrice;
+      b.timeline.push({
+        id: `tl-${Date.now()}`,
+        stage: 'Wholesale',
+        title: 'Dispatched to Retailer',
+        description: `Transferred ${quantity} ${b.unit || 'kg'} to ${retailerName} at wholesale price ₹${sellingPrice}/${b.unit || 'kg'}.`,
+        actorName: 'Distributor Logistics',
+        actorRole: 'distributor',
+        location: 'Regional Cold Hub',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        verified: true,
+      });
+      this.saveBatches(batches);
+      return b;
+    }
+    return null;
+  }
+
+  /**
+   * Retailer receives produce
+   */
+  async retailerReceive(batchId: string): Promise<ProduceBatch | null> {
+    try {
+      const response = await fetch(`/api/products/${encodeURIComponent(batchId)}/retailer-receive`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeader()
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.product) {
+          const normalized = this.normalizeBatch(data.product);
+          this.updateLocalBatch(normalized);
+          return normalized;
+        }
+      }
+    } catch (e) {
+      console.warn('Network call for retailerReceive failed, updating local:', e);
+    }
+
+    const batches = this.getStoredBatches();
+    const idx = batches.findIndex(b => b.id === batchId || b.batchId === batchId);
+    if (idx !== -1) {
+      const b = batches[idx];
+      b.status = 'On Retail Shelf';
+      b.currentCustodianRole = 'retailer';
+      b.timeline.push({
+        id: `tl-${Date.now()}`,
+        stage: 'Retail',
+        title: 'Received by Retailer',
+        description: 'Shipment accepted and verified in retail store inventory.',
+        actorName: 'Store Manager',
+        actorRole: 'retailer',
+        location: 'Retail Store Shelf',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        verified: true,
+      });
+      this.saveBatches(batches);
+      return b;
+    }
+    return null;
+  }
+
+  /**
+   * Retailer sets selling price
+   */
+  async retailerSetPrice(
+    batchId: string, 
+    purchasePrice: number, 
+    retailMargin: number, 
+    finalSellingPrice: number
+  ): Promise<ProduceBatch | null> {
+    try {
+      const response = await fetch(`/api/products/${encodeURIComponent(batchId)}/retailer-price`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeader()
+        },
+        body: JSON.stringify({ purchasePrice, retailMargin, finalSellingPrice })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.product) {
+          const normalized = this.normalizeBatch(data.product);
+          this.updateLocalBatch(normalized);
+          return normalized;
+        }
+      }
+    } catch (e) {
+      console.warn('Network call for retailerSetPrice failed, updating local:', e);
+    }
+
+    const batches = this.getStoredBatches();
+    const idx = batches.findIndex(b => b.id === batchId || b.batchId === batchId);
+    if (idx !== -1) {
+      const b = batches[idx];
+      b.pricing.retailerMargin = retailMargin;
+      b.pricing.finalConsumerPrice = finalSellingPrice;
+      b.timeline.push({
+        id: `tl-${Date.now()}`,
+        stage: 'Retail',
+        title: 'Retail Selling Price Set',
+        description: `Wholesale cost: ₹${purchasePrice}/${b.unit || 'kg'}, Retail margin: ${retailMargin}%, Final shelf price: ₹${finalSellingPrice}/${b.unit || 'kg'}.`,
+        actorName: 'Retailer',
+        actorRole: 'retailer',
+        location: 'Retail Store Shelf',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        verified: true,
+      });
+      this.saveBatches(batches);
+      return b;
+    }
+    return null;
+  }
+
+  /**
+   * Retailer sells produce
+   */
+  async retailerSell(batchId: string, soldQuantity: number, buyerNote?: string): Promise<ProduceBatch | null> {
+    try {
+      const response = await fetch(`/api/products/${encodeURIComponent(batchId)}/retailer-sell`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeader()
+        },
+        body: JSON.stringify({ soldQuantity, buyerNote })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.product) {
+          const normalized = this.normalizeBatch(data.product);
+          this.updateLocalBatch(normalized);
+          return normalized;
+        }
+      }
+    } catch (e) {
+      console.warn('Network call for retailerSell failed, updating local:', e);
+    }
+
+    const batches = this.getStoredBatches();
+    const idx = batches.findIndex(b => b.id === batchId || b.batchId === batchId);
+    if (idx !== -1) {
+      const b = batches[idx];
+      const remaining = Math.max(0, (b.quantity || 0) - soldQuantity);
+      b.quantity = remaining;
+      b.quantityKg = remaining;
+      if (remaining === 0) {
+        b.status = 'Sold to Consumer';
+        b.currentCustodianRole = 'consumer';
+      }
+      b.timeline.push({
+        id: `tl-${Date.now()}`,
+        stage: 'Consumer',
+        title: 'Point of Sale to Consumer',
+        description: `Sold ${soldQuantity} ${b.unit || 'kg'}${buyerNote ? ` (${buyerNote})` : ''}. ${remaining > 0 ? `${remaining} ${b.unit || 'kg'} remaining in stock.` : 'Batch lot completely sold.'}`,
+        actorName: 'Retail Checkout',
+        actorRole: 'retailer',
+        location: 'Retail Store Point of Sale',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        verified: true,
+      });
+      this.saveBatches(batches);
+      return b;
+    }
+    return null;
+  }
+
+  private updateLocalBatch(updated: ProduceBatch) {
+    const existing = this.getStoredBatches();
+    const filtered = existing.filter(b => b.id !== updated.id && b.batchId !== updated.batchId);
+    this.saveBatches([updated, ...filtered]);
+  }
 }
 
 export const productService = new ProductService();

@@ -44,16 +44,12 @@ export const RetailerDashboard: React.FC = () => {
     <div className="space-y-8 pb-12">
       
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-purple-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-gradient-to-br from-purple-50/90 via-slate-50 to-pink-50/40 text-slate-900 rounded-3xl p-6 sm:p-8 border border-purple-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <div className="flex items-center gap-2 text-purple-300 text-xs font-semibold mb-1">
-            <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-            <span>Retail Node: {currentUser.organization}</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
             Store Manager: {currentUser.name}
           </h1>
-          <p className="text-slate-300 text-xs sm:text-sm mt-1">
+          <p className="text-slate-600 text-xs sm:text-sm mt-1">
             {currentUser.location} • Fair Trade Compliance Node Active
           </p>
         </div>
@@ -61,7 +57,7 @@ export const RetailerDashboard: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => setActiveTab('retailer-inventory')}
-            className="px-4 py-2.5 bg-purple-500 hover:bg-purple-400 text-slate-950 font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-1.5"
+            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
             <Package className="w-4 h-4" />
             <span>Manage Store Stock ({onShelfBatches.length})</span>
@@ -146,7 +142,7 @@ export const RetailerDashboard: React.FC = () => {
                     ₹{batch.pricing.finalConsumerPrice}/kg
                   </td>
                   <td className="py-3.5 px-3">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <span className="text-xs font-semibold text-emerald-700">
                       {batch.quality.freshnessScore}% Fresh
                     </span>
                   </td>

@@ -16,7 +16,8 @@ import {
   Eye,
   Layers,
   Table as TableIcon,
-  LayoutGrid
+  LayoutGrid,
+  ArrowRightLeft
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ProduceBatch } from '../../types/produce';
@@ -62,10 +63,6 @@ export const MyProduce: React.FC = () => {
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span className="font-mono uppercase tracking-wider">Inventory & Batches</span>
-            </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
               <Package className="w-7 h-7 text-emerald-600" />
               <span>My Produce Batches</span>
@@ -239,20 +236,30 @@ export const MyProduce: React.FC = () => {
 
                       {/* Status */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-100">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                          <span>{batch.status || 'Registered'}</span>
+                        <span className="text-xs font-semibold text-emerald-700">
+                          {batch.status || 'Registered'}
                         </span>
                       </td>
 
-                      {/* Action: "View Details" */}
+                      {/* Action: "View Details", "Transfer", "QR" */}
                       <td className="py-3.5 px-4 whitespace-nowrap text-right space-x-1.5">
                         <button
                           onClick={() => handleViewDetails(batch)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer shadow-xs"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>View Details</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedBatchId(batch.id);
+                            navigate('/farmer/transfers');
+                          }}
+                          title="Transfer to Distributor"
+                          className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-700" />
+                          <span>Transfer</span>
                         </button>
                         <button
                           onClick={() => setActiveQRBatch(batch)}
@@ -288,10 +295,10 @@ export const MyProduce: React.FC = () => {
               >
                 <div className="p-5 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">
+                    <span className="font-mono text-xs font-bold text-slate-700">
                       {batch.batchId}
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800">
+                    <span className="text-xs font-semibold text-emerald-700">
                       {batch.status || 'Registered'}
                     </span>
                   </div>
@@ -325,20 +332,30 @@ export const MyProduce: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-5 pt-0 grid grid-cols-2 gap-2">
+                <div className="p-5 pt-0 grid grid-cols-3 gap-1.5">
                   <button
                     onClick={() => setActiveQRBatch(batch)}
-                    className="py-2 px-3 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                    className="py-2 px-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
                   >
                     <QrCode className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>QR Tag</span>
+                    <span>QR</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedBatchId(batch.id);
+                      navigate('/farmer/transfers');
+                    }}
+                    className="py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                  >
+                    <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Transfer</span>
                   </button>
                   <button
                     onClick={() => handleViewDetails(batch)}
-                    className="py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                    className="py-2 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer shadow-xs"
                   >
                     <Eye className="w-3.5 h-3.5" />
-                    <span>View Details</span>
+                    <span>Details</span>
                   </button>
                 </div>
               </div>
@@ -356,7 +373,7 @@ export const MyProduce: React.FC = () => {
             
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
-                <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
+                <span className="text-xs font-mono font-bold text-slate-800">
                   {inspectBatch.batchId}
                 </span>
                 <h2 className="text-xl font-extrabold text-slate-900 mt-1">
@@ -450,9 +467,9 @@ export const MyProduce: React.FC = () => {
                   setInspectBatch(null);
                   navigateToVerification(targetId);
                 }}
-                className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
               >
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-4 h-4 text-emerald-700" />
                 <span>Verify on Public Portal</span>
               </button>
               <button

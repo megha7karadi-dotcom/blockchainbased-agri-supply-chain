@@ -18,10 +18,10 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-slate-950 text-slate-400 border-t border-slate-800 text-xs">
+    <footer className="bg-white text-slate-600 border-t border-slate-200 text-xs">
       {/* Top Banner / Value Proposition */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10 pb-12 border-b border-slate-800/80">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10 pb-12 border-b border-slate-100">
           
           {/* Column 1: Brand Info (span 2 cols) */}
           <div className="lg:col-span-2 space-y-4">
@@ -34,72 +34,72 @@ export const Footer: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-1.5 leading-none">
-                  <span className="font-black text-lg tracking-tight text-white">
-                    Agri<span className="text-emerald-400">Trace</span>
+                  <span className="font-black text-lg tracking-tight text-slate-900">
+                    Agri<span className="text-emerald-600">Trace</span>
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                <p className="text-[10px] text-slate-500 font-medium mt-0.5">
                   Transparent. Traceable. Trusted.
                 </p>
               </div>
             </button>
 
-            <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
+            <p className="text-slate-600 text-xs leading-relaxed max-w-sm">
               AgriTrace is a digital agricultural supply-chain platform providing verifiable produce provenance, fair farmer price compensation, and IoT cold-chain tracking from farm to shelf.
             </p>
 
-            <div className="pt-2 flex items-center gap-2 text-[11px] text-emerald-400">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <div className="pt-2 flex items-center gap-2 text-[11px] text-emerald-700 font-medium">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
               <span>Cryptographically verified provenance & anti-fraud auditing</span>
             </div>
           </div>
 
           {/* Column 2: Platform Solutions */}
           <div className="space-y-3">
-            <h4 className="text-white font-bold text-xs uppercase tracking-wider">Solutions</h4>
+            <h4 className="text-slate-900 font-bold text-xs uppercase tracking-wider">Solutions</h4>
             <ul className="space-y-2">
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/for-farmers')}
-                  className="hover:text-emerald-400 transition flex items-center gap-1.5 text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition flex items-center gap-1.5 text-left cursor-pointer"
                 >
-                  <Sprout className="w-3.5 h-3.5 text-emerald-500" />
+                  <Sprout className="w-3.5 h-3.5 text-emerald-600" />
                   <span>For Farmers & Growers</span>
                 </button>
               </li>
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/for-businesses')}
-                  className="hover:text-emerald-400 transition flex items-center gap-1.5 text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition flex items-center gap-1.5 text-left cursor-pointer"
                 >
-                  <Truck className="w-3.5 h-3.5 text-blue-500" />
+                  <Truck className="w-3.5 h-3.5 text-blue-600" />
                   <span>For Logistics & Distributors</span>
                 </button>
               </li>
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/for-businesses')}
-                  className="hover:text-emerald-400 transition flex items-center gap-1.5 text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition flex items-center gap-1.5 text-left cursor-pointer"
                 >
-                  <Store className="w-3.5 h-3.5 text-purple-500" />
+                  <Store className="w-3.5 h-3.5 text-purple-600" />
                   <span>For Retailers & Supermarkets</span>
                 </button>
               </li>
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/trace-products')}
-                  className="hover:text-emerald-400 transition flex items-center gap-1.5 text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition flex items-center gap-1.5 text-left cursor-pointer"
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-teal-500" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
                   <span>Consumer Produce Verification</span>
                 </button>
               </li>
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/login')}
-                  className="hover:text-emerald-400 transition flex items-center gap-1.5 text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition flex items-center gap-1.5 text-left cursor-pointer"
                 >
-                  <Lock className="w-3.5 h-3.5 text-amber-500" />
+                  <Lock className="w-3.5 h-3.5 text-amber-600" />
                   <span>Participant Sign In</span>
                 </button>
               </li>
@@ -108,12 +108,12 @@ export const Footer: React.FC = () => {
 
           {/* Column 3: Resources & Standards */}
           <div className="space-y-3">
-            <h4 className="text-white font-bold text-xs uppercase tracking-wider">Resources</h4>
+            <h4 className="text-slate-900 font-bold text-xs uppercase tracking-wider">Resources</h4>
             <ul className="space-y-2">
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/how-it-works')}
-                  className="hover:text-emerald-400 transition text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition text-left cursor-pointer"
                 >
                   How Traceability Works
                 </button>
@@ -121,7 +121,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/trace-products')}
-                  className="hover:text-emerald-400 transition text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition text-left cursor-pointer"
                 >
                   Produce Registry
                 </button>
@@ -129,7 +129,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/resources')}
-                  className="hover:text-emerald-400 transition text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition text-left cursor-pointer"
                 >
                   Price Transparency Models
                 </button>
@@ -137,7 +137,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/resources')}
-                  className="hover:text-emerald-400 transition text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition text-left cursor-pointer"
                 >
                   Cold-Chain Monitoring Guidelines
                 </button>
@@ -145,7 +145,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/resources')}
-                  className="hover:text-emerald-400 transition text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition text-left cursor-pointer"
                 >
                   Frequently Asked Questions
                 </button>
@@ -155,12 +155,12 @@ export const Footer: React.FC = () => {
 
           {/* Column 4: Platform & Trust */}
           <div className="space-y-3">
-            <h4 className="text-white font-bold text-xs uppercase tracking-wider">Platform</h4>
+            <h4 className="text-slate-900 font-bold text-xs uppercase tracking-wider">Platform</h4>
             <ul className="space-y-2">
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/about')}
-                  className="hover:text-emerald-400 transition text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition text-left cursor-pointer"
                 >
                   About AgriTrace
                 </button>
@@ -168,7 +168,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/for-farmers')}
-                  className="hover:text-emerald-400 transition text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition text-left cursor-pointer"
                 >
                   Fair Price Guarantee
                 </button>
@@ -176,7 +176,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/for-businesses')}
-                  className="hover:text-emerald-400 transition text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition text-left cursor-pointer"
                 >
                   Commercial Integration
                 </button>
@@ -184,7 +184,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/resources')}
-                  className="hover:text-emerald-400 transition text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition text-left cursor-pointer"
                 >
                   Data Transparency Principles
                 </button>
@@ -192,7 +192,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/signup')}
-                  className="hover:text-emerald-400 transition text-left cursor-pointer"
+                  className="hover:text-emerald-700 transition text-left cursor-pointer"
                 >
                   Join the Network
                 </button>
@@ -209,11 +209,11 @@ export const Footer: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-6">
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span className="flex items-center gap-1.5 text-emerald-700 font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               <span>Tamper-evident verification protocol</span>
             </span>
-            <span className="font-mono text-slate-500">v2.4 Production</span>
+            <span className="font-mono text-slate-400">v2.4 Production</span>
           </div>
         </div>
 

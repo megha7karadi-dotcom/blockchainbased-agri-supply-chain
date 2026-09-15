@@ -66,9 +66,10 @@ export const ConsumerHistory: React.FC<{ onOpenQRScanner: () => void }> = ({ onO
               />
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  <span className="font-mono text-xs font-bold text-slate-800">
                     {item.batch.batchId}
                   </span>
+                  <span className="text-slate-300">|</span>
                   <span className="text-xs text-slate-400">{item.scannedAt}</span>
                 </div>
                 <h3 className="font-bold text-slate-900 text-sm sm:text-base">{item.batch.name}</h3>
@@ -86,7 +87,7 @@ export const ConsumerHistory: React.FC<{ onOpenQRScanner: () => void }> = ({ onO
               </div>
               <button
                 onClick={() => navigateToVerification(item.batch.id)}
-                className="px-3.5 py-1.5 bg-slate-900 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1"
+                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1 shadow-xs cursor-pointer"
               >
                 <span>View Full Passport</span>
                 <ArrowRight className="w-3.5 h-3.5" />

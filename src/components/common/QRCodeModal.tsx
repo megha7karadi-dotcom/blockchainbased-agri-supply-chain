@@ -128,7 +128,7 @@ export const QRCodeModal: React.FC<Props> = ({ batch, onClose }) => {
                 <CheckCircle className="w-3.5 h-3.5" />
                 <span>Verification State</span>
               </span>
-              <span className="text-[11px] bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200 font-semibold">
+              <span className="text-xs text-emerald-700 font-semibold">
                 Verified AgriTrace Batch
               </span>
             </div>

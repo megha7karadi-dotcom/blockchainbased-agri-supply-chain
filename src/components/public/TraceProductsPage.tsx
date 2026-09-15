@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { 
   Search, 
   Filter, 
@@ -46,14 +47,15 @@ export const TraceProductsPage: React.FC<Props> = ({ onOpenQRScanner }) => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-16">
+    <motion.div 
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="max-w-7xl mx-auto space-y-8 pb-16"
+    >
       
       {/* Page Header */}
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-xs space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
-          <Leaf className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Public Traceability Registry</span>
-        </div>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -65,9 +67,9 @@ export const TraceProductsPage: React.FC<Props> = ({ onOpenQRScanner }) => {
           </div>
           <button
             onClick={onOpenQRScanner}
-            className="self-start md:self-auto px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-xs flex items-center gap-2 transition"
+            className="self-start md:self-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-xs flex items-center gap-2 transition cursor-pointer"
           >
-            <QrCode className="w-4 h-4 text-emerald-400" />
+            <QrCode className="w-4 h-4" />
             <span>Scan Packaging QR</span>
           </button>
         </div>
@@ -154,15 +156,15 @@ export const TraceProductsPage: React.FC<Props> = ({ onOpenQRScanner }) => {
                   </div>
 
                   <div className="absolute top-3 right-3 flex items-center gap-1">
-                    <span className="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
-                      <ShieldCheck className="w-3 h-3" />
+                    <span className="text-xs font-semibold text-white/90 flex items-center gap-1 drop-shadow-xs">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                       <span>Verified</span>
                     </span>
                   </div>
 
                   <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between text-white">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-emerald-300 tracking-wider block">
+                      <span className="text-xs font-medium text-emerald-300 block">
                         {batch.category}
                       </span>
                       <h3 className="font-bold text-base leading-tight drop-shadow-xs">
@@ -260,6 +262,6 @@ export const TraceProductsPage: React.FC<Props> = ({ onOpenQRScanner }) => {
         />
       )}
 
-    </div>
+    </motion.div>
   );
 };

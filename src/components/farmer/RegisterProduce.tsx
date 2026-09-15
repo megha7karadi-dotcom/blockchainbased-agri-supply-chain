@@ -283,16 +283,15 @@ export const RegisterProduce: React.FC = () => {
 
             <div className="pt-3 flex items-center justify-between">
               <span className="text-slate-500 font-medium">Status</span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                <span>{registeredBatch.status || 'Registered'}</span>
+              <span className="text-xs font-bold text-emerald-700">
+                {registeredBatch.status || 'Registered'}
               </span>
             </div>
           </div>
 
           {/* Next Steps Section */}
           <div className="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-6 text-left max-w-lg mx-auto space-y-3">
-            <div className="text-xs font-bold uppercase tracking-wider text-emerald-900">
+            <div className="text-xs font-bold text-emerald-950">
               Next Steps
             </div>
             <ol className="space-y-2 text-xs text-slate-700">
@@ -331,7 +330,7 @@ export const RegisterProduce: React.FC = () => {
             <button
               id="btn-view-my-produce"
               onClick={() => navigate('/farmer/my-produce')}
-              className="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
             >
               <Package className="w-4 h-4" />
               <span>View My Produce</span>
@@ -368,10 +367,6 @@ export const RegisterProduce: React.FC = () => {
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="font-mono uppercase tracking-wider">Batch Registration</span>
-            </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Register New Produce
             </h1>
@@ -794,11 +789,11 @@ export const RegisterProduce: React.FC = () => {
           {/* Batch Preview Card as requested in Section 8 */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <span className="text-xs font-bold text-slate-700">
                 Batch Preview
               </span>
-              <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
-                Batch ID Generated upon Registration
+              <span className="text-xs font-mono text-slate-500">
+                Auto-assigned on registration
               </span>
             </div>
 
