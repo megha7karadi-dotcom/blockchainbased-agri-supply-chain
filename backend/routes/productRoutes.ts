@@ -361,16 +361,16 @@ router.post('/', optionalJWT, async (req: AuthenticatedRequest, res: Response) =
         shelfLifeDays: 14,
       },
       blockchain: {
-        contractAddress: '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+        contractAddress: body.blockchain?.contractAddress || (await import('../services/blockchainService')).getContractAddress(),
         tokenId: `0x${batchId.replace(/[^a-zA-Z0-9]/g, '')}`,
-        blockNumber: 18946400 + totalCount,
-        mintTxHash: `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
-        currentOwnerWallet: '0x71C...84B2',
-        consensusMechanism: 'Ethereum Sepolia Ledger',
-        gasUsed: '74,200 Gwei',
-        merkleRootHash: `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+        blockNumber: Number(body.blockchain?.blockNumber) || 1,
+        mintTxHash: body.blockchain?.mintTxHash || body.blockchain?.txHash || '0x0000000000000000000000000000000000000000000000000000000000000000',
+        currentOwnerWallet: body.blockchain?.currentOwnerWallet || (authUser as any)?.walletAddress || '0x0000000000000000000000000000000000000000',
+        consensusMechanism: body.blockchain?.consensusMechanism || 'Ethereum EVM / AgriTrace Smart Contract',
+        gasUsed: body.blockchain?.gasUsed || '180,000 gas',
+        merkleRootHash: body.blockchain?.merkleRootHash || body.blockchain?.originHash || '0x0000000000000000000000000000000000000000000000000000000000000000',
         isTamperEvident: true,
-        statusNotice: 'Registered Producer Ledger Entry'
+        statusNotice: 'Verified Smart Contract State: Registered Produce Batch'
       },
       timeline: [initialTimeline],
       sensorLogs: [

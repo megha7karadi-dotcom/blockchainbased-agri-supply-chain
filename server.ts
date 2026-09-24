@@ -14,6 +14,7 @@ import { createServer as createViteServer } from 'vite';
 import { connectDB, getDBStatus } from './backend/config/db';
 import authRoutes from './backend/routes/authRoutes';
 import productRoutes from './backend/routes/productRoutes';
+import blockchainRoutes from './backend/routes/blockchainRoutes';
 
 async function startServer() {
   const app = express();
@@ -54,9 +55,11 @@ async function startServer() {
   // Mount API routes
   const authRouter = (authRoutes as any)?.default || authRoutes;
   const productRouter = (productRoutes as any)?.default || productRoutes;
+  const blockchainRouter = (blockchainRoutes as any)?.default || blockchainRoutes;
 
   app.use('/api/auth', authRouter);
   app.use('/api/products', productRouter);
+  app.use('/api/blockchain', blockchainRouter);
 
   // Database offline error middleware fallback
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

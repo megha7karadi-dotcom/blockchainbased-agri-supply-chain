@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Sparkles } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
+import { WalletProvider } from './context/WalletContext';
+import { BlockchainStatusBar } from './components/common/BlockchainStatusBar';
 import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
 import { Footer } from './components/common/Footer';
@@ -255,6 +257,9 @@ const MainLayout: React.FC = () => {
         onOpenQRScanner={() => setIsQRScannerOpen(true)} 
       />
 
+      {/* Live Blockchain Smart Contract & Wallet Connectivity Bar */}
+      <BlockchainStatusBar />
+
       {/* App Body with Sidebar (Only for authenticated workspaces) & Content Region */}
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
         
@@ -287,8 +292,10 @@ const MainLayout: React.FC = () => {
 
 export default function App() {
   return (
-    <AppProvider>
-      <MainLayout />
-    </AppProvider>
+    <WalletProvider>
+      <AppProvider>
+        <MainLayout />
+      </AppProvider>
+    </WalletProvider>
   );
 }

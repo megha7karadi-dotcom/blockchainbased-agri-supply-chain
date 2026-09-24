@@ -33,6 +33,7 @@ export function compileContract() {
     },
     settings: {
       optimizer: { enabled: true, runs: 200 },
+      evmVersion: 'shanghai',
       outputSelection: {
         '*': {
           '*': ['abi', 'evm.bytecode']
@@ -65,6 +66,17 @@ export function compileContract() {
   const outputPath = path.join(buildDir, 'AgriTraceSupplyChain.json');
   fs.writeFileSync(outputPath, JSON.stringify(artifact, null, 2));
   console.log(`[Compile] Successfully compiled AgriTraceSupplyChain.sol -> ${outputPath}`);
+
+  // Also sync to frontend ABI file
+  const frontendAbiDir = path.resolve('src', 'lib', 'blockchain');
+  if (!fs.existsSync(frontendAbiDir)) {
+    fs.mkdirSync(frontendAbiDir, { recursive: true });
+  }
+  const frontendAbiPath = path.join(frontendAbiDir, 'abi.ts');
+  const abiContent = `/**\n * Auto-generated ABI from AgriTraceSupplyChain.sol compilation artifact\n * Do not edit manually\n */\nexport const AGRITRACE_ABI = ${JSON.stringify(artifact.abi, null, 2)} as const;\n\nexport default AGRITRACE_ABI;\n`;
+  fs.writeFileSync(frontendAbiPath, abiContent);
+  console.log(`[Compile] Synced ABI to frontend -> ${frontendAbiPath}`);
+
   return artifact;
 }
 

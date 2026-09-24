@@ -1,5 +1,20 @@
 import { ProduceBatch, ProduceCategory, ProduceGrade } from '../types/produce';
 import { INITIAL_BATCHES } from '../data/mockData';
+import {
+  registerProduceOnChain,
+  transferToDistributorOnChain,
+  updateDistributorPriceOnChain,
+  dispatchToRetailerOnChain,
+  receiveProduceByRetailerOnChain,
+  updateRetailerPriceOnChain,
+  recordSaleOnChain,
+  generateOriginHash,
+  getContractAddress,
+  stringToBatchId,
+  getBatchFromChain
+} from '../lib/blockchain/contract';
+import { OnChainQualityGrade } from '../lib/blockchain/types';
+import { getStakeholderWallet } from '../lib/blockchain/config';
 
 const STORAGE_KEY = 'agritrace_batches_v1';
 
@@ -163,6 +178,21 @@ class ProductService {
     if (input.unit === 'quintal') quantityInKg = quantityInKg * 100;
     else if (input.unit === 'tonnes') quantityInKg = quantityInKg * 1000;
 
+    // 1. Authoritative Smart Contract Validation & State Change
+    const originHash = generateOriginHash(input.farmLocation, input.state, input.harvestDate, input.farmerId);
+    const onChainGrade = input.qualityGrade === 'Grade A' ? OnChainQualityGrade.GRADE_A : input.qualityGrade === 'Grade B' ? OnChainQualityGrade.GRADE_B : OnChainQualityGrade.GRADE_C;
+
+    console.log(`[AgriTrace] Submitting batch ${batchId} to smart contract for on-chain validation...`);
+    const onChainTx = await registerProduceOnChain({
+      batchId,
+      cropName: input.cropName.trim(),
+      quantityKg: quantityInKg,
+      qualityGrade: onChainGrade,
+      initialPricePerKg: Number(input.farmgatePrice),
+      originHash
+    });
+    console.log(`[AgriTrace] Batch ${batchId} successfully mined on-chain! TxHash: ${onChainTx.txHash}`);
+
     const localBatch: ProduceBatch = {
       // 1. Core Fields
       id,
@@ -217,29 +247,29 @@ class ProductService {
         shelfLifeDays: 14,
       },
       blockchain: {
-        contractAddress: '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+        contractAddress: getContractAddress(),
         tokenId: `0x${batchId.replace(/[^a-zA-Z0-9]/g, '')}`,
-        blockNumber: 18946000 + existing.length,
-        mintTxHash: `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+        blockNumber: onChainTx.blockNumber,
+        mintTxHash: onChainTx.txHash,
         currentOwnerWallet: '0x1F2...A4C9',
-        consensusMechanism: 'Ethereum Sepolia Ledger',
-        gasUsed: '74,200 Gwei',
-        merkleRootHash: `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+        consensusMechanism: 'Ethereum EVM / AgriTrace Smart Contract',
+        gasUsed: `${onChainTx.gasUsed} gas`,
+        merkleRootHash: originHash,
         isTamperEvident: true,
-        statusNotice: 'Registered Producer Ledger Entry',
+        statusNotice: 'Verified Smart Contract State: Registered Produce Batch',
       },
       timeline: [
         {
           id: `tl-${Date.now()}`,
           stage: 'Farming',
           title: 'Harvest & Produce Batch Registered',
-          description: `Registered at ${input.farmLocation}, ${input.state}. Initial farmgate rate logged at ₹${input.farmgatePrice}/${input.unit}. Persisted to MongoDB Atlas.`,
+          description: `Registered at ${input.farmLocation}, ${input.state}. Initial farmgate rate logged at ₹${input.farmgatePrice}/${input.unit}. Confirmed on blockchain in block #${onChainTx.blockNumber}.`,
           actorName: input.farmerName || 'Verified Producer',
           actorRole: 'farmer',
           location: `${input.farmLocation}, ${input.state}`,
           timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
-          blockNumber: 18946000 + existing.length,
-          txHash: `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+          blockNumber: onChainTx.blockNumber,
+          txHash: onChainTx.txHash,
           temperature: '22.0°C',
           humidity: '65%',
           verified: true,
@@ -258,7 +288,7 @@ class ProductService {
       description: input.notes || `${input.cropName} harvested at ${input.farmLocation}. Batch logged on AgriTrace and persisted in MongoDB Atlas.`,
     };
 
-    // Make real network request: POST /api/products
+    // 2. Synchronize verified transaction to MongoDB Atlas
     try {
       const token = typeof window !== 'undefined' 
         ? (localStorage.getItem('agritrace_jwt_token') || sessionStorage.getItem('agritrace_jwt_token'))
@@ -270,7 +300,12 @@ class ProductService {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify(input)
+        body: JSON.stringify({
+          ...input,
+          batchId,
+          blockchain: localBatch.blockchain,
+          timeline: localBatch.timeline
+        })
       });
 
       if (response.ok) {
@@ -451,8 +486,17 @@ class ProductService {
     distributorName: string, 
     distributorId: string, 
     quantity: number, 
-    agreedPrice: number
+    agreedPrice: number,
+    distributorWalletAddress?: string
   ): Promise<ProduceBatch | null> {
+    const distributorWallet = distributorWalletAddress || getStakeholderWallet('distributor');
+
+    // 1. Authoritative Smart Contract State Execution & Validation Layer
+    console.log(`[AgriTrace] Invoking transferToDistributor on-chain for batch ${batchId}...`);
+    const onChainTx = await transferToDistributorOnChain(batchId, distributorWallet);
+    console.log(`[AgriTrace] Transfer confirmed on-chain in block #${onChainTx.blockNumber}, txHash: ${onChainTx.txHash}`);
+
+    // 2. Synchronize to MongoDB Atlas
     try {
       const response = await fetch(`/api/products/${encodeURIComponent(batchId)}/transfer-to-distributor`, {
         method: 'POST',
@@ -460,7 +504,14 @@ class ProductService {
           'Content-Type': 'application/json',
           ...this.getAuthHeader()
         },
-        body: JSON.stringify({ distributorName, distributorId, quantity, agreedPrice })
+        body: JSON.stringify({
+          distributorName,
+          distributorId,
+          quantity,
+          agreedPrice,
+          txHash: onChainTx.txHash,
+          blockNumber: onChainTx.blockNumber
+        })
       });
 
       if (response.ok) {
@@ -484,14 +535,19 @@ class ProductService {
       b.currentCustodianRole = 'distributor';
       b.currentCustodianName = distributorName;
       b.pricing.farmerPrice = agreedPrice;
+      b.blockchain.mintTxHash = onChainTx.txHash;
+      b.blockchain.blockNumber = onChainTx.blockNumber;
+      b.blockchain.statusNotice = 'On-Chain Validated: With Distributor';
       b.timeline.push({
         id: `tl-${Date.now()}`,
         stage: 'Logistics',
         title: 'Transferred to Distributor',
-        description: `Transferred ${quantity} ${b.unit || 'kg'} to ${distributorName} at agreed price ₹${agreedPrice}/${b.unit || 'kg'}.`,
+        description: `Transferred ${quantity} ${b.unit || 'kg'} to ${distributorName} at agreed price ₹${agreedPrice}/${b.unit || 'kg'}. Confirmed in block #${onChainTx.blockNumber}.`,
         actorName: b.farmerName,
         actorRole: 'farmer',
         location: b.farmLocation,
+        txHash: onChainTx.txHash,
+        blockNumber: onChainTx.blockNumber,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         verified: true,
       });
@@ -559,6 +615,12 @@ class ProductService {
     marginPercentage: number, 
     sellingPrice: number
   ): Promise<ProduceBatch | null> {
+    // 1. Authoritative Smart Contract State Execution & Validation Layer
+    console.log(`[AgriTrace] Updating distributor price on-chain for batch ${batchId} to ₹${sellingPrice}/kg...`);
+    const onChainTx = await updateDistributorPriceOnChain(batchId, sellingPrice);
+    console.log(`[AgriTrace] Price updated on-chain in block #${onChainTx.blockNumber}, txHash: ${onChainTx.txHash}`);
+
+    // 2. Synchronize to MongoDB Atlas
     try {
       const response = await fetch(`/api/products/${encodeURIComponent(batchId)}/distributor-price`, {
         method: 'POST',
@@ -566,7 +628,13 @@ class ProductService {
           'Content-Type': 'application/json',
           ...this.getAuthHeader()
         },
-        body: JSON.stringify({ purchasePrice, marginPercentage, sellingPrice })
+        body: JSON.stringify({
+          purchasePrice,
+          marginPercentage,
+          sellingPrice,
+          txHash: onChainTx.txHash,
+          blockNumber: onChainTx.blockNumber
+        })
       });
 
       if (response.ok) {
@@ -592,10 +660,12 @@ class ProductService {
         id: `tl-${Date.now()}`,
         stage: 'Wholesale',
         title: 'Distributor Pricing Configured',
-        description: `Base purchase: ₹${purchasePrice}/${b.unit || 'kg'}, Margin: ${marginPercentage}%, Wholesale selling price: ₹${sellingPrice}/${b.unit || 'kg'}.`,
+        description: `Base purchase: ₹${purchasePrice}/${b.unit || 'kg'}, Margin: ${marginPercentage}%, Wholesale selling price: ₹${sellingPrice}/${b.unit || 'kg'}. Logged to blockchain price history.`,
         actorName: b.currentCustodianName || 'Distributor',
         actorRole: 'distributor',
         location: 'Distribution Hub',
+        txHash: onChainTx.txHash,
+        blockNumber: onChainTx.blockNumber,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         verified: true,
       });
@@ -613,8 +683,17 @@ class ProductService {
     retailerName: string, 
     retailerId: string, 
     quantity: number, 
-    sellingPrice: number
+    sellingPrice: number,
+    retailerWalletAddress?: string
   ): Promise<ProduceBatch | null> {
+    const retailerWallet = retailerWalletAddress || getStakeholderWallet('retailer');
+
+    // 1. Authoritative Smart Contract State Execution & Validation Layer (dispatchToRetailer enters IN_TRANSIT)
+    console.log(`[AgriTrace] Dispatching batch ${batchId} to retailer ${retailerWallet} on-chain...`);
+    const onChainTx = await dispatchToRetailerOnChain(batchId, retailerWallet);
+    console.log(`[AgriTrace] Dispatched to retailer on-chain in block #${onChainTx.blockNumber}, txHash: ${onChainTx.txHash}`);
+
+    // 2. Synchronize to MongoDB Atlas
     try {
       const response = await fetch(`/api/products/${encodeURIComponent(batchId)}/transfer-to-retailer`, {
         method: 'POST',
@@ -622,7 +701,14 @@ class ProductService {
           'Content-Type': 'application/json',
           ...this.getAuthHeader()
         },
-        body: JSON.stringify({ retailerName, retailerId, quantity, sellingPrice })
+        body: JSON.stringify({
+          retailerName,
+          retailerId,
+          quantity,
+          sellingPrice,
+          txHash: onChainTx.txHash,
+          blockNumber: onChainTx.blockNumber
+        })
       });
 
       if (response.ok) {
@@ -645,14 +731,17 @@ class ProductService {
       b.currentCustodianRole = 'retailer';
       b.currentCustodianName = retailerName;
       b.pricing.finalConsumerPrice = sellingPrice;
+      b.blockchain.statusNotice = 'On-Chain Validated: In Transit to Retailer';
       b.timeline.push({
         id: `tl-${Date.now()}`,
         stage: 'Wholesale',
         title: 'Dispatched to Retailer',
-        description: `Transferred ${quantity} ${b.unit || 'kg'} to ${retailerName} at wholesale price ₹${sellingPrice}/${b.unit || 'kg'}.`,
+        description: `Transferred ${quantity} ${b.unit || 'kg'} to ${retailerName} at wholesale price ₹${sellingPrice}/${b.unit || 'kg'}. Confirmed in block #${onChainTx.blockNumber}.`,
         actorName: 'Distributor Logistics',
         actorRole: 'distributor',
         location: 'Regional Cold Hub',
+        txHash: onChainTx.txHash,
+        blockNumber: onChainTx.blockNumber,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         verified: true,
       });
@@ -666,13 +755,23 @@ class ProductService {
    * Retailer receives produce
    */
   async retailerReceive(batchId: string): Promise<ProduceBatch | null> {
+    // 1. Authoritative Smart Contract State Execution & Validation Layer
+    console.log(`[AgriTrace] Receiving batch ${batchId} on-chain as designated retailer...`);
+    const onChainTx = await receiveProduceByRetailerOnChain(batchId);
+    console.log(`[AgriTrace] Received on-chain in block #${onChainTx.blockNumber}, txHash: ${onChainTx.txHash}`);
+
+    // 2. Synchronize to MongoDB Atlas
     try {
       const response = await fetch(`/api/products/${encodeURIComponent(batchId)}/retailer-receive`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...this.getAuthHeader()
-        }
+        },
+        body: JSON.stringify({
+          txHash: onChainTx.txHash,
+          blockNumber: onChainTx.blockNumber
+        })
       });
 
       if (response.ok) {
@@ -693,14 +792,17 @@ class ProductService {
       const b = batches[idx];
       b.status = 'On Retail Shelf';
       b.currentCustodianRole = 'retailer';
+      b.blockchain.statusNotice = 'On-Chain Validated: On Retail Shelf';
       b.timeline.push({
         id: `tl-${Date.now()}`,
         stage: 'Retail',
         title: 'Received by Retailer',
-        description: 'Shipment accepted and verified in retail store inventory.',
+        description: `Shipment accepted and verified in retail store inventory. Recorded on-chain in block #${onChainTx.blockNumber}.`,
         actorName: 'Store Manager',
         actorRole: 'retailer',
         location: 'Retail Store Shelf',
+        txHash: onChainTx.txHash,
+        blockNumber: onChainTx.blockNumber,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         verified: true,
       });
@@ -719,6 +821,12 @@ class ProductService {
     retailMargin: number, 
     finalSellingPrice: number
   ): Promise<ProduceBatch | null> {
+    // 1. Authoritative Smart Contract State Execution & Validation Layer
+    console.log(`[AgriTrace] Updating retailer price on-chain for batch ${batchId} to ₹${finalSellingPrice}/kg...`);
+    const onChainTx = await updateRetailerPriceOnChain(batchId, finalSellingPrice);
+    console.log(`[AgriTrace] Retailer price updated on-chain in block #${onChainTx.blockNumber}, txHash: ${onChainTx.txHash}`);
+
+    // 2. Synchronize to MongoDB Atlas
     try {
       const response = await fetch(`/api/products/${encodeURIComponent(batchId)}/retailer-price`, {
         method: 'POST',
@@ -726,7 +834,13 @@ class ProductService {
           'Content-Type': 'application/json',
           ...this.getAuthHeader()
         },
-        body: JSON.stringify({ purchasePrice, retailMargin, finalSellingPrice })
+        body: JSON.stringify({
+          purchasePrice,
+          retailMargin,
+          finalSellingPrice,
+          txHash: onChainTx.txHash,
+          blockNumber: onChainTx.blockNumber
+        })
       });
 
       if (response.ok) {
@@ -751,10 +865,12 @@ class ProductService {
         id: `tl-${Date.now()}`,
         stage: 'Retail',
         title: 'Retail Selling Price Set',
-        description: `Wholesale cost: ₹${purchasePrice}/${b.unit || 'kg'}, Retail margin: ${retailMargin}%, Final shelf price: ₹${finalSellingPrice}/${b.unit || 'kg'}.`,
+        description: `Wholesale cost: ₹${purchasePrice}/${b.unit || 'kg'}, Retail margin: ${retailMargin}%, Final shelf price: ₹${finalSellingPrice}/${b.unit || 'kg'}. Logged to blockchain audit trail.`,
         actorName: 'Retailer',
         actorRole: 'retailer',
         location: 'Retail Store Shelf',
+        txHash: onChainTx.txHash,
+        blockNumber: onChainTx.blockNumber,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         verified: true,
       });
@@ -768,6 +884,12 @@ class ProductService {
    * Retailer sells produce
    */
   async retailerSell(batchId: string, soldQuantity: number, buyerNote?: string): Promise<ProduceBatch | null> {
+    // 1. Authoritative Smart Contract State Execution & Validation Layer (recordSale permanently locks batch)
+    console.log(`[AgriTrace] Recording consumer sale on-chain for batch ${batchId}...`);
+    const onChainTx = await recordSaleOnChain(batchId);
+    console.log(`[AgriTrace] Batch ${batchId} permanently locked as SOLD on-chain in block #${onChainTx.blockNumber}, txHash: ${onChainTx.txHash}`);
+
+    // 2. Synchronize to MongoDB Atlas
     try {
       const response = await fetch(`/api/products/${encodeURIComponent(batchId)}/retailer-sell`, {
         method: 'POST',
@@ -775,7 +897,12 @@ class ProductService {
           'Content-Type': 'application/json',
           ...this.getAuthHeader()
         },
-        body: JSON.stringify({ soldQuantity, buyerNote })
+        body: JSON.stringify({
+          soldQuantity,
+          buyerNote,
+          txHash: onChainTx.txHash,
+          blockNumber: onChainTx.blockNumber
+        })
       });
 
       if (response.ok) {
@@ -801,14 +928,17 @@ class ProductService {
         b.status = 'Sold to Consumer';
         b.currentCustodianRole = 'consumer';
       }
+      b.blockchain.statusNotice = 'On-Chain Validated: Batch Sold & Permanently Locked';
       b.timeline.push({
         id: `tl-${Date.now()}`,
         stage: 'Consumer',
         title: 'Point of Sale to Consumer',
-        description: `Sold ${soldQuantity} ${b.unit || 'kg'}${buyerNote ? ` (${buyerNote})` : ''}. ${remaining > 0 ? `${remaining} ${b.unit || 'kg'} remaining in stock.` : 'Batch lot completely sold.'}`,
+        description: `Sold ${soldQuantity} ${b.unit || 'kg'}${buyerNote ? ` (${buyerNote})` : ''}. ${remaining > 0 ? `${remaining} ${b.unit || 'kg'} remaining in stock.` : 'Batch lot completely sold and immutably finalized on-chain.'}`,
         actorName: 'Retail Checkout',
         actorRole: 'retailer',
         location: 'Retail Store Point of Sale',
+        txHash: onChainTx.txHash,
+        blockNumber: onChainTx.blockNumber,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         verified: true,
       });
