@@ -12,7 +12,7 @@
     "lint": "tsc --noEmit",
     "compile:contracts": "node scripts/compile-contract.js",
     "deploy:contracts": "node scripts/deploy-contract.js",
-    "test:contracts": "node scripts/compile-contract.js && tsx --test --test-reporter spec tests/AgriTraceSupplyChain.test.ts",
+    "test:contracts": "node scripts/compile-contract.js && tsx --test --test-concurrency=1 --test-reporter spec tests/AgriTraceSupplyChain.test.ts",
     "test": "npm run test:contracts"
   },
   "dependencies": {

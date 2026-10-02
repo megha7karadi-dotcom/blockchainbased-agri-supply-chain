@@ -16,7 +16,7 @@ function findImports(importPath) {
   }
 }
 
-export function compileContract() {
+export function compileContract(optimizerRuns = 1) {
   const contractPath = path.resolve('contracts', 'AgriTraceSupplyChain.sol');
   if (!fs.existsSync(contractPath)) {
     throw new Error(`Contract file not found at ${contractPath}`);
@@ -32,11 +32,11 @@ export function compileContract() {
       }
     },
     settings: {
-      optimizer: { enabled: true, runs: 200 },
-      evmVersion: 'shanghai',
+      optimizer: { enabled: true, runs: optimizerRuns },
+      evmVersion: process.env.SOLC_EVM_VERSION || 'shanghai',
       outputSelection: {
         '*': {
-          '*': ['abi', 'evm.bytecode']
+          '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode']
         }
       }
     }
@@ -57,15 +57,25 @@ export function compileContract() {
     fs.mkdirSync(buildDir, { recursive: true });
   }
 
+  const deployedBytecodeHex = contract.evm.deployedBytecode.object;
+  const creationBytecodeHex = contract.evm.bytecode.object;
+  const deployedSize = deployedBytecodeHex.length / 2;
+  const creationSize = creationBytecodeHex.length / 2;
+
   const artifact = {
     contractName: 'AgriTraceSupplyChain',
     abi: contract.abi,
-    bytecode: contract.evm.bytecode.object
+    bytecode: creationBytecodeHex,
+    deployedBytecode: deployedBytecodeHex,
+    deployedBytecodeSize: deployedSize,
+    creationBytecodeSize: creationSize
   };
 
   const outputPath = path.join(buildDir, 'AgriTraceSupplyChain.json');
   fs.writeFileSync(outputPath, JSON.stringify(artifact, null, 2));
-  console.log(`[Compile] Successfully compiled AgriTraceSupplyChain.sol -> ${outputPath}`);
+  console.log(`[Compile] Successfully compiled AgriTraceSupplyChain.sol (runs=${optimizerRuns}) -> ${outputPath}`);
+  console.log(`[Compile] Deployed Bytecode Size: ${deployedSize} bytes (EIP-170 limit: 24,576 bytes, margin: ${24576 - deployedSize} bytes under limit)`);
+  console.log(`[Compile] Creation Bytecode Size: ${creationSize} bytes`);
 
   // Also sync to frontend ABI file
   const frontendAbiDir = path.resolve('src', 'lib', 'blockchain');
@@ -82,5 +92,5 @@ export function compileContract() {
 
 // Run immediately if executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  compileContract();
+  compileContract(1);
 }

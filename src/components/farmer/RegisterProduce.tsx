@@ -85,6 +85,8 @@ export const RegisterProduce: React.FC = () => {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionProgress, setSubmissionProgress] = useState<string | null>(null);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [registeredBatch, setRegisteredBatch] = useState<ProduceBatch | null>(null);
 
   // Field change handler
@@ -172,6 +174,7 @@ export const RegisterProduce: React.FC = () => {
 
     try {
       setIsSubmitting(true);
+      setSubmissionProgress('Connecting to MetaMask and checking Ethereum Sepolia network...');
 
       const batchData = {
         cropName: formData.cropName.trim(),
@@ -193,14 +196,18 @@ export const RegisterProduce: React.FC = () => {
         farmerName: currentUser?.name || 'Verified Producer',
       };
 
-      // Register produce using clean service abstraction via AppContext
-      const created = await registerProductBatch(batchData);
+      setSubmissionError(null);
+      // Register produce using clean service abstraction via AppContext with live on-chain status
+      const created = await registerProductBatch(batchData, (progress: string) => {
+        setSubmissionProgress(progress);
+      });
       setRegisteredBatch(created);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to register produce:', err);
-      alert('An unexpected error occurred while saving the produce. Please try again.');
+      setSubmissionError(err?.message || 'An unexpected error occurred while validating or saving the produce.');
     } finally {
       setIsSubmitting(false);
+      setSubmissionProgress(null);
     }
   };
 
@@ -281,6 +288,41 @@ export const RegisterProduce: React.FC = () => {
               </span>
             </div>
 
+            <div className="py-3 flex items-center justify-between">
+              <span className="text-slate-500 font-medium">Smart Contract</span>
+              <a
+                href={`https://sepolia.etherscan.io/address/${registeredBatch.blockchain?.contractAddress || '0x110D36B8FA4FAc2Fc214c1F341261BA6654a57Ef'}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-xs font-bold text-emerald-700 hover:text-emerald-800 underline truncate max-w-[200px]"
+              >
+                {(registeredBatch.blockchain?.contractAddress || '0x110D36B8FA4FAc2Fc214c1F341261BA6654a57Ef').slice(0, 8)}...{(registeredBatch.blockchain?.contractAddress || '0x110D36B8FA4FAc2Fc214c1F341261BA6654a57Ef').slice(-6)}
+              </a>
+            </div>
+
+            <div className="py-3 flex items-center justify-between">
+              <span className="text-slate-500 font-medium">Transaction Hash</span>
+              {registeredBatch.blockchain?.mintTxHash && registeredBatch.blockchain.mintTxHash.startsWith('0x') ? (
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${registeredBatch.blockchain.mintTxHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-xs font-bold text-emerald-700 hover:text-emerald-800 underline truncate max-w-[200px]"
+                >
+                  {registeredBatch.blockchain.mintTxHash.slice(0, 10)}...{registeredBatch.blockchain.mintTxHash.slice(-8)}
+                </a>
+              ) : (
+                <span className="font-mono text-xs text-slate-700">Confirmed on Ledger</span>
+              )}
+            </div>
+
+            <div className="py-3 flex items-center justify-between">
+              <span className="text-slate-500 font-medium">Block Number</span>
+              <span className="font-mono font-bold text-slate-900">
+                #{registeredBatch.blockchain?.blockNumber || 'Confirmed'}
+              </span>
+            </div>
+
             <div className="pt-3 flex items-center justify-between">
               <span className="text-slate-500 font-medium">Status</span>
               <span className="text-xs font-bold text-emerald-700">
@@ -318,6 +360,15 @@ export const RegisterProduce: React.FC = () => {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <button
+              id="btn-verify-on-chain"
+              onClick={() => navigate(`/verify/${registeredBatch.batchId}`)}
+              className="w-full sm:w-auto px-6 py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <FileCheck className="w-4 h-4" />
+              <span>Verify On-Chain</span>
+            </button>
+
             <button
               id="btn-generate-qr"
               onClick={() => navigate('/farmer/qr-codes')}
@@ -842,6 +893,16 @@ export const RegisterProduce: React.FC = () => {
             </div>
           </div>
 
+          {submissionError && (
+            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <span className="font-bold block text-rose-900 mb-0.5">Authoritative Blockchain Validation Notice</span>
+                <span>{submissionError}</span>
+              </div>
+            </div>
+          )}
+
           {/* Buttons: "Edit Details" and "Register Produce" */}
           <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
             <button
@@ -863,7 +924,7 @@ export const RegisterProduce: React.FC = () => {
               {isSubmitting ? (
                 <>
                   <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                  <span>Registering Batch...</span>
+                  <span>{submissionProgress || 'Registering Produce...'}</span>
                 </>
               ) : (
                 <>

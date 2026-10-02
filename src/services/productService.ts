@@ -154,9 +154,24 @@ class ProductService {
    * Register a new Produce Batch
    * Encapsulates ID generation, record normalization, and persistence via POST /api/products to MongoDB Atlas.
    */
-  async registerProduct(input: RegisterProductInput): Promise<ProduceBatch> {
+  async registerProduct(input: RegisterProductInput, onProgress?: (msg: string) => void): Promise<ProduceBatch> {
     const existing = this.getStoredBatches();
-    const batchId = generateBatchId(input.cropName, existing);
+    let batchId = generateBatchId(input.cropName, existing);
+
+    // Verify batchId uniqueness on Sepolia smart contract
+    try {
+      const { checkBatchExistsOnChain } = await import('../lib/blockchain/contract');
+      let existsOnChain = await checkBatchExistsOnChain(batchId);
+      let attempts = 0;
+      while (existsOnChain && attempts < 15) {
+        attempts++;
+        batchId = generateBatchId(input.cropName, [...existing, { batchId }]);
+        existsOnChain = await checkBatchExistsOnChain(batchId);
+      }
+    } catch (checkErr) {
+      console.warn('Pre-flight batch existence check notice:', checkErr);
+    }
+
     const id = `batch-${Date.now()}`;
     const createdAt = new Date().toISOString();
 
@@ -180,7 +195,11 @@ class ProductService {
 
     // 1. Authoritative Smart Contract Validation & State Change
     const originHash = generateOriginHash(input.farmLocation, input.state, input.harvestDate, input.farmerId);
-    const onChainGrade = input.qualityGrade === 'Grade A' ? OnChainQualityGrade.GRADE_A : input.qualityGrade === 'Grade B' ? OnChainQualityGrade.GRADE_B : OnChainQualityGrade.GRADE_C;
+    const onChainGrade = input.qualityGrade === 'Grade A' 
+      ? OnChainQualityGrade.GRADE_A 
+      : input.qualityGrade === 'Grade B' 
+        ? OnChainQualityGrade.GRADE_B 
+        : OnChainQualityGrade.GRADE_C;
 
     console.log(`[AgriTrace] Submitting batch ${batchId} to smart contract for on-chain validation...`);
     const onChainTx = await registerProduceOnChain({
@@ -189,9 +208,21 @@ class ProductService {
       quantityKg: quantityInKg,
       qualityGrade: onChainGrade,
       initialPricePerKg: Number(input.farmgatePrice),
-      originHash
+      originHash,
+      onProgress
     });
     console.log(`[AgriTrace] Batch ${batchId} successfully mined on-chain! TxHash: ${onChainTx.txHash}`);
+
+    // Refresh batch data directly from smart contract to ensure authoritative synchronization
+    onProgress?.('Transaction confirmed on Sepolia! Refreshing data from smart contract...');
+    let onChainBatch: any = null;
+    try {
+      onChainBatch = await getBatchFromChain(batchId);
+    } catch (refreshErr) {
+      console.warn('Smart contract post-registration refresh notice:', refreshErr);
+    }
+
+    const currentOwner = onChainBatch?.currentOwner || onChainTx.signerAddress || '0x0000000000000000000000000000000000000000';
 
     const localBatch: ProduceBatch = {
       // 1. Core Fields
@@ -223,7 +254,7 @@ class ProductService {
       farmerName: input.farmerName || 'Verified Producer',
       farmerLocation: `${input.farmLocation}${input.state ? `, ${input.state}` : ''}`,
       farmCoordinates: '16.9902° N, 73.3120° E',
-      quantityKg: quantityInKg,
+      quantityKg: onChainBatch ? Number(onChainBatch.quantityKg) : quantityInKg,
       currentCustodianRole: 'farmer',
       currentCustodianName: input.farmerName || 'Verified Producer',
       pricing: {
@@ -251,10 +282,10 @@ class ProductService {
         tokenId: `0x${batchId.replace(/[^a-zA-Z0-9]/g, '')}`,
         blockNumber: onChainTx.blockNumber,
         mintTxHash: onChainTx.txHash,
-        currentOwnerWallet: '0x1F2...A4C9',
-        consensusMechanism: 'Ethereum EVM / AgriTrace Smart Contract',
+        currentOwnerWallet: currentOwner,
+        consensusMechanism: 'Ethereum EVM / AgriTrace Smart Contract (Sepolia)',
         gasUsed: `${onChainTx.gasUsed} gas`,
-        merkleRootHash: originHash,
+        merkleRootHash: onChainBatch?.originHash || originHash,
         isTamperEvident: true,
         statusNotice: 'Verified Smart Contract State: Registered Produce Batch',
       },
@@ -263,7 +294,7 @@ class ProductService {
           id: `tl-${Date.now()}`,
           stage: 'Farming',
           title: 'Harvest & Produce Batch Registered',
-          description: `Registered at ${input.farmLocation}, ${input.state}. Initial farmgate rate logged at ₹${input.farmgatePrice}/${input.unit}. Confirmed on blockchain in block #${onChainTx.blockNumber}.`,
+          description: `Registered at ${input.farmLocation}, ${input.state}. Initial farmgate rate logged at ₹${input.farmgatePrice}/${input.unit}. Confirmed on Ethereum Sepolia in block #${onChainTx.blockNumber} (Tx: ${onChainTx.txHash.slice(0, 10)}...).`,
           actorName: input.farmerName || 'Verified Producer',
           actorRole: 'farmer',
           location: `${input.farmLocation}, ${input.state}`,
@@ -289,6 +320,7 @@ class ProductService {
     };
 
     // 2. Synchronize verified transaction to MongoDB Atlas
+    onProgress?.('Persisting confirmed batch record to database...');
     try {
       const token = typeof window !== 'undefined' 
         ? (localStorage.getItem('agritrace_jwt_token') || sessionStorage.getItem('agritrace_jwt_token'))
@@ -384,7 +416,7 @@ class ProductService {
         shelfLifeDays: Number(p.quality?.shelfLifeDays ?? 14),
       },
       blockchain: {
-        contractAddress: p.blockchain?.contractAddress || '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+        contractAddress: p.blockchain?.contractAddress || getContractAddress(),
         tokenId: p.blockchain?.tokenId || `0x${p.batchId || 'BATCH'}`,
         blockNumber: Number(p.blockchain?.blockNumber ?? 18945300),
         mintTxHash: p.blockchain?.mintTxHash || '0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b',

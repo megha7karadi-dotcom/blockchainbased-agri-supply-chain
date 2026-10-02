@@ -46,6 +46,13 @@ export async function setupTestEnvironment(): Promise<TestEnv> {
     })
   );
 
+  // Add a safety buffer to gas estimation to prevent intermittent OOG in local Ganache tests
+  const origEstimateGas = provider.estimateGas.bind(provider);
+  provider.estimateGas = async (tx) => {
+    const gas = await origEstimateGas(tx);
+    return (gas * 130n) / 100n + 30000n;
+  };
+
   const signers = await Promise.all(
     Array.from({ length: 8 }, (_, i) => provider.getSigner(i))
   );
@@ -112,8 +119,9 @@ export async function expectCustomError(
   contractInterface: Interface,
   assertArgs?: (args: any) => void
 ): Promise<void> {
+  let result: any;
   try {
-    const result = await action;
+    result = await action;
     if (result && typeof result.wait === 'function') {
       await result.wait();
     }
@@ -123,7 +131,19 @@ export async function expectCustomError(
       throw err;
     }
 
-    const data = extractRevertData(err);
+    let data = extractRevertData(err);
+    if (!data && result && result.data && result.provider) {
+      try {
+        await result.provider.call({
+          to: result.to,
+          from: result.from,
+          data: result.data
+        });
+      } catch (replayErr: any) {
+        data = extractRevertData(replayErr);
+      }
+    }
+
     if (!data) {
       // If error message already contains parsed error
       if (err.message && err.message.includes(expectedErrorName)) {

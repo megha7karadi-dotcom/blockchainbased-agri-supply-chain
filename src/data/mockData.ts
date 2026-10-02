@@ -117,7 +117,7 @@ export const INITIAL_BATCHES: ProduceBatch[] = [
       shelfLifeDays: 14,
     },
     blockchain: {
-      contractAddress: '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+      contractAddress: '',
       tokenId: '0x001_MNG_HAPUS',
       blockNumber: 18942105,
       mintTxHash: '0x7e8f1b94d23a6c518e9324bcfa038914de6b9f1a23405cde78b91234abcd56ef',
@@ -237,7 +237,7 @@ export const INITIAL_BATCHES: ProduceBatch[] = [
       shelfLifeDays: 730,
     },
     blockchain: {
-      contractAddress: '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+      contractAddress: '',
       tokenId: '0x002_RIC_BASMATI',
       blockNumber: 18729100,
       mintTxHash: '0x9920bca3810f9247192837bcde10293847562019384756102938475610293847',
@@ -320,7 +320,7 @@ export const INITIAL_BATCHES: ProduceBatch[] = [
       shelfLifeDays: 8,
     },
     blockchain: {
-      contractAddress: '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+      contractAddress: '',
       tokenId: '0x003_TOM_ROMA',
       blockNumber: 18944510,
       mintTxHash: '0x4481029384756102938475610293847561029384756102938475610293847561',
@@ -408,7 +408,7 @@ export const INITIAL_BATCHES: ProduceBatch[] = [
       shelfLifeDays: 30,
     },
     blockchain: {
-      contractAddress: '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+      contractAddress: '',
       tokenId: '0x004_APL_SHIMLA',
       blockNumber: 18938100,
       mintTxHash: '0x118833445566778899aabbccddeeff00112233445566778899aabbccddeeff00',
@@ -506,7 +506,7 @@ export const INITIAL_BATCHES: ProduceBatch[] = [
       shelfLifeDays: 18,
     },
     blockchain: {
-      contractAddress: '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+      contractAddress: '',
       tokenId: '0x005_ORG_NAGPUR',
       blockNumber: 18945200,
       mintTxHash: '0x551166778899aabbccddeeff00112233445566778899aabbccddeeff00112233',
@@ -574,7 +574,7 @@ export const INITIAL_BATCHES: ProduceBatch[] = [
       shelfLifeDays: 540,
     },
     blockchain: {
-      contractAddress: '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+      contractAddress: '',
       tokenId: '0x006_TRM_CURCUMIN',
       blockNumber: 18910400,
       mintTxHash: '0x8899aabbccddeeff00112233445566778899aabbccddeeff0011223344556677',

@@ -27,10 +27,11 @@ export interface OnChainProduceBatch {
   originHash: string; // bytes32 hex
   currentOwner: string; // 0x address
   farmer: string; // 0x address
-  distributor: string; // 0x address
-  retailer: string; // 0x address
+  designatedRecipient?: string; // 0x address
+  distributor?: string; // 0x address
+  retailer?: string; // 0x address
   status: OnChainProduceStatus;
-  lastPricePerKg: bigint;
+  lastPricePerKg?: bigint;
   createdAt: bigint;
   lastUpdatedAt: bigint;
 }
@@ -38,7 +39,8 @@ export interface OnChainProduceBatch {
 export interface OnChainPriceRecord {
   pricePerKg: bigint;
   stage: OnChainProduceStatus;
-  updatedBy: string;
+  setBy?: string;
+  updatedBy?: string;
   timestamp: bigint;
 }
 
@@ -58,6 +60,7 @@ export interface WalletState {
   address: string | null;
   chainId: number | null;
   networkName: string | null;
+  isSepolia?: boolean;
   isConnecting: boolean;
   error: string | null;
 }
@@ -68,6 +71,7 @@ export interface BlockchainTransactionResult {
   blockHash: string;
   gasUsed: bigint;
   effectiveGasPrice?: bigint;
+  signerAddress?: string;
 }
 
 export const PRODUCE_STATUS_LABELS: Record<OnChainProduceStatus, string> = {

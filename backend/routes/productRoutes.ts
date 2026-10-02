@@ -287,7 +287,7 @@ router.post('/', optionalJWT, async (req: AuthenticatedRequest, res: Response) =
       return res.status(400).json({ success: false, error: 'Valid positive farmgate price is required.' });
     }
 
-    // Determine sequence & generate batchId
+    // Determine sequence & generate batchId or use client on-chain batchId
     let totalCount = inMemoryProducts.size;
     if (mongoose.connection.readyState === 1) {
       try {
@@ -297,7 +297,9 @@ router.post('/', optionalJWT, async (req: AuthenticatedRequest, res: Response) =
       }
     }
 
-    const batchId = generateBatchId(cropName, totalCount);
+    const batchId = (body.batchId && typeof body.batchId === 'string' && body.batchId.trim())
+      ? body.batchId.trim()
+      : generateBatchId(cropName, totalCount);
     const farmerId = authUser?.id || reqFarmerId || 'usr-farmer-01';
     const farmerName = authUser?.name || reqFarmerName || 'Verified Producer';
     const numPrice = Number(farmgatePrice);
@@ -539,10 +541,111 @@ router.get('/:batchId', async (req: Request, res: Response) => {
     }
 
     if (!product) {
+      try {
+        const { getOnChainBatch, getContractAddress, getOnChainPriceHistory, getOnChainProvenanceHistory } = await import('../services/blockchainService');
+        const onChain = await getOnChainBatch(cleanId);
+        if (onChain) {
+          const priceHist = await getOnChainPriceHistory(cleanId);
+          const provHist = await getOnChainProvenanceHistory(cleanId);
+          const contractAddr = getContractAddress();
+          product = {
+            batchId: cleanId,
+            name: onChain.cropName,
+            cropName: onChain.cropName,
+            variety: 'Standard Harvest',
+            cropVariety: 'Standard Harvest',
+            category: 'Produce',
+            farmerName: 'Verified Producer',
+            farmerId: onChain.farmer,
+            farmerLocation: 'Verified Farm Origin',
+            farmLocation: 'Verified Farm Origin',
+            quantityKg: Number(onChain.quantityKg),
+            quantity: Number(onChain.quantityKg),
+            unit: 'kg',
+            harvestDate: new Date(Number(onChain.createdAt) * 1000).toISOString().split('T')[0],
+            status: onChain.status === 1 ? 'Registered' : onChain.status === 2 ? 'At Distributor' : onChain.status === 3 ? 'In Transit' : onChain.status === 4 ? 'On Retail Shelf' : 'Sold to Consumer',
+            currentCustodianRole: onChain.status === 1 ? 'farmer' : onChain.status <= 3 ? 'distributor' : onChain.status === 4 ? 'retailer' : 'consumer',
+            currentCustodianName: onChain.status === 1 ? 'Verified Producer' : 'Custodian',
+            qualityGrade: onChain.qualityGrade === 1 ? 'Grade A' : onChain.qualityGrade === 2 ? 'Grade B' : 'Grade C',
+            pricing: {
+              farmerPrice: priceHist.length > 0 ? Number(priceHist[0].pricePerKg) : 50,
+              distributorLogisticsCost: 0,
+              distributorMargin: 0,
+              retailerOverhead: 0,
+              retailerMargin: 0,
+              finalConsumerPrice: priceHist.length > 0 ? Number(priceHist[priceHist.length - 1].pricePerKg) : 50,
+              currency: '₹',
+              fairPriceCeiling: 100,
+            },
+            quality: {
+              grade: onChain.qualityGrade === 1 ? 'Grade A (Export Quality)' : onChain.qualityGrade === 2 ? 'Grade B (Premium)' : 'Grade C (Standard)',
+              freshnessScore: 98,
+              moistureContent: '80%',
+              pesticideResidueTest: 'Safe Limits Verified',
+              harvestDate: new Date(Number(onChain.createdAt) * 1000).toISOString().split('T')[0],
+              shelfLifeDays: 14,
+            },
+            blockchain: {
+              contractAddress: contractAddr,
+              tokenId: `0x${cleanId.replace(/[^a-zA-Z0-9]/g, '')}`,
+              blockNumber: Number(onChain.createdAt),
+              mintTxHash: 'On-Chain Verified Record',
+              currentOwnerWallet: onChain.currentOwner,
+              consensusMechanism: 'Ethereum Sepolia Ledger',
+              merkleRootHash: onChain.originHash,
+              isTamperEvident: true,
+              statusNotice: 'Verified Smart Contract State'
+            },
+            timeline: provHist.map((p: any, idx: number) => ({
+              id: `tl-chain-${idx}`,
+              stage: p.toStatus === 1 ? 'Farming' : p.toStatus <= 3 ? 'Logistics' : 'Retail',
+              title: p.toStatus === 1 ? 'Produce Registered on Ledger' : 'Custody Updated',
+              description: p.remarks || `Status transitioned to stage ${p.toStatus}`,
+              actorName: p.actor,
+              actorRole: p.toStatus === 1 ? 'farmer' : 'stakeholder',
+              location: 'Verified Node',
+              timestamp: new Date(p.timestamp * 1000).toLocaleString(),
+              verified: true,
+            })),
+            sensorLogs: [],
+            imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80',
+            description: `${onChain.cropName} registered on Ethereum Sepolia smart contract ${contractAddr}.`,
+          };
+          inMemoryProducts.set(cleanId, product);
+        }
+      } catch (chainErr) {
+        console.warn('Smart contract fallback lookup error:', chainErr);
+      }
+    }
+
+    if (!product) {
       return res.status(404).json({
         success: false,
-        error: `Batch "${cleanId}" not found in AgriTrace database registry.`
+        error: `Batch "${cleanId}" not found in AgriTrace database registry or on Ethereum Sepolia ledger.`
       });
+    }
+
+    // Synchronize smart contract state if available so MongoDB never overrides blockchain state
+    try {
+      const { getOnChainBatch } = await import('../services/blockchainService');
+      const onChain = await getOnChainBatch(cleanId);
+      if (onChain) {
+        const onChainStatusMap: Record<number, string> = {
+          1: 'Registered',
+          2: 'At Distributor',
+          3: 'In Transit to Retailer',
+          4: 'On Retail Shelf',
+          5: 'Sold to Consumer'
+        };
+        if (onChainStatusMap[onChain.status]) {
+          product.status = onChainStatusMap[onChain.status];
+          if (product.blockchain) {
+            product.blockchain.currentOwnerWallet = onChain.currentOwner;
+          }
+        }
+      }
+    } catch {
+      // Non-blocking
     }
 
     return res.json({

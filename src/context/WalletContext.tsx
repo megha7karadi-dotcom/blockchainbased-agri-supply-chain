@@ -3,18 +3,29 @@ import {
   connectWallet, 
   getActiveWallet, 
   isMetaMaskAvailable, 
-  subscribeToWalletEvents 
+  subscribeToWalletEvents,
+  switchToSepoliaNetwork,
+  isSepoliaNetwork,
+  SEPOLIA_CHAIN_ID
 } from '../lib/blockchain/wallet';
-import { getContractAddress, setCustomContractAddress } from '../lib/blockchain/config';
+import { 
+  getContractAddress, 
+  setCustomContractAddress,
+  isContractConfigured,
+  isValidAddress
+} from '../lib/blockchain/config';
 import { WalletState } from '../lib/blockchain/types';
 
 interface WalletContextType {
   wallet: WalletState;
   isMetaMaskInstalled: boolean;
+  isSepolia: boolean;
   contractAddress: string;
-  updateContractAddress: (address: string) => void;
+  isContractReady: boolean;
+  updateContractAddress: (address: string) => Promise<boolean>;
   connect: () => Promise<void>;
   disconnect: () => void;
+  switchToSepolia: () => Promise<boolean>;
   lastTx: {
     hash: string | null;
     status: 'idle' | 'pending' | 'success' | 'error';
@@ -36,6 +47,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     address: null,
     chainId: null,
     networkName: null,
+    isSepolia: false,
     isConnecting: false,
     error: null,
   });
@@ -54,6 +66,22 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     status: 'idle',
   });
 
+  // Sync contract address from backend /api/blockchain/info if available
+  useEffect(() => {
+    fetch('/api/blockchain/info')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && data.contractAddress && isValidAddress(data.contractAddress)) {
+          const current = getContractAddress();
+          if (!current || !isValidAddress(current)) {
+            localStorage.setItem('agritrace_custom_contract_address', data.contractAddress);
+            setContractAddr(data.contractAddress);
+          }
+        }
+      })
+      .catch(err => console.warn('[WalletContext] Backend info notice:', err));
+  }, []);
+
   // Check if wallet is already connected
   const checkActiveConnection = useCallback(async () => {
     if (!isMetaMaskInstalled) return;
@@ -65,6 +93,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           address: active.address,
           chainId: active.chainId,
           networkName: active.networkName,
+          isSepolia: active.isSepolia,
           isConnecting: false,
           error: null,
         });
@@ -86,6 +115,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             address: null,
             chainId: null,
             networkName: null,
+            isSepolia: false,
             isConnecting: false,
             error: null,
           });
@@ -98,8 +128,15 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           }));
         }
       },
-      onChainChanged: () => {
-        // Re-check wallet state on chain change
+      onChainChanged: (chainIdHex) => {
+        const chainId = parseInt(chainIdHex, 16);
+        const isSepolia = chainId === SEPOLIA_CHAIN_ID;
+        setWallet(prev => ({
+          ...prev,
+          chainId,
+          isSepolia,
+          networkName: isSepolia ? 'Ethereum Sepolia Testnet' : `Chain ID ${chainId}`,
+        }));
         checkActiveConnection();
       },
       onDisconnect: () => {
@@ -108,6 +145,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           address: null,
           chainId: null,
           networkName: null,
+          isSepolia: false,
           isConnecting: false,
           error: null,
         });
@@ -123,7 +161,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!isMetaMaskInstalled) {
       setWallet(prev => ({
         ...prev,
-        error: 'MetaMask extension is not installed in your browser. Please install MetaMask to interact with the smart contract.',
+        error: 'MetaMask extension is not installed in your browser. Please install MetaMask to interact with the Sepolia smart contract.',
       }));
       return;
     }
@@ -136,6 +174,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         address: conn.address,
         chainId: conn.chainId,
         networkName: conn.networkName,
+        isSepolia: conn.isSepolia,
         isConnecting: false,
         error: null,
       });
@@ -143,9 +182,25 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setWallet(prev => ({
         ...prev,
         isConnecting: false,
-        error: err?.message || 'Failed to connect wallet.',
+        error: err?.message || 'Failed to connect MetaMask.',
       }));
       throw err;
+    }
+  };
+
+  const switchToSepolia = async (): Promise<boolean> => {
+    try {
+      const switched = await switchToSepoliaNetwork();
+      if (switched) {
+        await checkActiveConnection();
+      }
+      return switched;
+    } catch (err: any) {
+      setWallet(prev => ({
+        ...prev,
+        error: err.message || 'Failed to switch network to Sepolia.',
+      }));
+      return false;
     }
   };
 
@@ -155,16 +210,20 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       address: null,
       chainId: null,
       networkName: null,
+      isSepolia: false,
       isConnecting: false,
       error: null,
     });
   };
 
-  const updateContractAddress = (address: string) => {
-    if (address && address.startsWith('0x') && address.length === 42) {
-      setCustomContractAddress(address);
-      setContractAddr(address);
+  const updateContractAddress = async (address: string): Promise<boolean> => {
+    const trimmed = (address || '').trim();
+    if (!isValidAddress(trimmed)) {
+      throw new Error('Please enter a valid Ethereum contract address (42 characters hex starting with 0x).');
     }
+    await setCustomContractAddress(trimmed);
+    setContractAddr(trimmed);
+    return true;
   };
 
   const setTransactionPending = (actionName: string) => {
@@ -197,15 +256,21 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setLastTx({ hash: null, status: 'idle' });
   };
 
+  const isContractReady = isValidAddress(contractAddress);
+  const isSepolia = Boolean(wallet.isSepolia || (wallet.chainId && Number(wallet.chainId) === SEPOLIA_CHAIN_ID));
+
   return (
     <WalletContext.Provider
       value={{
         wallet,
         isMetaMaskInstalled,
+        isSepolia,
         contractAddress,
+        isContractReady,
         updateContractAddress,
         connect,
         disconnect,
+        switchToSepolia,
         lastTx,
         setTransactionPending,
         setTransactionSuccess,

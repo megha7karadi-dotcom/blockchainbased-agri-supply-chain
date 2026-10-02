@@ -11,6 +11,7 @@ import {
   IoTSensorLog
 } from '../types/produce';
 import { productService, RegisterProductInput } from '../services/productService';
+import { getContractAddress } from '../lib/blockchain/config';
 import { 
   INITIAL_USERS, 
   INITIAL_BATCHES, 
@@ -78,7 +79,7 @@ interface AppContextType {
   
   // Actions
   registerNewProduce: (newBatch: Partial<ProduceBatch>) => ProduceBatch;
-  registerProductBatch: (input: RegisterProductInput) => Promise<ProduceBatch>;
+  registerProductBatch: (input: RegisterProductInput, onProgress?: (msg: string) => void) => Promise<ProduceBatch>;
   distributorProcureProduce: (batchId: string, logisticsCost: number, margin: number, vehicleNumber?: string, targetTemp?: string) => void;
   distributorReceiveProduce: (batchId: string, inspectionNotes?: string, qualityPassed?: boolean) => void;
   updateDistributorPrice: (batchId: string, logisticsCost: number, margin: number) => void;
@@ -1114,7 +1115,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         shelfLifeDays: Number(newBatchData.quality?.shelfLifeDays) || 12,
       },
       blockchain: {
-        contractAddress: '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+        contractAddress: getContractAddress(),
         tokenId: `0x00${nextNum}_${catCode}`,
         blockNumber: mockBlock,
         mintTxHash: mockHash,
@@ -1152,12 +1153,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newBatch;
   };
 
-  const registerProductBatch = async (input: RegisterProductInput): Promise<ProduceBatch> => {
+  const registerProductBatch = async (input: RegisterProductInput, onProgress?: (msg: string) => void): Promise<ProduceBatch> => {
     const created = await productService.registerProduct({
       ...input,
       farmerId: currentUser?.id || input.farmerId,
       farmerName: currentUser?.name || input.farmerName || 'Verified Producer',
-    });
+    }, onProgress);
 
     setBatches(prev => [created, ...prev.filter(b => b.id !== created.id)]);
     setSelectedBatchId(created.id);
@@ -1234,7 +1235,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         timeline: [...(batch.timeline || []), newEvent],
         sensorLogs: [...(batch.sensorLogs || []), newSensorLog],
         blockchain: {
-          contractAddress: batch.blockchain?.contractAddress || '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+          contractAddress: batch.blockchain?.contractAddress || getContractAddress(),
           tokenId: batch.blockchain?.tokenId || `0x001_DIST`,
           blockNumber: mockBlock,
           mintTxHash: batch.blockchain?.mintTxHash || mockTx,
@@ -1293,7 +1294,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         timeline: [...(batch.timeline || []), intakeEvent],
         blockchain: {
           ...batch.blockchain,
-          contractAddress: batch.blockchain?.contractAddress || '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+          contractAddress: batch.blockchain?.contractAddress || getContractAddress(),
           tokenId: batch.blockchain?.tokenId || `0x001_DIST`,
           mintTxHash: batch.blockchain?.mintTxHash || mockTx,
           gasUsed: '76,500 Gwei',
@@ -1404,7 +1405,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentCustodianName: retailerName,
         timeline: [...(batch.timeline || []), newEvent],
         blockchain: {
-          contractAddress: batch.blockchain?.contractAddress || '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+          contractAddress: batch.blockchain?.contractAddress || getContractAddress(),
           tokenId: batch.blockchain?.tokenId || `0x001_DIST`,
           mintTxHash: batch.blockchain?.mintTxHash || mockTx,
           gasUsed: '92,300 Gwei',

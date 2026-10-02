@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Search, 
   ShieldCheck, 
@@ -32,6 +32,8 @@ import { SupplyChainTimeline } from '../common/SupplyChainTimeline';
 import { PriceBreakdownCard } from '../common/PriceBreakdownCard';
 import { QRCodeModal } from '../common/QRCodeModal';
 import { ProduceBatch } from '../../types/produce';
+import { productService } from '../../services/productService';
+import { getContractAddress, SEPOLIA_EXPLORER_URL, isContractConfigured } from '../../lib/blockchain/config';
 
 export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> = ({ onOpenQRScanner }) => {
   const { batches, currentPath, navigate, selectedBatchId, setSelectedBatchId } = useApp();
@@ -114,6 +116,9 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
     return null;
   }, [currentPath, selectedBatchId]);
 
+  const [asyncBatch, setAsyncBatch] = useState<ProduceBatch | null>(null);
+  const [isLoadingAsync, setIsLoadingAsync] = useState(false);
+
   // Lookup the requested batch
   const { resolvedBatch, isNotFound } = useMemo(() => {
     if (!requestedId) {
@@ -152,7 +157,71 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
     return { resolvedBatch: found, isNotFound: false };
   }, [requestedId, batches]);
 
-  const batch = resolvedBatch;
+  // Fallback to fetch from database / Sepolia smart contract if not in memory
+  useEffect(() => {
+    if (!requestedId || resolvedBatch) {
+      setAsyncBatch(null);
+      setIsLoadingAsync(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setIsLoadingAsync(true);
+
+    async function fetchFromLedger() {
+      try {
+        // 1. Try backend API
+        const prod = await productService.getProductById(requestedId!);
+        if (prod && !isCancelled) {
+          setAsyncBatch(prod);
+          setIsLoadingAsync(false);
+          return;
+        }
+
+        // 2. Query Ethereum Sepolia smart contract directly
+        const { getBatchFromChain, getContractAddress, getPriceHistoryFromChain } = await import('../../lib/blockchain/contract');
+        const onChain = await getBatchFromChain(requestedId!);
+        if (onChain && !isCancelled) {
+          const priceHist = await getPriceHistoryFromChain(requestedId!);
+          const contractAddr = getContractAddress();
+          const mapped = productService.normalizeBatch({
+            batchId: requestedId,
+            name: onChain.cropName,
+            cropName: onChain.cropName,
+            quantityKg: Number(onChain.quantityKg),
+            quantity: Number(onChain.quantityKg),
+            qualityGrade: onChain.qualityGrade === 1 ? 'Grade A' : onChain.qualityGrade === 2 ? 'Grade B' : 'Grade C',
+            harvestDate: new Date(Number(onChain.createdAt) * 1000).toISOString().split('T')[0],
+            status: onChain.status === 1 ? 'Registered' : onChain.status === 2 ? 'At Distributor' : onChain.status === 3 ? 'In Transit' : onChain.status === 4 ? 'On Retail Shelf' : 'Sold to Consumer',
+            pricing: {
+              farmerPrice: priceHist.length > 0 ? Number(priceHist[0].pricePerKg) : 100,
+              finalConsumerPrice: priceHist.length > 0 ? Number(priceHist[priceHist.length - 1].pricePerKg) : 100,
+            },
+            blockchain: {
+              contractAddress: contractAddr,
+              currentOwnerWallet: onChain.currentOwner,
+              merkleRootHash: onChain.originHash,
+              mintTxHash: 'On-Chain Confirmed Record',
+              consensusMechanism: 'Ethereum Sepolia Ledger',
+              isTamperEvident: true,
+              statusNotice: 'Verified Smart Contract State'
+            }
+          });
+          setAsyncBatch(mapped);
+        }
+      } catch (err) {
+        console.warn('Smart contract fallback resolution notice:', err);
+      } finally {
+        if (!isCancelled) setIsLoadingAsync(false);
+      }
+    }
+
+    fetchFromLedger();
+    return () => { isCancelled = true; };
+  }, [requestedId, resolvedBatch]);
+
+  const batch = resolvedBatch || asyncBatch;
+  const showNotFound = isNotFound && !asyncBatch && !isLoadingAsync;
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const verificationUrl = batch ? `${origin}/verify/${batch.batchId}` : '';
 
@@ -248,8 +317,21 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
         </div>
       </div>
 
+      {/* Case 0: Querying On-Chain */}
+      {isLoadingAsync && !batch && (
+        <div className="bg-white rounded-3xl border border-emerald-200 shadow-xs p-8 sm:p-12 text-center space-y-4">
+          <div className="w-10 h-10 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm font-semibold text-slate-800">
+            Querying Ethereum Sepolia smart contract for batch {requestedId}...
+          </p>
+          <p className="text-xs text-slate-500">
+            Validating cryptographic provenance record directly on-chain.
+          </p>
+        </div>
+      )}
+
       {/* Case 1: Batch Not Found */}
-      {isNotFound && (
+      {showNotFound && (
         <div className="bg-white rounded-3xl border border-red-200 shadow-xs p-8 sm:p-12 text-center space-y-6">
           <div className="w-16 h-16 mx-auto bg-red-50 text-red-600 rounded-2xl flex items-center justify-center border border-red-200">
             <AlertTriangle className="w-8 h-8" />
@@ -689,7 +771,23 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
               <div className="border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 font-mono text-xs">
                 <div className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-slate-50">
                   <span className="text-slate-500">Registry System:</span>
-                  <span className="font-bold text-slate-800">AgriTrace Verified Agricultural Ledger</span>
+                  <span className="font-bold text-slate-800">AgriTrace Verified Agricultural Ledger (Ethereum Sepolia)</span>
+                </div>
+                <div className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <span className="text-slate-500">Smart Contract:</span>
+                  {isContractConfigured() ? (
+                    <a 
+                      href={`${SEPOLIA_EXPLORER_URL}/address/${getContractAddress()}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-emerald-700 hover:text-emerald-900 underline flex items-center gap-1 font-semibold"
+                    >
+                      <span>{getContractAddress().slice(0, 10)}...{getContractAddress().slice(-8)}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <span className="text-amber-600 font-medium">Awaiting Sepolia contract deployment</span>
+                  )}
                 </div>
                 <div className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <span className="text-slate-500">Batch ID:</span>

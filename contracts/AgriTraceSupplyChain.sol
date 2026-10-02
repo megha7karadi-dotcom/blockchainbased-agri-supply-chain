@@ -78,19 +78,9 @@ contract AgriTraceSupplyChain is AccessControl {
     // ==========================================
     // STATE STORAGE
     // ==========================================
-    // Primary storage: batchId => ProduceBatch
     mapping(bytes32 => ProduceBatch) private _batches;
-
-    // Fast existence tracker: batchId => exists
-    mapping(bytes32 => bool) private _batchExists;
-
-    // Price audit history: batchId => chronologically appended price checkpoints
     mapping(bytes32 => PriceRecord[]) private _priceHistory;
-
-    // Provenance / Transaction history: batchId => chronologically appended supply-chain steps
     mapping(bytes32 => ProvenanceRecord[]) private _provenanceHistory;
-
-    // Global list of registered batch IDs for indexing
     bytes32[] private _allBatchIds;
 
     // ==========================================
@@ -155,20 +145,119 @@ contract AgriTraceSupplyChain is AccessControl {
     // MODIFIERS FOR VALIDATION
     // ==========================================
     modifier onlyActiveBatch(bytes32 batchId) {
-        if (!_batchExists[batchId]) {
-            revert BatchNotFound(batchId);
-        }
-        if (_batches[batchId].status == ProduceStatus.SOLD) {
-            revert BatchAlreadySold(batchId);
-        }
+        _validateActiveBatch(batchId);
         _;
     }
 
     modifier onlyCurrentOwner(bytes32 batchId) {
-        if (_batches[batchId].currentOwner != msg.sender) {
-            revert NotCurrentOwner(msg.sender, _batches[batchId].currentOwner);
-        }
+        _validateCurrentOwner(batchId);
         _;
+    }
+
+    // ==========================================
+    // INTERNAL OPTIMIZED VALIDATION & LOG HELPERS
+    // ==========================================
+    function _validateActiveBatch(bytes32 batchId) internal view returns (ProduceBatch storage batch) {
+        batch = _batches[batchId];
+        if (batch.status == ProduceStatus.NONE) {
+            revert BatchNotFound(batchId);
+        }
+        if (batch.status == ProduceStatus.SOLD) {
+            revert BatchAlreadySold(batchId);
+        }
+    }
+
+    function _validateCurrentOwner(bytes32 batchId) internal view {
+        address currentOwner = _batches[batchId].currentOwner;
+        if (currentOwner != msg.sender) {
+            revert NotCurrentOwner(msg.sender, currentOwner);
+        }
+    }
+
+    function _getActiveBatchAndOwner(bytes32 batchId) internal view returns (ProduceBatch storage batch) {
+        batch = _validateActiveBatch(batchId);
+        if (batch.currentOwner != msg.sender) {
+            revert NotCurrentOwner(msg.sender, batch.currentOwner);
+        }
+    }
+
+    function _validateRole(bytes32 requiredRole) internal view {
+        if (!hasRole(requiredRole, msg.sender)) {
+            revert UnauthorizedCaller(msg.sender, requiredRole);
+        }
+    }
+
+    function _validateRecipient(address recipient, bytes32 requiredRole) internal view {
+        if (recipient == address(0)) {
+            revert InvalidRecipient(address(0));
+        }
+        if (recipient == msg.sender) {
+            revert CannotTransferToSelf();
+        }
+        if (!hasRole(requiredRole, recipient)) {
+            revert RecipientMissingRole(recipient, requiredRole);
+        }
+    }
+
+    function _requireBatchExists(bytes32 batchId) internal view {
+        if (_batches[batchId].status == ProduceStatus.NONE) {
+            revert BatchNotFound(batchId);
+        }
+    }
+
+    function _addProvenance(
+        bytes32 batchId,
+        ProduceStatus fromStatus,
+        ProduceStatus toStatus,
+        address fromOwner,
+        address toOwner,
+        uint256 priceAtStep,
+        string memory remarks
+    ) internal {
+        _provenanceHistory[batchId].push(ProvenanceRecord({
+            fromStatus: fromStatus,
+            toStatus: toStatus,
+            actor: msg.sender,
+            fromOwner: fromOwner,
+            toOwner: toOwner,
+            priceAtStep: priceAtStep,
+            remarks: remarks,
+            timestamp: block.timestamp
+        }));
+    }
+
+    function _addPriceRecord(
+        bytes32 batchId,
+        uint256 pricePerKg,
+        ProduceStatus stage
+    ) internal {
+        _priceHistory[batchId].push(PriceRecord({
+            pricePerKg: pricePerKg,
+            setBy: msg.sender,
+            stage: stage,
+            timestamp: block.timestamp
+        }));
+        emit PriceUpdated(batchId, msg.sender, stage, pricePerKg, block.timestamp);
+    }
+
+    function _executeOwnershipTransfer(
+        bytes32 batchId,
+        ProduceBatch storage batch,
+        address newOwner,
+        ProduceStatus newStatus,
+        string memory remarks
+    ) internal {
+        address previousOwner = batch.currentOwner;
+        ProduceStatus previousStatus = batch.status;
+
+        batch.currentOwner = newOwner;
+        batch.status = newStatus;
+        batch.designatedRecipient = address(0);
+        batch.lastUpdatedAt = block.timestamp;
+
+        _addProvenance(batchId, previousStatus, newStatus, previousOwner, newOwner, 0, remarks);
+        emit OwnershipTransferred(batchId, previousOwner, newOwner, newStatus, block.timestamp);
+        emit StatusChanged(batchId, previousStatus, newStatus, msg.sender, block.timestamp);
     }
 
     // ==========================================
@@ -206,20 +295,14 @@ contract AgriTraceSupplyChain is AccessControl {
         uint256 initialPricePerKg,
         bytes32 originHash
     ) external {
-        // Validation: Role
-        if (!hasRole(FARMER_ROLE, msg.sender)) {
-            revert UnauthorizedCaller(msg.sender, FARMER_ROLE);
-        }
+        _validateRole(FARMER_ROLE);
 
-        // Validation: Unique and non-empty batch ID
         if (batchId == bytes32(0)) {
             revert EmptyBatchId();
         }
-        if (_batchExists[batchId]) {
+        if (_batches[batchId].status != ProduceStatus.NONE) {
             revert BatchAlreadyExists(batchId);
         }
-
-        // Validation: Business parameters
         if (bytes(cropName).length == 0) {
             revert EmptyCropName();
         }
@@ -236,8 +319,6 @@ contract AgriTraceSupplyChain is AccessControl {
             revert EmptyOriginInfo();
         }
 
-        // State Changes
-        _batchExists[batchId] = true;
         _allBatchIds.push(batchId);
 
         _batches[batchId] = ProduceBatch({
@@ -254,27 +335,9 @@ contract AgriTraceSupplyChain is AccessControl {
             lastUpdatedAt: block.timestamp
         });
 
-        // Append initial price record (immutable audit trail)
-        _priceHistory[batchId].push(PriceRecord({
-            pricePerKg: initialPricePerKg,
-            setBy: msg.sender,
-            stage: ProduceStatus.REGISTERED,
-            timestamp: block.timestamp
-        }));
+        _addPriceRecord(batchId, initialPricePerKg, ProduceStatus.REGISTERED);
+        _addProvenance(batchId, ProduceStatus.NONE, ProduceStatus.REGISTERED, address(0), msg.sender, initialPricePerKg, "Produce batch registered at farm origin");
 
-        // Append initial provenance entry
-        _provenanceHistory[batchId].push(ProvenanceRecord({
-            fromStatus: ProduceStatus.NONE,
-            toStatus: ProduceStatus.REGISTERED,
-            actor: msg.sender,
-            fromOwner: address(0),
-            toOwner: msg.sender,
-            priceAtStep: initialPricePerKg,
-            remarks: "Produce batch registered at farm origin",
-            timestamp: block.timestamp
-        }));
-
-        // Emit Events
         emit ProduceRegistered(
             batchId,
             msg.sender,
@@ -283,14 +346,6 @@ contract AgriTraceSupplyChain is AccessControl {
             qualityGrade,
             initialPricePerKg,
             originHash,
-            block.timestamp
-        );
-
-        emit PriceUpdated(
-            batchId,
-            msg.sender,
-            ProduceStatus.REGISTERED,
-            initialPricePerKg,
             block.timestamp
         );
 
@@ -315,49 +370,22 @@ contract AgriTraceSupplyChain is AccessControl {
     function transferToDistributor(
         bytes32 batchId,
         address distributor
-    ) external onlyActiveBatch(batchId) onlyCurrentOwner(batchId) {
-        ProduceBatch storage batch = _batches[batchId];
+    ) external {
+        ProduceBatch storage batch = _getActiveBatchAndOwner(batchId);
 
-        // Validation: Lifecycle must be REGISTERED
         if (batch.status != ProduceStatus.REGISTERED) {
             revert InvalidLifecycleTransition(batch.status, ProduceStatus.WITH_DISTRIBUTOR);
         }
 
-        // Validation: Recipient
-        if (distributor == address(0)) {
-            revert InvalidRecipient(distributor);
-        }
-        if (distributor == msg.sender) {
-            revert CannotTransferToSelf();
-        }
-        if (!hasRole(DISTRIBUTOR_ROLE, distributor)) {
-            revert RecipientMissingRole(distributor, DISTRIBUTOR_ROLE);
-        }
+        _validateRecipient(distributor, DISTRIBUTOR_ROLE);
 
-        // State changes
-        address previousOwner = batch.currentOwner;
-        ProduceStatus previousStatus = batch.status;
-
-        batch.currentOwner = distributor;
-        batch.status = ProduceStatus.WITH_DISTRIBUTOR;
-        batch.designatedRecipient = address(0);
-        batch.lastUpdatedAt = block.timestamp;
-
-        // Record provenance
-        _provenanceHistory[batchId].push(ProvenanceRecord({
-            fromStatus: previousStatus,
-            toStatus: ProduceStatus.WITH_DISTRIBUTOR,
-            actor: msg.sender,
-            fromOwner: previousOwner,
-            toOwner: distributor,
-            priceAtStep: 0, // Price unchanged in this step unless updated separately
-            remarks: "Ownership transferred from Farmer to verified Distributor",
-            timestamp: block.timestamp
-        }));
-
-        // Emit Events
-        emit OwnershipTransferred(batchId, previousOwner, distributor, ProduceStatus.WITH_DISTRIBUTOR, block.timestamp);
-        emit StatusChanged(batchId, previousStatus, ProduceStatus.WITH_DISTRIBUTOR, msg.sender, block.timestamp);
+        _executeOwnershipTransfer(
+            batchId,
+            batch,
+            distributor,
+            ProduceStatus.WITH_DISTRIBUTOR,
+            "Ownership transferred from Farmer to verified Distributor"
+        );
     }
 
     // ==========================================
@@ -372,13 +400,11 @@ contract AgriTraceSupplyChain is AccessControl {
     function updateDistributorPrice(
         bytes32 batchId,
         uint256 newPricePerKg
-    ) external onlyActiveBatch(batchId) onlyCurrentOwner(batchId) {
-        ProduceBatch storage batch = _batches[batchId];
+    ) external {
+        ProduceBatch storage batch = _getActiveBatchAndOwner(batchId);
 
-        // Validation: Role and Stage
-        if (!hasRole(DISTRIBUTOR_ROLE, msg.sender)) {
-            revert UnauthorizedCaller(msg.sender, DISTRIBUTOR_ROLE);
-        }
+        _validateRole(DISTRIBUTOR_ROLE);
+
         if (batch.status != ProduceStatus.WITH_DISTRIBUTOR) {
             revert InvalidLifecycleTransition(batch.status, ProduceStatus.WITH_DISTRIBUTOR);
         }
@@ -386,30 +412,10 @@ contract AgriTraceSupplyChain is AccessControl {
             revert InvalidPrice(newPricePerKg);
         }
 
-        // State changes
         batch.lastUpdatedAt = block.timestamp;
 
-        // Append to immutable price history
-        _priceHistory[batchId].push(PriceRecord({
-            pricePerKg: newPricePerKg,
-            setBy: msg.sender,
-            stage: ProduceStatus.WITH_DISTRIBUTOR,
-            timestamp: block.timestamp
-        }));
-
-        // Append provenance log
-        _provenanceHistory[batchId].push(ProvenanceRecord({
-            fromStatus: batch.status,
-            toStatus: batch.status,
-            actor: msg.sender,
-            fromOwner: msg.sender,
-            toOwner: msg.sender,
-            priceAtStep: newPricePerKg,
-            remarks: "Distributor updated wholesale price",
-            timestamp: block.timestamp
-        }));
-
-        emit PriceUpdated(batchId, msg.sender, ProduceStatus.WITH_DISTRIBUTOR, newPricePerKg, block.timestamp);
+        _addPriceRecord(batchId, newPricePerKg, ProduceStatus.WITH_DISTRIBUTOR);
+        _addProvenance(batchId, batch.status, batch.status, msg.sender, msg.sender, newPricePerKg, "Distributor updated wholesale price");
     }
 
     // ==========================================
@@ -423,43 +429,23 @@ contract AgriTraceSupplyChain is AccessControl {
     function dispatchToRetailer(
         bytes32 batchId,
         address retailer
-    ) external onlyActiveBatch(batchId) onlyCurrentOwner(batchId) {
-        ProduceBatch storage batch = _batches[batchId];
+    ) external {
+        ProduceBatch storage batch = _getActiveBatchAndOwner(batchId);
 
-        // Validation: Caller role and stage
-        if (!hasRole(DISTRIBUTOR_ROLE, msg.sender)) {
-            revert UnauthorizedCaller(msg.sender, DISTRIBUTOR_ROLE);
-        }
+        _validateRole(DISTRIBUTOR_ROLE);
+
         if (batch.status != ProduceStatus.WITH_DISTRIBUTOR) {
             revert InvalidLifecycleTransition(batch.status, ProduceStatus.IN_TRANSIT);
         }
-        if (retailer == address(0)) {
-            revert InvalidRecipient(retailer);
-        }
-        if (retailer == msg.sender) {
-            revert CannotTransferToSelf();
-        }
-        if (!hasRole(RETAILER_ROLE, retailer)) {
-            revert RecipientMissingRole(retailer, RETAILER_ROLE);
-        }
 
-        // State changes
+        _validateRecipient(retailer, RETAILER_ROLE);
+
         ProduceStatus previousStatus = batch.status;
         batch.status = ProduceStatus.IN_TRANSIT;
         batch.designatedRecipient = retailer;
         batch.lastUpdatedAt = block.timestamp;
 
-        // Record provenance
-        _provenanceHistory[batchId].push(ProvenanceRecord({
-            fromStatus: previousStatus,
-            toStatus: ProduceStatus.IN_TRANSIT,
-            actor: msg.sender,
-            fromOwner: msg.sender,
-            toOwner: retailer,
-            priceAtStep: 0,
-            remarks: "Batch dispatched in transit towards designated Retailer",
-            timestamp: block.timestamp
-        }));
+        _addProvenance(batchId, previousStatus, ProduceStatus.IN_TRANSIT, msg.sender, retailer, 0, "Batch dispatched in transit towards designated Retailer");
 
         emit StatusChanged(batchId, previousStatus, ProduceStatus.IN_TRANSIT, msg.sender, block.timestamp);
     }
@@ -473,13 +459,11 @@ contract AgriTraceSupplyChain is AccessControl {
      */
     function receiveProduceByRetailer(
         bytes32 batchId
-    ) external onlyActiveBatch(batchId) {
-        ProduceBatch storage batch = _batches[batchId];
+    ) external {
+        ProduceBatch storage batch = _validateActiveBatch(batchId);
 
-        // Validation: Role and Stage
-        if (!hasRole(RETAILER_ROLE, msg.sender)) {
-            revert UnauthorizedCaller(msg.sender, RETAILER_ROLE);
-        }
+        _validateRole(RETAILER_ROLE);
+
         if (batch.status != ProduceStatus.IN_TRANSIT) {
             revert InvalidLifecycleTransition(batch.status, ProduceStatus.WITH_RETAILER);
         }
@@ -487,29 +471,13 @@ contract AgriTraceSupplyChain is AccessControl {
             revert NotDesignatedRecipient(msg.sender, batch.designatedRecipient);
         }
 
-        // State changes
-        address previousOwner = batch.currentOwner;
-        ProduceStatus previousStatus = batch.status;
-
-        batch.currentOwner = msg.sender;
-        batch.status = ProduceStatus.WITH_RETAILER;
-        batch.designatedRecipient = address(0);
-        batch.lastUpdatedAt = block.timestamp;
-
-        // Record provenance
-        _provenanceHistory[batchId].push(ProvenanceRecord({
-            fromStatus: previousStatus,
-            toStatus: ProduceStatus.WITH_RETAILER,
-            actor: msg.sender,
-            fromOwner: previousOwner,
-            toOwner: msg.sender,
-            priceAtStep: 0,
-            remarks: "Shipment received and verified into Retailer inventory",
-            timestamp: block.timestamp
-        }));
-
-        emit OwnershipTransferred(batchId, previousOwner, msg.sender, ProduceStatus.WITH_RETAILER, block.timestamp);
-        emit StatusChanged(batchId, previousStatus, ProduceStatus.WITH_RETAILER, msg.sender, block.timestamp);
+        _executeOwnershipTransfer(
+            batchId,
+            batch,
+            msg.sender,
+            ProduceStatus.WITH_RETAILER,
+            "Shipment received and verified into Retailer inventory"
+        );
     }
 
     // ==========================================
@@ -523,13 +491,11 @@ contract AgriTraceSupplyChain is AccessControl {
     function updateRetailerPrice(
         bytes32 batchId,
         uint256 consumerPricePerKg
-    ) external onlyActiveBatch(batchId) onlyCurrentOwner(batchId) {
-        ProduceBatch storage batch = _batches[batchId];
+    ) external {
+        ProduceBatch storage batch = _getActiveBatchAndOwner(batchId);
 
-        // Validation: Role and Stage
-        if (!hasRole(RETAILER_ROLE, msg.sender)) {
-            revert UnauthorizedCaller(msg.sender, RETAILER_ROLE);
-        }
+        _validateRole(RETAILER_ROLE);
+
         if (batch.status != ProduceStatus.WITH_RETAILER) {
             revert InvalidLifecycleTransition(batch.status, ProduceStatus.WITH_RETAILER);
         }
@@ -537,30 +503,10 @@ contract AgriTraceSupplyChain is AccessControl {
             revert InvalidPrice(consumerPricePerKg);
         }
 
-        // State changes
         batch.lastUpdatedAt = block.timestamp;
 
-        // Append to price history
-        _priceHistory[batchId].push(PriceRecord({
-            pricePerKg: consumerPricePerKg,
-            setBy: msg.sender,
-            stage: ProduceStatus.WITH_RETAILER,
-            timestamp: block.timestamp
-        }));
-
-        // Append provenance log
-        _provenanceHistory[batchId].push(ProvenanceRecord({
-            fromStatus: batch.status,
-            toStatus: batch.status,
-            actor: msg.sender,
-            fromOwner: msg.sender,
-            toOwner: msg.sender,
-            priceAtStep: consumerPricePerKg,
-            remarks: "Retailer established consumer shelf price",
-            timestamp: block.timestamp
-        }));
-
-        emit PriceUpdated(batchId, msg.sender, ProduceStatus.WITH_RETAILER, consumerPricePerKg, block.timestamp);
+        _addPriceRecord(batchId, consumerPricePerKg, ProduceStatus.WITH_RETAILER);
+        _addProvenance(batchId, batch.status, batch.status, msg.sender, msg.sender, consumerPricePerKg, "Retailer established consumer shelf price");
     }
 
     // ==========================================
@@ -573,33 +519,20 @@ contract AgriTraceSupplyChain is AccessControl {
      */
     function recordSale(
         bytes32 batchId
-    ) external onlyActiveBatch(batchId) onlyCurrentOwner(batchId) {
-        ProduceBatch storage batch = _batches[batchId];
+    ) external {
+        ProduceBatch storage batch = _getActiveBatchAndOwner(batchId);
 
-        // Validation: Role and Stage
-        if (!hasRole(RETAILER_ROLE, msg.sender)) {
-            revert UnauthorizedCaller(msg.sender, RETAILER_ROLE);
-        }
+        _validateRole(RETAILER_ROLE);
+
         if (batch.status != ProduceStatus.WITH_RETAILER) {
             revert InvalidLifecycleTransition(batch.status, ProduceStatus.SOLD);
         }
 
-        // State changes
         ProduceStatus previousStatus = batch.status;
         batch.status = ProduceStatus.SOLD;
         batch.lastUpdatedAt = block.timestamp;
 
-        // Record provenance
-        _provenanceHistory[batchId].push(ProvenanceRecord({
-            fromStatus: previousStatus,
-            toStatus: ProduceStatus.SOLD,
-            actor: msg.sender,
-            fromOwner: msg.sender,
-            toOwner: address(0), // Final consumer handoff
-            priceAtStep: 0,
-            remarks: "Produce batch sold to final consumer",
-            timestamp: block.timestamp
-        }));
+        _addProvenance(batchId, previousStatus, ProduceStatus.SOLD, msg.sender, address(0), 0, "Produce batch sold to final consumer");
 
         emit StatusChanged(batchId, previousStatus, ProduceStatus.SOLD, msg.sender, block.timestamp);
     }
@@ -618,50 +551,25 @@ contract AgriTraceSupplyChain is AccessControl {
         bytes32 batchId,
         address recipient,
         ProduceStatus targetStatus
-    ) external onlyActiveBatch(batchId) onlyCurrentOwner(batchId) {
-        ProduceBatch storage batch = _batches[batchId];
-
-        if (recipient == address(0)) {
-            revert InvalidRecipient(recipient);
-        }
-        if (recipient == msg.sender) {
-            revert CannotTransferToSelf();
-        }
+    ) external {
+        ProduceBatch storage batch = _getActiveBatchAndOwner(batchId);
 
         // Validate allowed transitions
         if (batch.status == ProduceStatus.REGISTERED && targetStatus == ProduceStatus.WITH_DISTRIBUTOR) {
-            if (!hasRole(DISTRIBUTOR_ROLE, recipient)) {
-                revert RecipientMissingRole(recipient, DISTRIBUTOR_ROLE);
-            }
+            _validateRecipient(recipient, DISTRIBUTOR_ROLE);
         } else if (batch.status == ProduceStatus.WITH_DISTRIBUTOR && targetStatus == ProduceStatus.WITH_RETAILER) {
-            if (!hasRole(RETAILER_ROLE, recipient)) {
-                revert RecipientMissingRole(recipient, RETAILER_ROLE);
-            }
+            _validateRecipient(recipient, RETAILER_ROLE);
         } else {
             revert InvalidLifecycleTransition(batch.status, targetStatus);
         }
 
-        address previousOwner = batch.currentOwner;
-        ProduceStatus previousStatus = batch.status;
-
-        batch.currentOwner = recipient;
-        batch.status = targetStatus;
-        batch.designatedRecipient = address(0);
-        batch.lastUpdatedAt = block.timestamp;
-
-        _provenanceHistory[batchId].push(ProvenanceRecord({
-            fromStatus: previousStatus,
-            toStatus: targetStatus,
-            actor: msg.sender,
-            fromOwner: previousOwner,
-            toOwner: recipient,
-            priceAtStep: 0,
-            remarks: "Ownership transferred via unified transfer pipeline",
-            timestamp: block.timestamp
-        }));
-
-        emit OwnershipTransferred(batchId, previousOwner, recipient, targetStatus, block.timestamp);
-        emit StatusChanged(batchId, previousStatus, targetStatus, msg.sender, block.timestamp);
+        _executeOwnershipTransfer(
+            batchId,
+            batch,
+            recipient,
+            targetStatus,
+            "Ownership transferred via unified transfer pipeline"
+        );
     }
 
     // ==========================================
@@ -671,16 +579,14 @@ contract AgriTraceSupplyChain is AccessControl {
      * @notice Checks if a batch ID exists on-chain.
      */
     function batchExists(bytes32 batchId) external view returns (bool) {
-        return _batchExists[batchId];
+        return _batches[batchId].status != ProduceStatus.NONE;
     }
 
     /**
      * @notice Retrieves batch details.
      */
     function getBatch(bytes32 batchId) external view returns (ProduceBatch memory) {
-        if (!_batchExists[batchId]) {
-            revert BatchNotFound(batchId);
-        }
+        _requireBatchExists(batchId);
         return _batches[batchId];
     }
 
@@ -688,9 +594,7 @@ contract AgriTraceSupplyChain is AccessControl {
      * @notice Retrieves current ownership of a batch.
      */
     function getCurrentOwner(bytes32 batchId) external view returns (address) {
-        if (!_batchExists[batchId]) {
-            revert BatchNotFound(batchId);
-        }
+        _requireBatchExists(batchId);
         return _batches[batchId].currentOwner;
     }
 
@@ -698,9 +602,7 @@ contract AgriTraceSupplyChain is AccessControl {
      * @notice Retrieves current lifecycle status of a batch.
      */
     function getCurrentStatus(bytes32 batchId) external view returns (ProduceStatus) {
-        if (!_batchExists[batchId]) {
-            revert BatchNotFound(batchId);
-        }
+        _requireBatchExists(batchId);
         return _batches[batchId].status;
     }
 
@@ -708,9 +610,7 @@ contract AgriTraceSupplyChain is AccessControl {
      * @notice Checks if a batch is sold (terminal status).
      */
     function isBatchSold(bytes32 batchId) external view returns (bool) {
-        if (!_batchExists[batchId]) {
-            revert BatchNotFound(batchId);
-        }
+        _requireBatchExists(batchId);
         return _batches[batchId].status == ProduceStatus.SOLD;
     }
 
@@ -718,9 +618,7 @@ contract AgriTraceSupplyChain is AccessControl {
      * @notice Retrieves the full historical pricing records for a batch.
      */
     function getPriceHistory(bytes32 batchId) external view returns (PriceRecord[] memory) {
-        if (!_batchExists[batchId]) {
-            revert BatchNotFound(batchId);
-        }
+        _requireBatchExists(batchId);
         return _priceHistory[batchId];
     }
 
@@ -728,9 +626,7 @@ contract AgriTraceSupplyChain is AccessControl {
      * @notice Retrieves the full provenance trail and supply-chain transaction timeline for a batch.
      */
     function getProvenanceHistory(bytes32 batchId) external view returns (ProvenanceRecord[] memory) {
-        if (!_batchExists[batchId]) {
-            revert BatchNotFound(batchId);
-        }
+        _requireBatchExists(batchId);
         return _provenanceHistory[batchId];
     }
 

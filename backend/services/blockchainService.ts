@@ -1,14 +1,46 @@
 import { ethers, Contract } from 'ethers';
 import fs from 'fs';
 import path from 'path';
-import ganache from 'ganache';
 
 let cachedAbi: any = null;
 let cachedBytecode: any = null;
-let inProcessGanache: any = null;
-let inProcessBrowserProvider: any = null;
-let activeContractAddress: string = process.env.AGRITRACE_CONTRACT_ADDRESS || '0x95446f5Cda059dE75D9d0bc0d7388B3FA416deEF';
-let adminSigner: any = null;
+
+// Initialize active contract address from env or deployedAddress.json (never placeholder)
+function readInitialContractAddress(): string {
+  if (process.env.AGRITRACE_CONTRACT_ADDRESS && isValidAddress(process.env.AGRITRACE_CONTRACT_ADDRESS)) {
+    return process.env.AGRITRACE_CONTRACT_ADDRESS.trim();
+  }
+  if (process.env.VITE_AGRITRACE_CONTRACT_ADDRESS && isValidAddress(process.env.VITE_AGRITRACE_CONTRACT_ADDRESS)) {
+    return process.env.VITE_AGRITRACE_CONTRACT_ADDRESS.trim();
+  }
+  try {
+    const deployedJsonPath = path.resolve(process.cwd(), 'contracts', 'deployedAddress.json');
+    if (fs.existsSync(deployedJsonPath)) {
+      const data = JSON.parse(fs.readFileSync(deployedJsonPath, 'utf8'));
+      if (data.contractAddress && isValidAddress(data.contractAddress)) {
+        return data.contractAddress.trim();
+      }
+    }
+  } catch (err) {
+    console.warn('[Blockchain Service] Error reading deployedAddress.json:', err);
+  }
+  return '';
+}
+
+let activeContractAddress: string = readInitialContractAddress();
+
+export const SEPOLIA_CHAIN_ID = 11155111;
+export const SEPOLIA_RPC_URL = 'https://ethereum-sepolia-rpc.publicnode.com';
+
+export function isValidAddress(address: string | null | undefined): boolean {
+  if (!address) return false;
+  const trimmed = address.trim();
+  return trimmed.startsWith('0x') && trimmed.length === 42 && /^0x[a-fA-F0-9]{40}$/.test(trimmed);
+}
+
+export function isContractConfigured(): boolean {
+  return isValidAddress(getContractAddress());
+}
 
 function loadArtifact() {
   if (cachedAbi && cachedBytecode) return { abi: cachedAbi, bytecode: cachedBytecode };
@@ -32,109 +64,78 @@ export function getContractAbi() {
 }
 
 export function getContractAddress(): string {
-  return (
-    process.env.AGRITRACE_CONTRACT_ADDRESS ||
-    process.env.VITE_AGRITRACE_CONTRACT_ADDRESS ||
-    activeContractAddress
-  );
+  if (process.env.AGRITRACE_CONTRACT_ADDRESS && isValidAddress(process.env.AGRITRACE_CONTRACT_ADDRESS)) {
+    return process.env.AGRITRACE_CONTRACT_ADDRESS.trim();
+  }
+  if (process.env.VITE_AGRITRACE_CONTRACT_ADDRESS && isValidAddress(process.env.VITE_AGRITRACE_CONTRACT_ADDRESS)) {
+    return process.env.VITE_AGRITRACE_CONTRACT_ADDRESS.trim();
+  }
+  return activeContractAddress;
+}
+
+export function setActiveContractAddress(address: string): boolean {
+  const trimmed = (address || '').trim();
+  if (!isValidAddress(trimmed)) {
+    throw new Error('Invalid Ethereum contract address. Must be a 42-character hex string starting with 0x.');
+  }
+
+  activeContractAddress = trimmed;
+
+  // Persist to contracts/deployedAddress.json
+  try {
+    const deployedJsonPath = path.resolve(process.cwd(), 'contracts', 'deployedAddress.json');
+    fs.writeFileSync(
+      deployedJsonPath,
+      JSON.stringify(
+        {
+          contractAddress: trimmed,
+          network: 'sepolia',
+          chainId: SEPOLIA_CHAIN_ID,
+          rpcUrl: getRpcUrl(),
+          updatedAt: new Date().toISOString(),
+          status: 'Deployed on Ethereum Sepolia'
+        },
+        null,
+        2
+      )
+    );
+    console.log(`[Blockchain Service] Updated Sepolia contract address: ${trimmed}`);
+  } catch (err) {
+    console.warn('[Blockchain Service] Failed to persist deployedAddress.json:', err);
+  }
+
+  return true;
 }
 
 export function getRpcUrl(): string {
   return (
     process.env.BLOCKCHAIN_RPC_URL ||
     process.env.VITE_BLOCKCHAIN_RPC_URL ||
-    '/api/blockchain/rpc'
+    SEPOLIA_RPC_URL
   );
 }
 
 /**
- * Ensures an active EVM provider exists (external RPC or in-process Ganache EVM)
+ * Returns a persistent read-only JsonRpcProvider connected to Ethereum Sepolia Testnet
  */
-export async function getActiveProvider(): Promise<ethers.Provider> {
-  const externalRpc = process.env.BLOCKCHAIN_RPC_URL;
-  if (externalRpc) {
-    try {
-      const jsonRpc = new ethers.JsonRpcProvider(externalRpc);
-      await jsonRpc.getBlockNumber();
-      return jsonRpc;
-    } catch {
-      // fallback to in-process
-    }
-  }
-
-  if (!inProcessGanache) {
-    inProcessGanache = ganache.provider({
-      logging: { quiet: true },
-      wallet: { totalAccounts: 10, defaultBalance: 1000 }
-    });
-    inProcessBrowserProvider = new ethers.BrowserProvider(inProcessGanache);
-  }
-
-  return inProcessBrowserProvider;
+export function getActiveProvider(): ethers.JsonRpcProvider {
+  const rpc = getRpcUrl();
+  return new ethers.JsonRpcProvider(rpc);
 }
 
 /**
- * Handles incoming JSON-RPC calls for /api/blockchain/rpc
- */
-export async function handleRpcRequest(body: any): Promise<any> {
-  await getActiveProvider();
-  if (inProcessGanache) {
-    return new Promise((resolve) => {
-      inProcessGanache.send(body, (err: any, res: any) => {
-        if (err) {
-          resolve({ jsonrpc: '2.0', id: body?.id, error: { code: -32000, message: err.message || String(err) } });
-        } else {
-          resolve(res);
-        }
-      });
-    });
-  }
-  throw new Error('RPC relay not available');
-}
-
-/**
- * Deploys the contract to the local EVM if not already deployed
- */
-export async function ensureContractDeployed(): Promise<string> {
-  const provider = await getActiveProvider();
-  const { abi, bytecode } = loadArtifact();
-  if (!abi || !bytecode) {
-    return activeContractAddress;
-  }
-
-  try {
-    if (inProcessBrowserProvider) {
-      adminSigner = await inProcessBrowserProvider.getSigner(0);
-      const adminAddress = await adminSigner.getAddress();
-      
-      const factory = new ethers.ContractFactory(abi, bytecode, adminSigner);
-      const deployed = await factory.deploy(adminAddress);
-      await deployed.waitForDeployment();
-      
-      activeContractAddress = await deployed.getAddress();
-      console.log(`[Blockchain Service] AgriTraceSupplyChain initialized on EVM at: ${activeContractAddress}`);
-      return activeContractAddress;
-    }
-  } catch (err: any) {
-    console.warn('[Blockchain Service] Contract deploy check notice:', err?.message);
-  }
-
-  return activeContractAddress;
-}
-
-/**
- * Returns a read-only contract instance connected via Node.js
+ * Returns a read-only contract instance connected via Sepolia Node.js provider
  */
 export async function getBackendContract(): Promise<Contract | null> {
   const abi = getContractAbi();
-  if (!abi) return null;
+  const address = getContractAddress();
+  if (!abi || !isValidAddress(address)) return null;
 
   try {
-    const provider = await getActiveProvider();
-    const address = getContractAddress();
+    const provider = getActiveProvider();
     return new Contract(address, abi, provider);
   } catch (err) {
-    console.warn('[Blockchain Service] Provider init notice:', err);
+    console.warn('[Blockchain Service] Contract init notice:', err);
     return null;
   }
 }
@@ -152,7 +153,7 @@ export function stringToBytes32(batchId: string): string {
 }
 
 /**
- * Role hash mappings
+ * OpenZeppelin AccessControl role hash mappings
  */
 export const ROLE_HASHES: Record<string, string> = {
   FARMER: ethers.keccak256(ethers.toUtf8Bytes('FARMER_ROLE')),
@@ -162,11 +163,11 @@ export const ROLE_HASHES: Record<string, string> = {
 };
 
 /**
- * Checks if an account has a given role on-chain
+ * Checks if an account holds a given role on the Sepolia smart contract
  */
 export async function checkRoleOnChain(accountAddress: string, roleName: string): Promise<boolean> {
   const contract = await getBackendContract();
-  if (!contract) return true; // optimistic if offline
+  if (!contract) return true; // optimistic if contract not yet configured
 
   const normalized = roleName.toUpperCase().replace('_ROLE', '');
   const roleHash = ROLE_HASHES[normalized] || ROLE_HASHES.FARMER;
@@ -180,40 +181,7 @@ export async function checkRoleOnChain(accountAddress: string, roleName: string)
 }
 
 /**
- * Grants an on-chain role using the admin signer
- */
-export async function grantRoleOnChain(accountAddress: string, roleName: string): Promise<{ success: boolean; txHash?: string; error?: string }> {
-  try {
-    const { abi } = loadArtifact();
-    if (!adminSigner || !abi) {
-      await ensureContractDeployed();
-    }
-    if (!adminSigner) {
-      return { success: false, error: 'Admin signer is not available on this provider.' };
-    }
-
-    const normalized = roleName.toUpperCase().replace('_ROLE', '');
-    const roleHash = ROLE_HASHES[normalized];
-    if (!roleHash) {
-      return { success: false, error: `Unknown role: ${roleName}` };
-    }
-
-    const contract = new Contract(activeContractAddress, abi, adminSigner);
-    const tx = await contract.grantRole(roleHash, accountAddress);
-    const receipt = await tx.wait(1);
-
-    return {
-      success: true,
-      txHash: receipt.hash,
-    };
-  } catch (err: any) {
-    console.error(`[Blockchain Service] grantRole failed:`, err);
-    return { success: false, error: err?.message || 'Failed to grant on-chain role.' };
-  }
-}
-
-/**
- * Fetches authoritative batch data from smart contract
+ * Fetches authoritative batch data from Ethereum Sepolia smart contract
  */
 export async function getOnChainBatch(batchId: string) {
   const contract = await getBackendContract();
@@ -233,21 +201,19 @@ export async function getOnChainBatch(batchId: string) {
       originHash: raw.originHash,
       currentOwner: raw.currentOwner,
       farmer: raw.farmer,
-      distributor: raw.distributor,
-      retailer: raw.retailer,
+      designatedRecipient: raw.designatedRecipient,
       status: Number(raw.status),
-      lastPricePerKg: raw.lastPricePerKg.toString(),
       createdAt: Number(raw.createdAt),
       lastUpdatedAt: Number(raw.lastUpdatedAt),
     };
   } catch (err: any) {
-    console.warn(`[Blockchain Service] getOnChainBatch failed for ${batchId}:`, err?.message);
+    console.warn(`[Blockchain Service] getOnChainBatch error for ${batchId}:`, err?.message);
     return null;
   }
 }
 
 /**
- * Fetches on-chain price history
+ * Fetches on-chain price history from Ethereum Sepolia smart contract
  */
 export async function getOnChainPriceHistory(batchId: string) {
   const contract = await getBackendContract();
@@ -259,17 +225,17 @@ export async function getOnChainPriceHistory(batchId: string) {
     return rawList.map((item: any) => ({
       pricePerKg: item.pricePerKg.toString(),
       stage: Number(item.stage),
-      updatedBy: item.updatedBy,
+      setBy: item.setBy || item.updatedBy || '',
       timestamp: Number(item.timestamp),
     }));
   } catch (err: any) {
-    console.warn(`[Blockchain Service] getOnChainPriceHistory failed for ${batchId}:`, err?.message);
+    console.warn(`[Blockchain Service] getOnChainPriceHistory error for ${batchId}:`, err?.message);
     return [];
   }
 }
 
 /**
- * Fetches on-chain provenance records
+ * Fetches on-chain provenance records from Ethereum Sepolia smart contract
  */
 export async function getOnChainProvenanceHistory(batchId: string) {
   const contract = await getBackendContract();
@@ -289,38 +255,52 @@ export async function getOnChainProvenanceHistory(batchId: string) {
       timestamp: Number(item.timestamp),
     }));
   } catch (err: any) {
-    console.warn(`[Blockchain Service] getOnChainProvenanceHistory failed for ${batchId}:`, err?.message);
+    console.warn(`[Blockchain Service] getOnChainProvenanceHistory error for ${batchId}:`, err?.message);
     return [];
   }
 }
 
 /**
- * Verifies if a given MongoDB product matches the authoritative on-chain contract state
+ * Verifies if a given MongoDB product matches the authoritative on-chain contract state on Sepolia
  */
 export async function verifyProductAgainstBlockchain(product: any) {
+  const contractAddress = getContractAddress();
+  if (!isContractConfigured()) {
+    return {
+      isVerified: false,
+      reason: 'Awaiting Sepolia contract deployment. Please deploy the contract to Sepolia and supply the address.',
+      contractAddress: null,
+      onChain: null
+    };
+  }
+
   if (!product || !product.batchId) {
-    return { isVerified: false, reason: 'Missing product or batchId' };
+    return { isVerified: false, reason: 'Missing product record or batchId' };
   }
 
   const onChain = await getOnChainBatch(product.batchId);
   if (!onChain) {
     return {
       isVerified: false,
-      reason: 'Batch not found on smart contract ledger',
+      reason: 'Batch was not found on the Ethereum Sepolia smart contract ledger',
       onChain: null,
+      contractAddress,
     };
   }
 
-  // Authoritative validation
+  // Authoritative validation against smart contract
   const mismatches: string[] = [];
-  if (onChain.cropName.toLowerCase() !== (product.cropName || product.name || '').toLowerCase()) {
-    mismatches.push(`Crop name mismatch: on-chain "${onChain.cropName}" vs DB "${product.cropName || product.name}"`);
+  const dbCropName = (product.cropName || product.name || '').toLowerCase();
+  if (onChain.cropName.toLowerCase() !== dbCropName) {
+    mismatches.push(`Crop name mismatch: on-chain "${onChain.cropName}" vs database "${product.cropName || product.name}"`);
   }
 
   return {
     isVerified: mismatches.length === 0,
     mismatches,
     onChain,
-    contractAddress: getContractAddress(),
+    network: 'Ethereum Sepolia',
+    chainId: SEPOLIA_CHAIN_ID,
+    contractAddress,
   };
 }

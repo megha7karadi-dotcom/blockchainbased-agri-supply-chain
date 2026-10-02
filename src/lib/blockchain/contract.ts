@@ -8,9 +8,20 @@ import {
   ContractTransactionReceipt
 } from 'ethers';
 import { AGRITRACE_ABI } from './abi';
-import { getContractAddress, DEFAULT_RPC_URL, getRpcUrl } from './config';
-export { getContractAddress, getRpcUrl };
-import { getBrowserProvider, isMetaMaskAvailable } from './wallet';
+import { 
+  getContractAddress, 
+  DEFAULT_RPC_URL, 
+  getRpcUrl, 
+  isContractConfigured, 
+  SEPOLIA_CHAIN_ID 
+} from './config';
+export { getContractAddress, getRpcUrl, isContractConfigured };
+import { 
+  getBrowserProvider, 
+  isMetaMaskAvailable, 
+  isSepoliaNetwork, 
+  switchToSepoliaNetwork 
+} from './wallet';
 import { 
   OnChainProduceBatch, 
   OnChainPriceRecord, 
@@ -70,9 +81,25 @@ export function generateOriginHash(
 export function parseContractError(err: any): string {
   if (!err) return 'Unknown blockchain error occurred.';
 
+  // Check user rejection
+  if (
+    err.code === 4001 || 
+    err.code === 'ACTION_REJECTED' || 
+    err.message?.includes('user rejected') || 
+    err.message?.includes('ACTION_REJECTED')
+  ) {
+    return 'Transaction was rejected by the user in MetaMask.';
+  }
+
   // Check if ethers captured the custom error name directly
   const customErrorName = err.revert?.name || err.shortMessage || '';
-  const errorData = err.data || err.error?.data || err.info?.error?.data;
+  const errorData = 
+    err.data || 
+    err.error?.data || 
+    err.info?.error?.data || 
+    err.payload?.error?.data ||
+    (typeof err.error === 'string' && err.error.startsWith('0x') ? err.error : null) ||
+    (typeof err.data === 'string' && err.data.startsWith('0x') ? err.data : null);
 
   let parsed: any = null;
 
@@ -123,6 +150,7 @@ export function parseContractError(err: any): string {
       return 'Validation Rejection: Origin certificate hash is missing.';
     case 'BatchNotFound':
       return 'Blockchain Lookup Error: The specified batch does not exist on the smart contract ledger.';
+    case 'NotCurrentOwner':
     case 'NotBatchOwner':
       return 'Custody Rejection: Only the current authenticated on-chain custodian of this batch can execute this transfer or update.';
     case 'InvalidRecipient':
@@ -143,8 +171,9 @@ export function parseContractError(err: any): string {
     }
     case 'BatchAlreadySold':
       return 'Immutability Lock: This batch has already been marked as SOLD to the consumer and cannot receive further transfers or price updates.';
+    case 'NotDesignatedRecipient':
     case 'UnauthorizedRetailer':
-      return 'Access Denied: Only the specific designated retailer specified during transit dispatch can receive this shipment.';
+      return 'Access Denied: Only the specific designated recipient retailer specified during transit dispatch can receive this shipment.';
     default:
       if (err.reason) return `Blockchain Revert: ${err.reason}`;
       if (err.message) {
@@ -158,12 +187,15 @@ export function parseContractError(err: any): string {
 }
 
 /**
- * Returns a read-only ethers Contract instance
+ * Returns a read-only ethers Contract instance connected to Ethereum Sepolia
  */
 export function getReadOnlyContract(customRpcUrl?: string): Contract {
   const address = getContractAddress();
-  let provider: ethers.Provider;
+  if (!isContractConfigured()) {
+    throw new Error('Awaiting Sepolia contract deployment. Please deploy the AgriTraceSupplyChain contract to Sepolia and supply its address in the configuration.');
+  }
 
+  let provider: ethers.Provider;
   if (isMetaMaskAvailable()) {
     provider = getBrowserProvider()!;
   } else {
@@ -174,55 +206,61 @@ export function getReadOnlyContract(customRpcUrl?: string): Contract {
 }
 
 /**
- * Returns an ethers Contract instance connected to the active MetaMask signer,
- * or falls back to local RPC provider if running in an environment without MetaMask.
+ * Returns an ethers Contract instance connected to the active MetaMask signer on Ethereum Sepolia.
+ * Users must authorize and sign transactions via MetaMask; never exposes or uses server private keys.
  */
 export async function getContractWithSigner(roleHint?: 'farmer' | 'distributor' | 'retailer' | 'admin'): Promise<{
   contract: Contract;
   signerAddress: string;
 }> {
-  let signer: any = null;
-  let signerAddress: string = '';
-
-  if (isMetaMaskAvailable()) {
-    try {
-      const browserProvider = getBrowserProvider()!;
-      signer = await browserProvider.getSigner();
-      signerAddress = await signer.getAddress();
-    } catch {
-      // User may not have connected MetaMask yet; fallback to RPC provider below
-    }
+  const contractAddress = getContractAddress();
+  if (!isContractConfigured()) {
+    throw new Error(
+      'Awaiting Sepolia contract deployment. Please deploy the AgriTraceSupplyChain contract to Sepolia and provide its address in the Blockchain Status bar or environment.'
+    );
   }
 
-  if (!signer) {
+  if (!isMetaMaskAvailable()) {
+    throw new Error(
+      'MetaMask was not detected in your browser. MetaMask is required to sign authoritative transactions on Ethereum Sepolia.'
+    );
+  }
+
+  // Request account authorization from user if not already granted
+  try {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+  } catch (authErr: any) {
+    if (authErr.code === 4001 || authErr?.message?.includes('rejected')) {
+      throw new Error('MetaMask connection was rejected by the user. Please connect your wallet to continue.');
+    }
+    throw new Error(`MetaMask account authorization error: ${authErr.message}`);
+  }
+
+  const browserProvider = getBrowserProvider()!;
+  const network = await browserProvider.getNetwork();
+
+  // Validate network is Sepolia (Chain ID 11155111)
+  if (!isSepoliaNetwork(network.chainId)) {
     try {
-      const rpcUrl = getRpcUrl();
-      const rpcProvider = new JsonRpcProvider(rpcUrl);
-      const accountIndex = roleHint === 'admin' ? 0 : roleHint === 'distributor' ? 2 : roleHint === 'retailer' ? 3 : 1;
-      signer = await rpcProvider.getSigner(accountIndex);
-      signerAddress = await signer.getAddress();
-    } catch (err) {
-      console.warn('[Blockchain] RPC Signer init fallback notice:', err);
+      await switchToSepoliaNetwork();
+    } catch (switchErr: any) {
       throw new Error(
-        'No active blockchain signer available. Please connect MetaMask or ensure local blockchain node is reachable.'
+        `MetaMask is currently connected to Chain ID ${network.chainId}. Please switch your MetaMask network to Ethereum Sepolia (Chain ID 11155111) to sign transactions.`
       );
     }
   }
 
-  // Ensure role is granted on-chain for seamless state validation
-  if (roleHint && roleHint !== 'admin') {
-    try {
-      await fetch('/api/blockchain/grant-role', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accountAddress: signerAddress, role: roleHint })
-      });
-    } catch {
-      // optimistic
-    }
+  // Re-verify network is Sepolia after network switch
+  const confirmedNetwork = await browserProvider.getNetwork();
+  if (!isSepoliaNetwork(confirmedNetwork.chainId)) {
+    throw new Error(
+      `MetaMask is currently connected to Chain ID ${confirmedNetwork.chainId}. Please switch your MetaMask network to Ethereum Sepolia (Chain ID 11155111) to sign transactions.`
+    );
   }
 
-  const contractAddress = getContractAddress();
+  const signer = await browserProvider.getSigner();
+  const signerAddress = await signer.getAddress();
+
   const contract = new Contract(contractAddress, AGRITRACE_ABI, signer);
   return { contract, signerAddress };
 }
@@ -232,10 +270,12 @@ export async function getContractWithSigner(roleHint?: 'farmer' | 'distributor' 
  */
 export async function executeBlockchainTransaction(
   actionName: string,
-  txPromise: Promise<ContractTransactionResponse>
+  txPromise: Promise<ContractTransactionResponse>,
+  onProgress?: (status: string) => void
 ): Promise<BlockchainTransactionResult> {
   let tx: ContractTransactionResponse;
   try {
+    onProgress?.('Awaiting signature in MetaMask...');
     tx = await txPromise;
   } catch (err: any) {
     console.error(`Blockchain call error in ${actionName}:`, err);
@@ -243,6 +283,7 @@ export async function executeBlockchainTransaction(
   }
 
   console.log(`[Blockchain] Tx sent (${actionName}): ${tx.hash}. Waiting for block confirmation...`);
+  onProgress?.(`Transaction broadcast (Tx: ${tx.hash.slice(0, 10)}...). Waiting for Sepolia block confirmation...`);
 
   let receipt: ContractTransactionReceipt | null;
   try {
@@ -256,6 +297,7 @@ export async function executeBlockchainTransaction(
   }
 
   console.log(`[Blockchain] Confirmed in block #${receipt.blockNumber}! TxHash: ${receipt.hash}`);
+  onProgress?.(`Confirmed in Sepolia block #${receipt.blockNumber}!`);
 
   return {
     txHash: receipt.hash,
@@ -280,24 +322,53 @@ export async function registerProduceOnChain(params: {
   qualityGrade: OnChainQualityGrade;
   initialPricePerKg: number;
   originHash: string;
+  onProgress?: (status: string) => void;
 }): Promise<BlockchainTransactionResult> {
-  const { contract } = await getContractWithSigner('farmer');
+  params.onProgress?.('Connecting to MetaMask and validating Sepolia network...');
+  const { contract, signerAddress } = await getContractWithSigner('farmer');
+
+  // Verify that the connected account has the FARMER_ROLE
+  params.onProgress?.('Verifying farmer authorization on smart contract...');
+  try {
+    const isFarmer = await contract.hasRole(ROLES.FARMER_ROLE, signerAddress);
+    if (!isFarmer) {
+      throw new Error(
+        `Access Denied: Connected MetaMask account (${signerAddress}) does not hold the FARMER_ROLE on this smart contract. Please switch to an authorized farmer account in MetaMask.`
+      );
+    }
+  } catch (roleErr: any) {
+    if (roleErr.message?.includes('Access Denied')) {
+      throw roleErr;
+    }
+    console.warn('[registerProduceOnChain] Pre-flight role check notice:', roleErr?.message);
+  }
+
   const bytes32BatchId = stringToBatchId(params.batchId);
   const bytes32OriginHash = params.originHash.startsWith('0x') && params.originHash.length === 66
     ? params.originHash
     : ethers.keccak256(ethers.toUtf8Bytes(params.originHash));
 
-  return executeBlockchainTransaction(
+  const qtyBigInt = BigInt(Math.max(1, Math.round(params.quantityKg)));
+  const priceBigInt = BigInt(Math.max(1, Math.round(params.initialPricePerKg)));
+
+  params.onProgress?.('Please confirm the produce registration in MetaMask...');
+  const txResult = await executeBlockchainTransaction(
     'registerProduce',
     contract.registerProduce(
       bytes32BatchId,
       params.cropName.trim(),
-      BigInt(Math.round(params.quantityKg)),
+      qtyBigInt,
       params.qualityGrade,
-      BigInt(Math.round(params.initialPricePerKg)),
+      priceBigInt,
       bytes32OriginHash
-    )
+    ),
+    params.onProgress
   );
+
+  return {
+    ...txResult,
+    signerAddress,
+  };
 }
 
 /**
@@ -429,10 +500,8 @@ export async function getBatchFromChain(batchId: string): Promise<OnChainProduce
       originHash: raw.originHash,
       currentOwner: raw.currentOwner,
       farmer: raw.farmer,
-      distributor: raw.distributor,
-      retailer: raw.retailer,
+      designatedRecipient: raw.designatedRecipient,
       status: Number(raw.status),
-      lastPricePerKg: raw.lastPricePerKg,
       createdAt: raw.createdAt,
       lastUpdatedAt: raw.lastUpdatedAt,
     };

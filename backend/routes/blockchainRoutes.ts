@@ -1,11 +1,15 @@
 import express, { Request, Response } from 'express';
 import { 
   getContractAddress, 
+  setActiveContractAddress,
+  isContractConfigured,
   getRpcUrl, 
   getOnChainBatch, 
   getOnChainPriceHistory, 
   getOnChainProvenanceHistory,
-  verifyProductAgainstBlockchain
+  verifyProductAgainstBlockchain,
+  checkRoleOnChain,
+  SEPOLIA_CHAIN_ID
 } from '../services/blockchainService';
 import { Product } from '../models/Product';
 import mongoose from 'mongoose';
@@ -14,12 +18,19 @@ const router = express.Router();
 
 /**
  * GET /api/blockchain/info
- * Returns contract metadata and network configuration
+ * Returns contract metadata, chain ID, and network configuration
  */
 router.get('/info', (req: Request, res: Response) => {
+  const configured = isContractConfigured();
+  const address = getContractAddress();
+
   res.json({
     success: true,
-    contractAddress: getContractAddress(),
+    network: 'Ethereum Sepolia Testnet',
+    chainId: SEPOLIA_CHAIN_ID,
+    contractAddress: address || null,
+    isConfigured: configured,
+    status: configured ? 'Connected to Sepolia Contract' : 'Awaiting Sepolia contract deployment',
     rpcUrl: getRpcUrl(),
     standards: 'Solidity ^0.8.20 + OpenZeppelin AccessControl',
     immutableRules: [
@@ -33,12 +44,45 @@ router.get('/info', (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/blockchain/contract-address
+ * Sets the active contract address across frontend and backend after Sepolia deployment
+ */
+router.post('/contract-address', (req: Request, res: Response) => {
+  try {
+    const { contractAddress } = req.body;
+    if (!contractAddress) {
+      return res.status(400).json({ success: false, error: 'contractAddress is required' });
+    }
+
+    setActiveContractAddress(contractAddress);
+    return res.json({
+      success: true,
+      contractAddress: getContractAddress(),
+      network: 'Ethereum Sepolia',
+      chainId: SEPOLIA_CHAIN_ID,
+      message: 'Contract address successfully updated and synchronized across backend and frontend.'
+    });
+  } catch (err: any) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * GET /api/blockchain/batch/:batchId
- * Authoritative on-chain lookup for a produce batch
+ * Authoritative on-chain lookup for a produce batch from Sepolia
  */
 router.get('/batch/:batchId', async (req: Request, res: Response) => {
   try {
     const { batchId } = req.params;
+
+    if (!isContractConfigured()) {
+      return res.status(503).json({
+        success: false,
+        error: 'Awaiting Sepolia contract deployment. Please deploy the contract to Sepolia and supply its address.',
+        contractAddress: null,
+      });
+    }
+
     const batch = await getOnChainBatch(batchId);
 
     if (!batch) {
@@ -71,7 +115,7 @@ router.get('/batch/:batchId', async (req: Request, res: Response) => {
 
 /**
  * GET /api/blockchain/verify/:batchId
- * Verifies MongoDB record against authoritative smart contract
+ * Verifies MongoDB record against authoritative Sepolia smart contract
  */
 router.get('/verify/:batchId', async (req: Request, res: Response) => {
   try {
@@ -101,51 +145,6 @@ router.get('/verify/:batchId', async (req: Request, res: Response) => {
 });
 
 /**
- * POST /api/blockchain/rpc
- * JSON-RPC relay endpoint for in-process EVM or external node
- */
-router.post('/rpc', async (req: Request, res: Response) => {
-  try {
-    const { handleRpcRequest } = await import('../services/blockchainService');
-    const result = await handleRpcRequest(req.body);
-    res.json(result);
-  } catch (err: any) {
-    res.status(500).json({
-      jsonrpc: '2.0',
-      id: req.body?.id || 1,
-      error: { code: -32603, message: err.message || 'Internal RPC relay error' }
-    });
-  }
-});
-
-/**
- * POST /api/blockchain/grant-role
- * Authorizes a stakeholder wallet with an on-chain role (FARMER, DISTRIBUTOR, RETAILER)
- */
-router.post('/grant-role', async (req: Request, res: Response) => {
-  try {
-    const { accountAddress, role } = req.body;
-    if (!accountAddress || !role) {
-      return res.status(400).json({ success: false, error: 'accountAddress and role are required.' });
-    }
-
-    const { grantRoleOnChain } = await import('../services/blockchainService');
-    const result = await grantRoleOnChain(accountAddress, role);
-    if (!result.success) {
-      return res.status(400).json(result);
-    }
-
-    return res.json({
-      success: true,
-      message: `Granted on-chain role ${role} to ${accountAddress}`,
-      txHash: result.txHash,
-    });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message || 'Failed to grant role.' });
-  }
-});
-
-/**
  * POST /api/blockchain/check-role
  * Checks if a given wallet address holds a specific role on-chain
  */
@@ -156,7 +155,6 @@ router.post('/check-role', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'accountAddress and role are required.' });
     }
 
-    const { checkRoleOnChain } = await import('../services/blockchainService');
     const hasRole = await checkRoleOnChain(accountAddress, role);
 
     return res.json({
