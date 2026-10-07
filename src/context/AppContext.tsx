@@ -92,7 +92,7 @@ interface AppContextType {
   // Real-world role lifecycle actions connected to backend API / MongoDB
   farmerTransferToDistributor: (batchId: string, distributorName: string, distributorId: string, quantity: number, agreedPrice: number) => Promise<ProduceBatch | null>;
   distributorReceiveBatch: (batchId: string, notes?: string) => Promise<ProduceBatch | null>;
-  distributorSetPrice: (batchId: string, purchasePrice: number, marginPercentage: number, sellingPrice: number) => Promise<ProduceBatch | null>;
+  distributorSetPrice: (batchId: string, purchasePrice: number, marginPercentage: number, sellingPrice: number, onProgress?: (msg: string) => void) => Promise<ProduceBatch | null>;
   distributorTransferToRetailer: (batchId: string, retailerName: string, retailerId: string, quantity: number, sellingPrice: number) => Promise<ProduceBatch | null>;
   retailerReceiveBatch: (batchId: string) => Promise<ProduceBatch | null>;
   retailerSetFinalPrice: (batchId: string, purchasePrice: number, retailMargin: number, finalSellingPrice: number) => Promise<ProduceBatch | null>;
@@ -1573,9 +1573,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     batchId: string, 
     purchasePrice: number, 
     marginPercentage: number, 
-    sellingPrice: number
+    sellingPrice: number,
+    onProgress?: (msg: string) => void
   ): Promise<ProduceBatch | null> => {
-    const updated = await productService.distributorUpdatePrice(batchId, purchasePrice, marginPercentage, sellingPrice);
+    const updated = await productService.distributorUpdatePrice(batchId, purchasePrice, marginPercentage, sellingPrice, onProgress);
     if (updated) {
       setBatches(prev => [updated, ...prev.filter(b => b.id !== updated.id && b.batchId !== updated.batchId)]);
       return updated;

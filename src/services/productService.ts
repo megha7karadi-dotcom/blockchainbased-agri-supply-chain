@@ -11,7 +11,9 @@ import {
   generateOriginHash,
   getContractAddress,
   stringToBatchId,
-  getBatchFromChain
+  resolveBatchIdToBytes32,
+  getBatchFromChain,
+  getPriceHistoryFromChain
 } from '../lib/blockchain/contract';
 import { OnChainQualityGrade } from '../lib/blockchain/types';
 import { getStakeholderWallet } from '../lib/blockchain/config';
@@ -645,12 +647,22 @@ class ProductService {
     batchId: string, 
     purchasePrice: number, 
     marginPercentage: number, 
-    sellingPrice: number
+    sellingPrice: number,
+    onProgress?: (msg: string) => void
   ): Promise<ProduceBatch | null> {
     // 1. Authoritative Smart Contract State Execution & Validation Layer
     console.log(`[AgriTrace] Updating distributor price on-chain for batch ${batchId} to ₹${sellingPrice}/kg...`);
-    const onChainTx = await updateDistributorPriceOnChain(batchId, sellingPrice);
+    const onChainTx = await updateDistributorPriceOnChain(batchId, sellingPrice, onProgress);
     console.log(`[AgriTrace] Price updated on-chain in block #${onChainTx.blockNumber}, txHash: ${onChainTx.txHash}`);
+
+    onProgress?.('Fetching authoritative price history from Sepolia smart contract...');
+    let onChainPriceHistory: any[] = [];
+    try {
+      const resolvedBytes32 = await resolveBatchIdToBytes32(batchId);
+      onChainPriceHistory = await getPriceHistoryFromChain(resolvedBytes32);
+    } catch (historyErr) {
+      console.warn('[distributorUpdatePrice] Price history fetch notice:', historyErr);
+    }
 
     // 2. Synchronize to MongoDB Atlas
     try {
@@ -665,7 +677,8 @@ class ProductService {
           marginPercentage,
           sellingPrice,
           txHash: onChainTx.txHash,
-          blockNumber: onChainTx.blockNumber
+          blockNumber: onChainTx.blockNumber,
+          signerAddress: onChainTx.signerAddress
         })
       });
 
@@ -688,12 +701,23 @@ class ProductService {
       b.pricing.farmerPrice = purchasePrice;
       b.pricing.distributorMargin = marginPercentage;
       b.pricing.finalConsumerPrice = sellingPrice;
+      if (!b.blockchain) {
+        b.blockchain = {
+          contractAddress: getContractAddress(),
+          blockNumber: onChainTx.blockNumber,
+          txHash: onChainTx.txHash
+        };
+      } else {
+        b.blockchain.blockNumber = onChainTx.blockNumber;
+        b.blockchain.txHash = onChainTx.txHash;
+      }
+
       b.timeline.push({
         id: `tl-${Date.now()}`,
         stage: 'Wholesale',
-        title: 'Distributor Pricing Configured',
-        description: `Base purchase: ₹${purchasePrice}/${b.unit || 'kg'}, Margin: ${marginPercentage}%, Wholesale selling price: ₹${sellingPrice}/${b.unit || 'kg'}. Logged to blockchain price history.`,
-        actorName: b.currentCustodianName || 'Distributor',
+        title: 'Wholesale Price Configured on Smart Contract',
+        description: `Base purchase: ₹${purchasePrice}/${b.unit || 'kg'}, Margin: ${marginPercentage}%, Wholesale selling price: ₹${sellingPrice}/${b.unit || 'kg'}. Authoritatively committed on Sepolia in block #${onChainTx.blockNumber} (Tx: ${onChainTx.txHash.slice(0, 10)}...). Total confirmed price updates on-chain: ${onChainPriceHistory.length}.`,
+        actorName: onChainTx.signerAddress ? `Distributor (${onChainTx.signerAddress.slice(0, 8)}...${onChainTx.signerAddress.slice(-6)})` : (b.currentCustodianName || 'Distributor'),
         actorRole: 'distributor',
         location: 'Distribution Hub',
         txHash: onChainTx.txHash,

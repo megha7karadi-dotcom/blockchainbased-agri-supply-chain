@@ -51,7 +51,8 @@ export const ROLE_NAMES: Record<string, string> = {
 };
 
 /**
- * Converts a string batch identifier into a deterministic bytes32 hex string
+ * Converts a string batch identifier into a deterministic bytes32 hex string.
+ * Supports direct 66-character 0x hex, or keccak256 hash of human-readable batch code.
  */
 export function stringToBatchId(batchId: string): string {
   if (!batchId) throw new Error('Batch ID cannot be empty');
@@ -60,6 +61,59 @@ export function stringToBatchId(batchId: string): string {
     return trimmed;
   }
   return ethers.keccak256(ethers.toUtf8Bytes(trimmed));
+}
+
+/**
+ * Robustly resolves a human-readable or hexadecimal batch ID against the deployed
+ * Sepolia smart contract to find the exact existing on-chain bytes32 batch ID.
+ */
+export async function resolveBatchIdToBytes32(batchIdInput: string): Promise<string> {
+  if (!batchIdInput) throw new Error('Batch ID cannot be empty');
+  const trimmed = batchIdInput.trim();
+
+  // Try read-only contract check
+  try {
+    const contract = getReadOnlyContract();
+    
+    // 1. If direct 66-char bytes32 hex
+    if (trimmed.startsWith('0x') && trimmed.length === 66) {
+      const exists = await contract.batchExists(trimmed);
+      if (exists) return trimmed;
+    }
+
+    // 2. keccak256 hash of human-readable string (canonical AgriTrace on-chain format)
+    const keccak = ethers.keccak256(ethers.toUtf8Bytes(trimmed));
+    const keccakExists = await contract.batchExists(keccak);
+    if (keccakExists) return keccak;
+
+    // 3. ethers.encodeBytes32String format fallback
+    try {
+      const encoded = ethers.encodeBytes32String(trimmed);
+      const encodedExists = await contract.batchExists(encoded);
+      if (encodedExists) return encoded;
+    } catch {
+      // not 31-byte string
+    }
+
+    // 4. If all direct existence checks returned false, scan on-chain batch index
+    const total = await contract.getTotalBatches();
+    const count = Number(total);
+    for (let i = 0; i < count; i++) {
+      const onChainId = await contract.getBatchIdAtIndex(i);
+      const b = await contract.getBatch(onChainId);
+      if (
+        b.cropName?.toLowerCase() === trimmed.toLowerCase() ||
+        onChainId.toLowerCase() === trimmed.toLowerCase()
+      ) {
+        return onChainId;
+      }
+    }
+  } catch (err) {
+    console.warn('[resolveBatchIdToBytes32] On-chain lookup notice:', err);
+  }
+
+  // Fallback to canonical stringToBatchId
+  return stringToBatchId(trimmed);
 }
 
 /**
@@ -73,6 +127,35 @@ export function generateOriginHash(
 ): string {
   const payload = `${location.trim()}|${state.trim()}|${harvestDate.trim()}|${farmerIdentifier.trim()}`;
   return ethers.keccak256(ethers.toUtf8Bytes(payload));
+}
+
+/**
+ * Helper to recursively extract bytes/hex revert data from nested error objects
+ * emitted by ethers v6, browser MetaMask RPC, or Web3 providers.
+ */
+function extractHexErrorData(err: any): string | null {
+  if (!err) return null;
+  const queue = [err];
+  const seen = new Set();
+  while (queue.length > 0) {
+    const cur = queue.shift();
+    if (!cur || typeof cur !== 'object') continue;
+    if (seen.has(cur)) continue;
+    seen.add(cur);
+
+    if (typeof cur.data === 'string' && cur.data.startsWith('0x') && cur.data.length >= 10) {
+      return cur.data;
+    }
+    if (typeof cur.error === 'string' && cur.error.startsWith('0x') && cur.error.length >= 10) {
+      return cur.error;
+    }
+    for (const key of Object.keys(cur)) {
+      if (cur[key] && typeof cur[key] === 'object') {
+        queue.push(cur[key]);
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -92,18 +175,12 @@ export function parseContractError(err: any): string {
   }
 
   // Check if ethers captured the custom error name directly
-  const customErrorName = err.revert?.name || err.shortMessage || '';
-  const errorData = 
-    err.data || 
-    err.error?.data || 
-    err.info?.error?.data || 
-    err.payload?.error?.data ||
-    (typeof err.error === 'string' && err.error.startsWith('0x') ? err.error : null) ||
-    (typeof err.data === 'string' && err.data.startsWith('0x') ? err.data : null);
+  const customErrorName = err.revert?.name || '';
+  const errorData = extractHexErrorData(err);
 
   let parsed: any = null;
 
-  if (errorData && typeof errorData === 'string' && errorData.startsWith('0x')) {
+  if (errorData) {
     try {
       parsed = contractInterface.parseError(errorData);
     } catch {
@@ -392,15 +469,71 @@ export async function transferToDistributorOnChain(
  */
 export async function updateDistributorPriceOnChain(
   batchId: string,
-  newPricePerKg: number
+  newPricePerKg: number,
+  onProgress?: (msg: string) => void
 ): Promise<BlockchainTransactionResult> {
-  const { contract } = await getContractWithSigner('distributor');
-  const bytes32BatchId = stringToBatchId(batchId);
+  onProgress?.('Connecting to MetaMask and validating Sepolia network...');
+  const { contract, signerAddress } = await getContractWithSigner('distributor');
 
-  return executeBlockchainTransaction(
+  console.log(`[updateDistributorPriceOnChain] Active MetaMask Signer: ${signerAddress}`);
+  onProgress?.(`Connected wallet: ${signerAddress.slice(0, 8)}...${signerAddress.slice(-6)}. Checking DISTRIBUTOR_ROLE...`);
+
+  // Verify connected signer holds DISTRIBUTOR_ROLE on-chain
+  try {
+    const isDistributor = await contract.hasRole(ROLES.DISTRIBUTOR_ROLE, signerAddress);
+    if (!isDistributor) {
+      throw new Error(
+        `Access Denied: Connected MetaMask account (${signerAddress}) does not hold DISTRIBUTOR_ROLE on the smart contract. Please switch to an authorized distributor account (e.g. Account 2) in MetaMask.`
+      );
+    }
+  } catch (roleErr: any) {
+    if (roleErr.message?.includes('Access Denied')) {
+      throw roleErr;
+    }
+    console.warn('[updateDistributorPriceOnChain] Pre-flight role check notice:', roleErr?.message);
+  }
+
+  // Resolve batchId to exact on-chain bytes32
+  onProgress?.('Verifying produce batch on Sepolia smart contract...');
+  const bytes32BatchId = await resolveBatchIdToBytes32(batchId);
+  const exists = await contract.batchExists(bytes32BatchId);
+  if (!exists) {
+    throw new Error(
+      `BatchNotFound: The batch "${batchId}" (resolved bytes32: ${bytes32BatchId}) does not exist on the deployed Sepolia smart contract.`
+    );
+  }
+
+  // Check on-chain batch owner
+  try {
+    const onChainBatch = await contract.getBatch(bytes32BatchId);
+    if (onChainBatch.currentOwner.toLowerCase() !== signerAddress.toLowerCase()) {
+      throw new Error(
+        `NotCurrentOwner: Active signer (${signerAddress}) is not the current custodian/owner of batch (${bytes32BatchId}). On-chain owner is: ${onChainBatch.currentOwner}.`
+      );
+    }
+    if (Number(onChainBatch.status) !== 2 /* WITH_DISTRIBUTOR */) {
+      throw new Error(
+        `InvalidLifecycleTransition: Batch status is stage ${onChainBatch.status}. Distributor can only set wholesale price when batch status is WITH_DISTRIBUTOR (stage 2).`
+      );
+    }
+  } catch (ownerErr: any) {
+    if (ownerErr.message?.includes('NotCurrentOwner') || ownerErr.message?.includes('InvalidLifecycleTransition')) {
+      throw ownerErr;
+    }
+    console.warn('[updateDistributorPriceOnChain] Pre-flight owner check notice:', ownerErr?.message);
+  }
+
+  onProgress?.(`Please confirm the wholesale price update (₹${newPricePerKg}/kg) in MetaMask...`);
+  const txResult = await executeBlockchainTransaction(
     'updateDistributorPrice',
-    contract.updateDistributorPrice(bytes32BatchId, BigInt(Math.round(newPricePerKg)))
+    contract.updateDistributorPrice(bytes32BatchId, BigInt(Math.round(newPricePerKg))),
+    onProgress
   );
+
+  return {
+    ...txResult,
+    signerAddress,
+  };
 }
 
 /**
