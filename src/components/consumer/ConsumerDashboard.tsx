@@ -26,7 +26,7 @@ export const ConsumerDashboard: React.FC<{ onOpenQRScanner: () => void }> = ({ o
       b.batchId.toLowerCase().includes(manualBatchId.trim().toLowerCase()) ||
       b.name.toLowerCase().includes(manualBatchId.trim().toLowerCase())
     );
-    navigateToVerification(match ? match.id : 'batch-001');
+    navigateToVerification(match ? match.batchId : 'AGRI-2026-RIC-003');
   };
 
   return (

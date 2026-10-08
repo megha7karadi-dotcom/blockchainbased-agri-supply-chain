@@ -58,9 +58,9 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
     );
 
     if (matched) {
-      navigateToVerification(matched.id);
+      navigateToVerification(matched.batchId || matched.id);
     } else {
-      navigateToVerification('batch-001');
+      navigateToVerification('AGRI-2026-RIC-003');
     }
     setSearchFocused(false);
   };

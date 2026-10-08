@@ -46,9 +46,9 @@ export const LandingPage: React.FC<{ onOpenQRScanner: () => void }> = ({ onOpenQ
         b.batchId.toLowerCase().includes(searchBatchQuery.toLowerCase()) ||
         b.name.toLowerCase().includes(searchBatchQuery.toLowerCase())
       );
-      navigateToVerification(match ? match.id : 'batch-001');
+      navigateToVerification(match ? match.batchId : 'AGRI-2026-RIC-003');
     } else {
-      navigateToVerification('batch-001');
+      navigateToVerification('AGRI-2026-RIC-003');
     }
   };
 

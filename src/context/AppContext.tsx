@@ -93,7 +93,15 @@ interface AppContextType {
   farmerTransferToDistributor: (batchId: string, distributorName: string, distributorId: string, quantity: number, agreedPrice: number) => Promise<ProduceBatch | null>;
   distributorReceiveBatch: (batchId: string, notes?: string) => Promise<ProduceBatch | null>;
   distributorSetPrice: (batchId: string, purchasePrice: number, marginPercentage: number, sellingPrice: number, onProgress?: (msg: string) => void) => Promise<ProduceBatch | null>;
-  distributorTransferToRetailer: (batchId: string, retailerName: string, retailerId: string, quantity: number, sellingPrice: number) => Promise<ProduceBatch | null>;
+  distributorTransferToRetailer: (
+    batchId: string, 
+    retailerName: string, 
+    retailerId: string, 
+    quantity: number, 
+    sellingPrice: number,
+    retailerWalletAddress?: string,
+    onProgress?: (msg: string) => void
+  ) => Promise<ProduceBatch | null>;
   retailerReceiveBatch: (batchId: string) => Promise<ProduceBatch | null>;
   retailerSetFinalPrice: (batchId: string, purchasePrice: number, retailMargin: number, finalSellingPrice: number) => Promise<ProduceBatch | null>;
   retailerSellProduce: (batchId: string, soldQuantity: number, buyerNote?: string) => Promise<ProduceBatch | null>;
@@ -182,7 +190,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [activeTab, setActiveTabState] = useState<string>('landing');
-  const [selectedBatchId, setSelectedBatchId] = useState<string | null>('batch-001');
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>('AGRI-2026-RIC-003');
   const [searchBatchQuery, setSearchBatchQuery] = useState<string>('');
   const [authNotice, setAuthNotice] = useState<string | null>(null);
 
@@ -1589,9 +1597,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     retailerName: string, 
     retailerId: string, 
     quantity: number, 
-    sellingPrice: number
+    sellingPrice: number,
+    retailerWalletAddress?: string,
+    onProgress?: (msg: string) => void
   ): Promise<ProduceBatch | null> => {
-    const updated = await productService.transferToRetailer(batchId, retailerName, retailerId, quantity, sellingPrice);
+    const updated = await productService.transferToRetailer(
+      batchId, 
+      retailerName, 
+      retailerId, 
+      quantity, 
+      sellingPrice,
+      retailerWalletAddress,
+      onProgress
+    );
     if (updated) {
       setBatches(prev => [updated, ...prev.filter(b => b.id !== updated.id && b.batchId !== updated.batchId)]);
       return updated;
@@ -1677,7 +1695,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUsers(INITIAL_USERS);
     setFraudAlerts(INITIAL_FRAUD_ALERTS);
     setNotifications(INITIAL_NOTIFICATIONS);
-    setSelectedBatchId('batch-001');
+    setSelectedBatchId('AGRI-2026-RIC-003');
     try {
       localStorage.removeItem(STORAGE_KEY_BATCHES);
       localStorage.removeItem(STORAGE_KEY_USERS);

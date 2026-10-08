@@ -71,6 +71,7 @@ export interface BlockchainProof {
   tokenId: string; // ERC-721 / ERC-1155 Batch Token ID
   blockNumber: number;
   mintTxHash: string;
+  txHash?: string;
   currentOwnerWallet: string;
   consensusMechanism: string;
   gasUsed: string;
