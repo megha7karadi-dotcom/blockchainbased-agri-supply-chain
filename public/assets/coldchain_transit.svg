@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgCold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f0f9ff" />
+      <stop offset="100%" stop-color="#e0f2fe" />
+    </linearGradient>
+    <linearGradient id="truckBody" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="100%" stop-color="#e2e8f0" />
+    </linearGradient>
+    <linearGradient id="reeferGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <filter id="truckShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#0c4a6e" flood-opacity="0.15" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="600" height="450" fill="url(#bgCold)" rx="24" />
+
+  <!-- Road & Route Waves -->
+  <path d="M-20 380 Q 250 340 620 380" stroke="#cbd5e1" stroke-width="48" fill="none" />
+  <path d="M-20 380 Q 250 340 620 380" stroke="#0284c7" stroke-width="2" stroke-dasharray="12 10" fill="none" opacity="0.6" />
+
+  <!-- IoT Telemetry Wireless Wave Rings -->
+  <g transform="translate(300, 140)">
+    <circle cx="0" cy="0" r="45" stroke="#38bdf8" stroke-width="2" fill="none" opacity="0.8" />
+    <circle cx="0" cy="0" r="75" stroke="#38bdf8" stroke-width="1.5" fill="none" stroke-dasharray="6 4" opacity="0.5" />
+    <circle cx="0" cy="0" r="105" stroke="#38bdf8" stroke-width="1" fill="none" stroke-dasharray="4 6" opacity="0.3" />
+    <!-- Center antenna node -->
+    <circle cx="0" cy="0" r="14" fill="#0284c7" />
+    <circle cx="0" cy="0" r="6" fill="#ffffff" />
+  </g>
+
+  <!-- High-Tech Reefer Logistics Van -->
+  <g transform="translate(110, 180)" filter="url(#truckShadow)">
+    <!-- Reefer Cargo Container -->
+    <rect x="0" y="40" width="260" height="130" rx="10" fill="url(#truckBody)" stroke="#94a3b8" stroke-width="2" />
+    <!-- Cooling Unit on Top of Cargo -->
+    <rect x="20" y="20" width="80" height="20" rx="4" fill="#0284c7" />
+    <line x1="30" y1="30" x2="90" y2="30" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+
+    <!-- Van Cab -->
+    <path d="M260 80 L310 95 L345 125 L345 170 L260 170 Z" fill="#0284c7" />
+    <!-- Cab Window -->
+    <polygon points="275,95 305,105 330,125 275,125" fill="#bae6fd" opacity="0.9" />
+
+    <!-- Wheels with Rims -->
+    <g transform="translate(60, 170)">
+      <circle cx="0" cy="0" r="28" fill="#1e293b" />
+      <circle cx="0" cy="0" r="16" fill="#64748b" />
+      <circle cx="0" cy="0" r="7" fill="#f8fafc" />
+    </g>
+    <g transform="translate(195, 170)">
+      <circle cx="0" cy="0" r="28" fill="#1e293b" />
+      <circle cx="0" cy="0" r="16" fill="#64748b" />
+      <circle cx="0" cy="0" r="7" fill="#f8fafc" />
+    </g>
+    <g transform="translate(295, 170)">
+      <circle cx="0" cy="0" r="28" fill="#1e293b" />
+      <circle cx="0" cy="0" r="16" fill="#64748b" />
+      <circle cx="0" cy="0" r="7" fill="#f8fafc" />
+    </g>
+
+    <!-- Side Brand & Temperature Display Panel -->
+    <rect x="25" y="65" width="210" height="75" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" />
+    
+    <text x="38" y="85" font-family="Inter, sans-serif" font-size="10" font-weight="800" fill="#0369a1" letter-spacing="0.5">KISANLOGIX COLD CHAIN</text>
+    <text x="38" y="98" font-family="Inter, monospace" font-size="9" font-weight="600" fill="#64748b">Sensor Node #MH-4421</text>
+
+    <!-- Live Telemetry Badge inside van panel -->
+    <rect x="36" y="108" width="90" height="22" rx="6" fill="#e0f2fe" />
+    <circle cx="48" cy="119" r="4" fill="#0284c7" />
+    <text x="58" y="123" font-family="Inter, monospace" font-size="10" font-weight="bold" fill="#0369a1">11.8°C / OPTIMAL</text>
+
+    <rect x="134" y="108" width="90" height="22" rx="6" fill="#ecfdf5" />
+    <circle cx="146" cy="119" r="4" fill="#10b981" />
+    <text x="156" y="123" font-family="Inter, monospace" font-size="10" font-weight="bold" fill="#065f46">RH: 85% HUMID</text>
+  </g>
+
+  <!-- Top Right Floating Status Box -->
+  <g transform="translate(380, 50)" filter="url(#truckShadow)">
+    <rect width="180" height="70" rx="12" fill="#ffffff" stroke="#38bdf8" stroke-width="1.5" />
+    <circle cx="26" cy="35" r="14" fill="#e0f2fe" />
+    <path d="M20 35 L24 39 L32 30" fill="none" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+    <text x="50" y="30" font-family="Inter, sans-serif" font-size="11" font-weight="bold" fill="#0f172a">Continuous Custody</text>
+    <text x="50" y="46" font-family="Inter, sans-serif" font-size="9.5" font-weight="500" fill="#0284c7">GPS Route: NH-66 Pune</text>
+  </g>
+</svg>

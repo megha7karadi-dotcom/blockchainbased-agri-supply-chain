@@ -31,14 +31,14 @@ export const AboutPage: React.FC = () => {
       
       {/* Hero Header */}
       <div className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-xs">
-        <div className="h-64 relative overflow-hidden bg-slate-100">
+        <div className="h-64 sm:h-72 relative overflow-hidden bg-emerald-950">
           <img 
-            src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80" 
-            alt="Verifiable organic agriculture fields" 
+            src="/assets/hero_agritrace.svg" 
+            alt="Verifiable organic agriculture fields and smart supply chain" 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/50 to-transparent flex items-end p-8 sm:p-12">
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent flex items-end p-8 sm:p-12">
             <div className="space-y-2 text-white">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
                 Rebuilding Trust Across the Global Agricultural Supply Chain

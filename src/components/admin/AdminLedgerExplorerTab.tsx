@@ -10,8 +10,7 @@ import {
   ArrowRight, 
   Clock, 
   MapPin, 
-  Hash,
-  Sparkles
+  Hash
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { CryptoHashDisplay } from '../common/CryptoHashDisplay';

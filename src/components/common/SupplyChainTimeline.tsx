@@ -14,7 +14,6 @@ import {
   Building2
 } from 'lucide-react';
 import { TimelineEvent, BatchStatus } from '../../types/produce';
-import { CryptoHashDisplay } from './CryptoHashDisplay';
 
 interface Props {
   timeline?: TimelineEvent[];
@@ -148,15 +147,14 @@ export const SupplyChainTimeline: React.FC<Props> = ({ timeline = [], currentSta
                     )}
                   </div>
 
-                  {/* Blockchain Proof Footnote */}
-                  <div className="mt-3 pt-2.5 border-t border-dashed border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-400 font-medium">Block:</span>
-                      <span className="font-mono font-bold text-emerald-700">#{fallbackBlock}</span>
+                  {/* Supply Chain Ledger Verification Footnote */}
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                    <div className="flex items-center gap-1.5 text-emerald-800 font-medium">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Ledger Verified Event</span>
                     </div>
-                    <div className="flex items-center gap-1.5 overflow-hidden">
-                      <span className="text-slate-400 font-medium flex-shrink-0">Tx:</span>
-                      <CryptoHashDisplay hash={fallbackTx} truncateLength={8} />
+                    <div className="text-slate-400 text-[11px]">
+                      <span>Immutable Supply Chain Entry</span>
                     </div>
                   </div>
 

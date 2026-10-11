@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="100%" height="100%">
+  <defs>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="35%" stop-color="#1e293b" />
+      <stop offset="65%" stop-color="#064e3b" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="sunGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="50%" y1="50%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#059669" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="hillGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#065f46" />
+      <stop offset="100%" stop-color="#022c22" />
+    </linearGradient>
+    <linearGradient id="hillGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="hillGrad3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#f8fafc" stop-opacity="0.9" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#022c22" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Sky & Atmosphere -->
+  <rect width="1200" height="675" fill="url(#skyGrad)" />
+  <circle cx="600" cy="220" r="140" fill="url(#sunGrad)" opacity="0.85" filter="blur(1px)" />
+  <circle cx="600" cy="220" r="260" fill="url(#glowGrad)" />
+
+  <!-- Constellation / Blockchain Network Nodes in the Sky -->
+  <g opacity="0.35" stroke="#a7f3d0" stroke-width="1.5">
+    <line x1="200" y1="120" x2="320" y2="80" />
+    <line x1="320" y1="80" x2="480" y2="110" />
+    <line x1="480" y1="110" x2="600" y2="70" />
+    <line x1="600" y1="70" x2="740" y2="100" />
+    <line x1="740" y1="100" x2="880" y2="60" />
+    <line x1="880" y1="60" x2="1020" y2="110" />
+  </g>
+  <g fill="#34d399">
+    <circle cx="200" cy="120" r="4" />
+    <circle cx="320" cy="80" r="5" />
+    <circle cx="480" cy="110" r="4.5" />
+    <circle cx="600" cy="70" r="6" />
+    <circle cx="740" cy="100" r="5" />
+    <circle cx="880" cy="60" r="5" />
+    <circle cx="1020" cy="110" r="4" />
+  </g>
+
+  <!-- Distant Mountain Ridges -->
+  <path d="M0 380 Q 280 260 550 340 T 1200 320 L 1200 675 L 0 675 Z" fill="url(#hillGrad1)" opacity="0.9" />
+
+  <!-- Midground Rolling Terraced Hills -->
+  <path d="M0 420 Q 320 340 700 420 T 1200 390 L 1200 675 L 0 675 Z" fill="url(#hillGrad2)" opacity="0.95" />
+  
+  <!-- Contour Agricultural Terraces Lines -->
+  <g stroke="#6ee7b7" stroke-width="1.8" opacity="0.4" fill="none">
+    <path d="M-50 470 Q 300 400 680 470 T 1250 440" />
+    <path d="M-50 510 Q 340 440 730 510 T 1250 480" />
+    <path d="M-50 555 Q 380 480 780 555 T 1250 520" />
+    <path d="M-50 600 Q 420 520 830 600 T 1250 560" />
+    <path d="M-50 645 Q 460 560 880 645 T 1250 605" />
+  </g>
+
+  <!-- Foreground Vibrant Hill -->
+  <path d="M0 500 Q 400 430 850 530 T 1200 490 L 1200 675 L 0 675 Z" fill="url(#hillGrad3)" />
+
+  <!-- Crop Pattern Dots / Rows -->
+  <g fill="#064e3b" opacity="0.3">
+    <circle cx="150" cy="560" r="3" /><circle cx="190" cy="565" r="3" /><circle cx="230" cy="570" r="3" /><circle cx="270" cy="575" r="3" />
+    <circle cx="310" cy="580" r="3" /><circle cx="350" cy="585" r="3" /><circle cx="390" cy="590" r="3" /><circle cx="430" cy="595" r="3" />
+    <circle cx="170" cy="600" r="3.5" /><circle cx="210" cy="605" r="3.5" /><circle cx="250" cy="610" r="3.5" /><circle cx="290" cy="615" r="3.5" />
+  </g>
+
+  <!-- Smart IoT Weather & Telemetry Station (Left) -->
+  <g transform="translate(180, 370)">
+    <line x1="40" y1="120" x2="40" y2="20" stroke="#f8fafc" stroke-width="4" />
+    <circle cx="40" cy="18" r="8" fill="#10b981" />
+    <path d="M25 35 L55 35 M28 50 L52 50" stroke="#cbd5e1" stroke-width="2.5" />
+    <!-- Telemetry Pulse waves -->
+    <circle cx="40" cy="18" r="18" stroke="#34d399" stroke-width="1.5" fill="none" opacity="0.8" />
+    <circle cx="40" cy="18" r="28" stroke="#34d399" stroke-width="1" fill="none" opacity="0.4" />
+    <!-- Solar cell -->
+    <polygon points="40,65 65,55 65,75 40,85" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5" />
+  </g>
+
+  <!-- High-Tech Greenhouses (Center-Right) -->
+  <g transform="translate(720, 390)" opacity="0.9">
+    <path d="M0 60 L40 30 L80 60 L80 100 L0 100 Z" fill="#ffffff" fill-opacity="0.25" stroke="#f8fafc" stroke-width="2" />
+    <path d="M80 60 L120 30 L160 60 L160 100 L80 100 Z" fill="#ffffff" fill-opacity="0.2" stroke="#f8fafc" stroke-width="2" />
+    <line x1="40" y1="30" x2="40" y2="100" stroke="#f8fafc" stroke-width="1.5" />
+    <line x1="120" y1="30" x2="120" y2="100" stroke="#f8fafc" stroke-width="1.5" />
+  </g>
+
+  <!-- Smart Electric Reefer Logistics Van (Moving right) -->
+  <g transform="translate(480, 520)">
+    <!-- Road strip -->
+    <path d="M-60 65 Q 160 55 380 70" stroke="#334155" stroke-width="16" fill="none" stroke-linecap="round" />
+    <path d="M-40 65 Q 160 55 360 70" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 6" fill="none" />
+    <!-- Van Body -->
+    <rect x="80" y="15" width="90" height="42" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2" />
+    <path d="M170 28 L195 38 L195 57 L170 57 Z" fill="#047857" />
+    <rect x="175" y="32" width="14" height="12" rx="2" fill="#bae6fd" />
+    <!-- Wheels -->
+    <circle cx="105" cy="58" r="9" fill="#0f172a" />
+    <circle cx="105" cy="58" r="4" fill="#94a3b8" />
+    <circle cx="180" cy="58" r="9" fill="#0f172a" />
+    <circle cx="180" cy="58" r="4" fill="#94a3b8" />
+    <!-- Cold chain snowflake badge -->
+    <circle cx="125" cy="35" r="10" fill="#ecfdf5" />
+    <text x="125" y="39" font-family="sans-serif" font-size="11" font-weight="bold" fill="#059669" text-anchor="middle">❄ 4°C</text>
+  </g>
+
+  <!-- Floating Holographic AgriTrace Verification Card (Right Hero Focus) -->
+  <g transform="translate(850, 160)" filter="url(#shadow)">
+    <rect width="280" height="190" rx="16" fill="url(#cardGrad)" stroke="#10b981" stroke-width="2" />
+    
+    <!-- Card Header -->
+    <circle cx="36" cy="36" r="16" fill="#d1fae5" />
+    <path d="M30 36 L34 40 L43 31" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+    <text x="62" y="32" font-family="Inter, sans-serif" font-size="13" font-weight="bold" fill="#0f172a">Verified Farm Provenance</text>
+    <text x="62" y="47" font-family="Inter, monospace" font-size="10" font-weight="600" fill="#059669">AGRI-2026-MNG-001</text>
+    
+    <line x1="20" y1="62" x2="260" y2="62" stroke="#e2e8f0" stroke-width="1" />
+
+    <!-- Metrics rows -->
+    <text x="24" y="85" font-family="Inter, sans-serif" font-size="10" font-weight="500" fill="#64748b">Farmgate Base:</text>
+    <text x="256" y="85" font-family="Inter, sans-serif" font-size="12" font-weight="bold" fill="#047857" text-anchor="end">₹120/kg (Fair)</text>
+
+    <text x="24" y="110" font-family="Inter, sans-serif" font-size="10" font-weight="500" fill="#64748b">Transit Cold Temp:</text>
+    <text x="256" y="110" font-family="Inter, sans-serif" font-size="12" font-weight="bold" fill="#0284c7" text-anchor="end">11.8°C (Optimal)</text>
+
+    <text x="24" y="135" font-family="Inter, sans-serif" font-size="10" font-weight="500" fill="#64748b">Pesticide Residue:</text>
+    <text x="256" y="135" font-family="Inter, sans-serif" font-size="11" font-weight="bold" fill="#059669" text-anchor="end">0.00 ppm (Organic)</text>
+
+    <!-- Block verification badge -->
+    <rect x="20" y="150" width="240" height="26" rx="8" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1" />
+    <text x="140" y="167" font-family="Inter, monospace" font-size="9.5" font-weight="bold" fill="#065f46" text-anchor="middle">✓ Sepolia Contract: 0x3A5b...5D3c</text>
+  </g>
+</svg>

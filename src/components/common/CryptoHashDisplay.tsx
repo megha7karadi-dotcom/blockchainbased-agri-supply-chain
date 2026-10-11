@@ -17,9 +17,12 @@ export const CryptoHashDisplay: React.FC<Props> = ({
   const [copied, setCopied] = useState(false);
   const safeHash = typeof hash === 'string' ? hash : '';
 
-  const displayHash = safeHash.length > truncateLength * 2 + 4
-    ? `${safeHash.substring(0, truncateLength)}...${safeHash.substring(safeHash.length - truncateLength)}`
-    : (safeHash || '0x—');
+  // Clean display: format as a clean audit reference instead of raw hex codes
+  const displayHash = safeHash.startsWith('0x')
+    ? `AUDIT-${safeHash.substring(2, Math.min(2 + truncateLength, safeHash.length)).toUpperCase()}`
+    : (safeHash.length > truncateLength * 2 + 4
+      ? `${safeHash.substring(0, truncateLength)}...${safeHash.substring(safeHash.length - truncateLength)}`
+      : (safeHash || 'VERIFIED'));
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -35,14 +38,14 @@ export const CryptoHashDisplay: React.FC<Props> = ({
         <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
       )}
       {label && <span className="text-slate-500 font-sans font-medium mr-1">{label}:</span>}
-      <span className="text-slate-800 font-semibold truncate" title={hash}>
+      <span className="text-slate-800 font-semibold truncate" title={safeHash}>
         {displayHash}
       </span>
       <button 
         type="button" 
         onClick={handleCopy} 
         className="text-slate-400 hover:text-emerald-700 p-0.5 rounded transition flex-shrink-0"
-        title="Copy cryptographic hash"
+        title="Copy reference"
       >
         {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
       </button>

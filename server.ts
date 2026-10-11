@@ -20,9 +20,9 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Initialize MongoDB Atlas connection asynchronously
-  connectDB().catch((err) => {
-    console.warn('MongoDB Atlas initial connection notice:', err?.message || err);
+  // Initialize MongoDB Atlas connection asynchronously (falls back to resilient in-memory storage)
+  connectDB().catch(() => {
+    // Handled gracefully inside connectDB
   });
 
   // Middleware

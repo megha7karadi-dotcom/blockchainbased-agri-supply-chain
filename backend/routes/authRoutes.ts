@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User, IUser } from '../models/User';
 import { JWT_SECRET, authenticateJWT, AuthenticatedRequest } from '../middleware/auth';
+import { persistentDb, DBUser } from '../config/persistentDb';
+import { smsService } from '../services/smsService';
 
 const router = express.Router();
 
@@ -24,87 +26,16 @@ function generateToken(user: { id: string; email: string; role: string; name: st
   );
 }
 
-// In-memory fallback for environments without an active MongoDB connection
-const inMemoryUsers: Map<string, any> = new Map();
-
-// Default demo users with pre-hashed 'password123'
-const SEED_USERS = [
-  {
-    id: 'usr-farmer-01',
-    _id: 'usr-farmer-01',
-    name: 'Ramesh Patil',
-    email: 'ramesh.farmer@agritrace.org',
-    role: 'farmer',
-    password: '$2a$10$e8wE22uUqHhFhR4z5f3C.e9Lw1W6vC5Fk1G9Q2L9w5b6N7r8u9i0a',
-    phone: '+91 98230 45678',
-    location: 'Ratnagiri, Maharashtra, India',
-    organization: 'Sahyadri Organic Mango Producers Co-op',
-    kycStatus: 'verified',
-    trustScore: 98,
-    createdAt: new Date('2025-04-12')
-  },
-  {
-    id: 'usr-dist-01',
-    _id: 'usr-dist-01',
-    name: 'Vikram Mehra',
-    email: 'vikram.logistics@kisanlogix.com',
-    role: 'distributor',
-    password: '$2a$10$e8wE22uUqHhFhR4z5f3C.e9Lw1W6vC5Fk1G9Q2L9w5b6N7r8u9i0a',
-    phone: '+91 98112 34567',
-    location: 'Pune Cold Hub, Maharashtra',
-    organization: 'KisanLogix Agri Cold-Chain Solutions',
-    kycStatus: 'verified',
-    trustScore: 94,
-    createdAt: new Date('2025-02-18')
-  },
-  {
-    id: 'usr-ret-01',
-    _id: 'usr-ret-01',
-    name: 'Ananya Sharma',
-    email: 'ananya@freshrootorganics.in',
-    role: 'retailer',
-    password: '$2a$10$e8wE22uUqHhFhR4z5f3C.e9Lw1W6vC5Fk1G9Q2L9w5b6N7r8u9i0a',
-    phone: '+91 98450 12389',
-    location: 'Bandra West, Mumbai',
-    organization: 'FreshRoot Organic Markets Ltd',
-    kycStatus: 'verified',
-    trustScore: 96,
-    createdAt: new Date('2025-03-01')
-  },
-  {
-    id: 'usr-cons-01',
-    _id: 'usr-cons-01',
-    name: 'Priya Nair',
-    email: 'priya.nair@gmail.com',
-    role: 'consumer',
-    password: '$2a$10$e8wE22uUqHhFhR4z5f3C.e9Lw1W6vC5Fk1G9Q2L9w5b6N7r8u9i0a',
-    phone: '+91 97410 99881',
-    location: 'Worli, Mumbai',
-    organization: 'Conscious Consumer Guild',
-    kycStatus: 'verified',
-    trustScore: 100,
-    createdAt: new Date('2025-06-15')
-  },
-  {
-    id: 'usr-admin-01',
-    _id: 'usr-admin-01',
-    name: 'Platform Administrator',
-    email: 'admin@agritrace.org',
-    role: 'admin',
-    password: '$2a$10$e8wE22uUqHhFhR4z5f3C.e9Lw1W6vC5Fk1G9Q2L9w5b6N7r8u9i0a',
-    phone: '+91 94220 11223',
-    location: 'AgriTrace Operations',
-    organization: 'AgriTrace Platform Governance',
-    kycStatus: 'verified',
-    trustScore: 99,
-    createdAt: new Date('2024-11-10')
-  }
-];
-
-SEED_USERS.forEach(u => inMemoryUsers.set(u.email.toLowerCase(), u));
+/**
+ * Normalizes phone numbers by stripping all non-digits
+ */
+function normalizePhone(phone: string): string {
+  if (!phone) return '';
+  return phone.replace(/[^0-9]/g, '');
+}
 
 /**
- * Helper to find user by email in MongoDB with in-memory fallback
+ * Helper to find user by email in MongoDB with persistent database fallback
  */
 async function findUserByEmail(email: string): Promise<any | null> {
   const cleanEmail = email.trim().toLowerCase();
@@ -116,11 +47,11 @@ async function findUserByEmail(email: string): Promise<any | null> {
       console.warn('MongoDB user lookup notice:', dbErr?.message);
     }
   }
-  return inMemoryUsers.get(cleanEmail) || null;
+  return persistentDb.findUserByEmail(cleanEmail);
 }
 
 /**
- * Helper to find user by ID in MongoDB with in-memory fallback
+ * Helper to find user by ID in MongoDB with persistent database fallback
  */
 async function findUserById(id: string): Promise<any | null> {
   if (mongoose.connection.readyState === 1) {
@@ -131,25 +62,16 @@ async function findUserById(id: string): Promise<any | null> {
       console.warn('MongoDB user lookup by id notice:', dbErr?.message);
     }
   }
-  for (const user of inMemoryUsers.values()) {
-    if (user.id === id || user._id === id || String(user._id) === id) {
-      const { password, ...safeUser } = user;
-      return safeUser;
-    }
+  const user = persistentDb.findUserById(id);
+  if (user) {
+    const { password, ...safeUser } = user;
+    return safeUser;
   }
   return null;
 }
 
 /**
- * Normalizes phone numbers by stripping all non-digits
- */
-function normalizePhone(phone: string): string {
-  if (!phone) return '';
-  return phone.replace(/[^0-9]/g, '');
-}
-
-/**
- * Helper to find user by mobile phone in MongoDB with in-memory fallback
+ * Helper to find user by mobile phone in MongoDB with persistent database fallback
  */
 async function findUserByPhone(phone: string): Promise<any | null> {
   const norm = normalizePhone(phone);
@@ -169,23 +91,8 @@ async function findUserByPhone(phone: string): Promise<any | null> {
     }
   }
 
-  for (const user of inMemoryUsers.values()) {
-    if (user.phone && normalizePhone(user.phone).endsWith(last10)) {
-      return user;
-    }
-  }
-  return null;
+  return persistentDb.findUserByPhone(phone);
 }
-
-// In-memory OTP storage with 5 minute expiration
-interface OtpEntry {
-  code: string;
-  expiresAt: number;
-  purpose: 'login' | 'signup';
-  phone: string;
-}
-
-const otpStore: Map<string, OtpEntry> = new Map();
 
 /**
  * 2. REGISTER API
@@ -299,8 +206,8 @@ router.post(['/register', '/signup'], async (req: Request, res: Response) => {
       }
     }
 
-    // Always store in memory cache
-    inMemoryUsers.set(cleanEmail, userPayload);
+    // Always persist to database
+    persistentDb.saveUser(userPayload);
 
     // 9. Return required registration format (Never return the password or password hash)
     return res.status(201).json({
@@ -396,12 +303,20 @@ router.post('/login', async (req: Request, res: Response) => {
 });
 
 /**
- * 4. MOBILE & OTP AUTHENTICATION ENDPOINTS
+ * 4. MOBILE & SECURE SMS OTP AUTHENTICATION ENDPOINTS
  */
 
 /**
+ * GET /api/auth/otp/provider
+ * Get current SMS gateway status and active provider configuration
+ */
+router.get('/otp/provider', (_req: Request, res: Response) => {
+  return res.status(200).json(smsService.getActiveProvider());
+});
+
+/**
  * POST /api/auth/otp/send
- * Request a 6-digit OTP code sent to mobile number
+ * Dispatches cryptographically secure 6-digit OTP code to mobile number via external SMS API
  */
 router.post('/otp/send', async (req: Request, res: Response) => {
   try {
@@ -418,40 +333,29 @@ router.post('/otp/send', async (req: Request, res: Response) => {
 
     const existingUser = await findUserByPhone(phone);
 
-    if (purpose === 'login') {
-      if (!existingUser) {
-        return res.status(404).json({ 
-          error: 'No account registered with this mobile number. Please sign up first.',
-          notRegistered: true
-        });
-      }
-    } else if (purpose === 'signup') {
-      if (existingUser) {
-        return res.status(400).json({ 
-          error: 'An account with this mobile number already exists. Please sign in instead.',
-          alreadyRegistered: true
-        });
-      }
+    // Call secure SMS service (handles rate limiting, cooldown, crypto random OTP generation & external SMS API dispatch)
+    const smsResult = await smsService.sendOtp(phone.trim(), purpose as 'login' | 'signup');
+
+    if (!smsResult.success) {
+      const statusCode = smsResult.errorCode === 'COOLDOWN_ACTIVE' ? 429 : 400;
+      return res.status(statusCode).json({
+        error: smsResult.message,
+        cooldownSeconds: smsResult.cooldownSeconds,
+        errorCode: smsResult.errorCode
+      });
     }
 
-    // Generate random 6-digit OTP
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const key = digits.slice(-10);
-
-    otpStore.set(key, {
-      code,
-      expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
-      purpose: purpose as 'login' | 'signup',
-      phone: phone.trim()
-    });
-
-    console.log(`[AgriTrace SMS Gateway Simulator] OTP sent to ${phone.trim()}: ${code}`);
+    // Also mirror to persistentDb for backward compatibility
+    if (smsResult.otp) {
+      persistentDb.saveOtp(phone.trim(), smsResult.otp, purpose as 'login' | 'signup');
+    }
 
     return res.status(200).json({
-      message: `Verification code successfully sent to ${phone.trim()}`,
-      otp: code, // returned for preview/demo testing convenience
+      message: smsResult.message,
+      otp: smsResult.otp,
       phone: phone.trim(),
-      expiresIn: 300,
+      provider: smsResult.provider,
+      expiresIn: smsResult.expiresInSeconds,
       userFound: !!existingUser,
       userName: existingUser ? existingUser.name : undefined,
       userRole: existingUser ? existingUser.role : undefined
@@ -468,7 +372,7 @@ router.post('/otp/send', async (req: Request, res: Response) => {
  */
 router.post('/otp/verify-login', async (req: Request, res: Response) => {
   try {
-    const { phone, otp } = req.body;
+    const { phone, otp, name, fullName, role } = req.body;
 
     if (!phone || !otp) {
       return res.status(400).json({ error: 'Mobile number and verification code are required.' });
@@ -479,32 +383,65 @@ router.post('/otp/verify-login', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid mobile number format.' });
     }
 
-    const key = digits.slice(-10);
-    const stored = otpStore.get(key);
-
-    const isCodeValid = 
-      (stored && stored.code === String(otp).trim() && Date.now() <= stored.expiresAt) || 
-      String(otp).trim() === '123456';
-
-    if (!isCodeValid) {
-      return res.status(400).json({ error: 'Invalid or expired verification code. Please try again or request a new code.' });
+    // 1. Strict validation with secure SMS service
+    const otpVerification = smsService.verifyOtp(phone.trim(), String(otp).trim());
+    if (!otpVerification.valid) {
+      // Fallback check against persistentDb
+      const dbFallback = persistentDb.verifyOtp(phone.trim(), String(otp).trim());
+      if (!dbFallback) {
+        return res.status(400).json({ 
+          error: otpVerification.message || 'Invalid or expired verification code.',
+          attemptsRemaining: otpVerification.attemptsRemaining,
+          errorCode: otpVerification.errorCode
+        });
+      }
     }
 
     // Lookup user by phone
-    const user = await findUserByPhone(phone);
+    let user = await findUserByPhone(phone);
     if (!user) {
-      return res.status(404).json({ error: 'User account not found for this mobile number.' });
-    }
+      // Auto-register user seamlessly if mobile number is new
+      const assignedRole = (role || 'farmer').toLowerCase();
+      const assignedName = (name || fullName || '').trim() || `User ${digits.slice(-4)}`;
+      const cleanEmail = `${digits.slice(-10)}@mobile.agritrace.org`;
 
-    // Clean up used OTP
-    otpStore.delete(key);
+      user = persistentDb.saveUser({
+        id: `usr-m-${Date.now()}`,
+        name: assignedName,
+        email: cleanEmail,
+        role: assignedRole as any,
+        phone: phone.trim(),
+        location: req.body.location || 'India',
+        organization: req.body.organization || 'AgriTrace Network',
+        kycStatus: 'verified',
+        trustScore: 92,
+        createdAt: new Date().toISOString()
+      });
+
+      if (mongoose.connection.readyState === 1) {
+        try {
+          const mongoUser = new User({
+            name: assignedName,
+            email: cleanEmail,
+            role: assignedRole,
+            phone: phone.trim(),
+            password: 'mobile-verified-pass',
+            location: req.body.location || 'India',
+            organization: req.body.organization || 'AgriTrace Network'
+          });
+          await mongoUser.save();
+        } catch (dbErr: any) {
+          console.warn('MongoDB auto-register user notice:', dbErr?.message);
+        }
+      }
+    }
 
     const userId = (user._id || user.id).toString();
 
     // Generate JWT token
     const token = generateToken({
       id: userId,
-      email: user.email || `${key}@user.agritrace.org`,
+      email: user.email || `${digits.slice(-10)}@user.agritrace.org`,
       role: user.role,
       name: user.name
     });
@@ -562,14 +499,18 @@ router.post('/otp/verify-signup', async (req: Request, res: Response) => {
     }
 
     const key = digits.slice(-10);
-    const stored = otpStore.get(key);
 
-    const isCodeValid = 
-      (stored && stored.code === String(otp).trim() && Date.now() <= stored.expiresAt) || 
-      String(otp).trim() === '123456';
-
-    if (!isCodeValid) {
-      return res.status(400).json({ error: 'Invalid or expired verification code. Please request a new code.' });
+    // 1. Strict validation with secure SMS service
+    const otpVerification = smsService.verifyOtp(phone.trim(), String(otp).trim());
+    if (!otpVerification.valid) {
+      const dbFallback = persistentDb.verifyOtp(phone.trim(), String(otp).trim());
+      if (!dbFallback) {
+        return res.status(400).json({ 
+          error: otpVerification.message || 'Invalid or expired verification code.',
+          attemptsRemaining: otpVerification.attemptsRemaining,
+          errorCode: otpVerification.errorCode
+        });
+      }
     }
 
     // Role validation
@@ -631,10 +572,8 @@ router.post('/otp/verify-signup', async (req: Request, res: Response) => {
       }
     }
 
-    // Save to memory cache
-    inMemoryUsers.set(cleanEmail, userPayload);
-    // Remove used OTP
-    otpStore.delete(key);
+    // Always persist to database
+    persistentDb.saveUser(userPayload);
 
     // Generate JWT token
     const token = generateToken({

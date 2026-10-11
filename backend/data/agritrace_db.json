@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-10-09T13:56:06.990Z",
+  "users": [
+    {
+      "id": "usr-farmer-01",
+      "_id": "usr-farmer-01",
+      "name": "Ramesh Patil",
+      "email": "ramesh.farmer@agritrace.org",
+      "role": "farmer",
+      "password": "$2a$10$e8wE22uUqHhFhR4z5f3C.e9Lw1W6vC5Fk1G9Q2L9w5b6N7r8u9i0a",
+      "phone": "+91 98230 45678",
+      "location": "Ratnagiri, Maharashtra, India",
+      "organization": "Sahyadri Organic Mango Producers Co-op",
+      "kycStatus": "verified",
+      "trustScore": 98,
+      "walletAddress": "ACTOR-FARM-98230",
+      "createdAt": "2025-04-12T00:00:00.000Z"
+    },
+    {
+      "id": "usr-dist-01",
+      "_id": "usr-dist-01",
+      "name": "Vikram Mehra",
+      "email": "vikram.logistics@kisanlogix.com",
+      "role": "distributor",
+      "password": "$2a$10$e8wE22uUqHhFhR4z5f3C.e9Lw1W6vC5Fk1G9Q2L9w5b6N7r8u9i0a",
+      "phone": "+91 98112 34567",
+      "location": "Pune Cold Hub, Maharashtra",
+      "organization": "KisanLogix Agri Cold-Chain Solutions",
+      "kycStatus": "verified",
+      "trustScore": 94,
+      "walletAddress": "ACTOR-DIST-98112",
+      "createdAt": "2025-02-18T00:00:00.000Z"
+    },
+    {
+      "id": "usr-ret-01",
+      "_id": "usr-ret-01",
+      "name": "Ananya Sharma",
+      "email": "ananya@freshrootorganics.in",
+      "role": "retailer",
+      "password": "$2a$10$e8wE22uUqHhFhR4z5f3C.e9Lw1W6vC5Fk1G9Q2L9w5b6N7r8u9i0a",
+      "phone": "+91 98450 12389",
+      "location": "Bandra West, Mumbai",
+      "organization": "FreshRoot Organic Markets Ltd",
+      "kycStatus": "verified",
+      "trustScore": 96,
+      "walletAddress": "ACTOR-RET-98450",
+      "createdAt": "2025-03-01T00:00:00.000Z"
+    },
+    {
+      "id": "usr-cons-01",
+      "_id": "usr-cons-01",
+      "name": "Priya Nair",
+      "email": "priya.nair@gmail.com",
+      "role": "consumer",
+      "password": "$2a$10$e8wE22uUqHhFhR4z5f3C.e9Lw1W6vC5Fk1G9Q2L9w5b6N7r8u9i0a",
+      "phone": "+91 97410 99881",
+      "location": "Worli, Mumbai",
+      "organization": "Conscious Consumer Guild",
+      "kycStatus": "verified",
+      "trustScore": 100,
+      "walletAddress": "ACTOR-CONS-97410",
+      "createdAt": "2025-06-15T00:00:00.000Z"
+    },
+    {
+      "id": "usr-admin-01",
+      "_id": "usr-admin-01",
+      "name": "Platform Administrator",
+      "email": "admin@agritrace.org",
+      "role": "admin",
+      "password": "$2a$10$e8wE22uUqHhFhR4z5f3C.e9Lw1W6vC5Fk1G9Q2L9w5b6N7r8u9i0a",
+      "phone": "+91 94220 11223",
+      "location": "AgriTrace Operations Center",
+      "organization": "AgriTrace Platform Governance",
+      "kycStatus": "verified",
+      "trustScore": 99,
+      "walletAddress": "ACTOR-ADMIN-94220",
+      "createdAt": "2024-11-10T00:00:00.000Z"
+    },
+    {
+      "id": "usr-m-1790272663628",
+      "_id": "usr-m-1790272663628",
+      "name": "Sunil Verma",
+      "email": "9998877665@mobile.agritrace.org",
+      "password": "$2b$10$4TzCzJZgqUz08HR3cvrRb.iFXYzbSDSQkCgxArFRvTM4wQvKj2kOe",
+      "role": "farmer",
+      "phone": "+91 99988 77665",
+      "organization": "Verma Organic Farms",
+      "location": "Nashik, Maharashtra",
+      "kycStatus": "verified",
+      "trustScore": 98,
+      "createdAt": "2026-09-24T17:57:43.628Z"
+    },
+    {
+      "id": "usr-m-1791552331852",
+      "name": "Sneha Patil",
+      "email": "9123456789@mobile.agritrace.org",
+      "role": "farmer",
+      "phone": "+91 91234 56789",
+      "location": "India",
+      "organization": "AgriTrace Network",
+      "kycStatus": "verified",
+      "trustScore": 92,
+      "createdAt": "2026-10-09T13:25:31.852Z"
+    },
+    {
+      "id": "usr-m-1791552943038",
+      "_id": "usr-m-1791552943038",
+      "name": "Radhika Rao",
+      "email": "9777788888@mobile.agritrace.org",
+      "password": "$2b$10$zgUK.vTkjB1GftnHDDozAOHSxiFC1EgSdoZ/UyKGN9GtKHGuCTaI6",
+      "role": "farmer",
+      "phone": "+91 97777 88888",
+      "organization": "Rao Farms",
+      "location": "Karnataka",
+      "kycStatus": "verified",
+      "trustScore": 98,
+      "createdAt": "2026-10-09T13:35:43.038Z"
+    },
+    {
+      "id": "usr-m-1791554166990",
+      "name": "Test Farmer",
+      "email": "9988776655@mobile.agritrace.org",
+      "role": "farmer",
+      "phone": "+91 99887 76655",
+      "location": "India",
+      "organization": "AgriTrace Network",
+      "kycStatus": "verified",
+      "trustScore": 92,
+      "createdAt": "2026-10-09T13:56:06.990Z"
+    }
+  ],
+  "products": [],
+  "otps": [
+    {
+      "phone": "+91 91234 56789",
+      "code": "854497",
+      "purpose": "login",
+      "expiresAt": 1791552640815,
+      "createdAt": 1791552340815
+    },
+    {
+      "phone": "+91 9811234567",
+      "code": "329397",
+      "purpose": "login",
+      "expiresAt": 1791553329755,
+      "createdAt": 1791553029755
+    },
+    {
+      "phone": "+91 98230 45678",
+      "code": "251655",
+      "purpose": "login",
+      "expiresAt": 1791554456245,
+      "createdAt": 1791554156245
+    },
+    {
+      "phone": "+91 99887 76655",
+      "code": "722706",
+      "purpose": "login",
+      "expiresAt": 1791554463213,
+      "createdAt": 1791554163213
+    }
+  ],
+  "auditLogs": []
+}

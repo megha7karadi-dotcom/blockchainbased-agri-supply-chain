@@ -13,7 +13,6 @@ import {
   AlertCircle,
   FileText,
   Calendar,
-  Sparkles,
   ChevronRight,
   TrendingUp,
   X

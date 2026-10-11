@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+  </defs>
+  <!-- Rosette scalloped edge -->
+  <circle cx="100" cy="100" r="92" fill="#ecfdf5" stroke="#10b981" stroke-width="4" stroke-dasharray="6 4" />
+  <circle cx="100" cy="100" r="80" fill="url(#goldGrad)" />
+  <circle cx="100" cy="100" r="74" fill="none" stroke="#a7f3d0" stroke-width="2" />
+  
+  <!-- Ribbon Tails -->
+  <path d="M70 170 L50 200 L75 190 L95 200 L85 165 Z" fill="#047857" />
+  <path d="M130 170 L115 200 L125 190 L150 200 L130 165 Z" fill="#047857" />
+
+  <!-- Shield Icon and Stars -->
+  <path d="M100 50 L125 62 V92 C125 110 100 124 100 124 C100 124 75 110 75 92 V62 Z" fill="#ffffff" />
+  <path d="M92 88 L98 94 L110 82" fill="none" stroke="#059669" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Text arched -->
+  <text x="100" y="142" font-family="Inter, sans-serif" font-size="9" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="1.5">AGRITRACE</text>
+  <text x="100" y="154" font-family="Inter, sans-serif" font-size="8" font-weight="700" fill="#a7f3d0" text-anchor="middle" letter-spacing="1">100% VERIFIED</text>
+</svg>

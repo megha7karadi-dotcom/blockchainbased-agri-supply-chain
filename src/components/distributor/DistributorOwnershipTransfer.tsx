@@ -276,8 +276,8 @@ export const DistributorOwnershipTransfer: React.FC = () => {
                             <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" />
                             <span className="truncate">{retailer.storeLocation}</span>
                           </div>
-                          <div className="text-[10px] font-mono text-slate-400">
-                            Wallet: {retailer.walletAddress}
+                          <div className="text-[11px] text-emerald-700 font-medium">
+                            Store Manager: {retailer.managerName}
                           </div>
                         </div>
                       );

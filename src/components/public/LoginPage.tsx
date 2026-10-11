@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   LogIn, 
   Lock, 
@@ -9,14 +9,21 @@ import {
   CheckCircle2,
   KeyRound,
   RotateCcw,
-  Sparkles
+  ChevronDown,
+  ChevronUp,
+  ShieldCheck,
+  UserCheck,
+  User,
+  Sparkles,
+  Zap
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { RealtimeSmsNotification } from '../common/RealtimeSmsNotification';
 
 export const LoginPage: React.FC = () => {
   const { loginUser, sendOtp, loginWithOtp, navigate, authNotice, setAuthNotice, isAuthenticated, currentRole } = useApp();
 
-  // Automatic redirect if user is already authenticated or just logged in
+  // Automatic redirect if user is already authenticated
   useEffect(() => {
     if (isAuthenticated && currentRole && currentRole !== 'public') {
       navigate(`/${currentRole}/dashboard`);
@@ -32,8 +39,25 @@ export const LoginPage: React.FC = () => {
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
-  const [demoOtpHint, setDemoOtpHint] = useState<string | null>(null);
   const [resendCountdown, setResendCountdown] = useState(0);
+
+  // Detected user info from real-time lookup
+  const [detectedUser, setDetectedUser] = useState<{
+    found: boolean;
+    name?: string;
+    role?: string;
+  } | null>(null);
+
+  // New user instant setup fields (if number is new)
+  const [newUserRole, setNewUserRole] = useState<'farmer' | 'distributor' | 'retailer' | 'consumer'>('farmer');
+  const [newUserName, setNewUserName] = useState('');
+
+  // Realtime SMS notification state
+  const [smsNotification, setSmsNotification] = useState<{
+    phone: string;
+    code: string;
+    purpose: 'login' | 'signup';
+  } | null>(null);
 
   // Email & Password States
   const [email, setEmail] = useState('');
@@ -44,25 +68,24 @@ export const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
-  const [notRegisteredNotice, setNotRegisteredNotice] = useState(false);
 
-  // Demo accounts for email login
-  const demoEmailAccounts = [
-    { label: 'Farmer', email: 'ramesh.farmer@agritrace.org', password: 'password123' },
-    { label: 'Distributor', email: 'vikram.logistics@kisanlogix.com', password: 'password123' },
-    { label: 'Retailer', email: 'ananya@freshrootorganics.in', password: 'password123' },
-    { label: 'Consumer', email: 'priya.nair@gmail.com', password: 'password123' },
-    { label: 'Admin', email: 'admin@agritrace.org', password: 'password123' },
+  // Collapsible backup demo profiles
+  const [showDemoBackup, setShowDemoBackup] = useState(false);
+
+  // Backup demo accounts
+  const backupAccounts = [
+    { label: 'Farmer', phone: '9823045678', display: '+91 98230 45678', name: 'Ramesh Patil', email: 'ramesh.farmer@agritrace.org' },
+    { label: 'Distributor', phone: '9811234567', display: '+91 98112 34567', name: 'Vikram Mehra', email: 'vikram.logistics@kisanlogix.com' },
+    { label: 'Retailer', phone: '9845012389', display: '+91 98450 12389', name: 'Ananya Sharma', email: 'ananya@freshrootorganics.in' },
+    { label: 'Consumer', phone: '9741099881', display: '+91 97410 99881', name: 'Priya Nair', email: 'priya.nair@gmail.com' },
+    { label: 'Admin', phone: '9422011223', display: '+91 94220 11223', name: 'System Admin', email: 'admin@agritrace.org' },
   ];
 
-  // Demo accounts for mobile OTP login
-  const demoMobileAccounts = [
-    { label: 'Farmer', phone: '9823045678', display: '+91 98230 45678', name: 'Ramesh Patil' },
-    { label: 'Distributor', phone: '9811234567', display: '+91 98112 34567', name: 'Vikram Mehra' },
-    { label: 'Retailer', phone: '9845012389', display: '+91 98450 12389', name: 'Ananya Sharma' },
-    { label: 'Consumer', phone: '9741099881', display: '+91 97410 99881', name: 'Priya Nair' },
-    { label: 'Admin', phone: '9422011223', display: '+91 94220 11223', name: 'System Admin' },
-  ];
+  // Refs for tracking real-time dispatch and focusing inputs
+  const lastDispatchedPhoneRef = useRef<string>('');
+  const autoSendTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const otpInputRef = useRef<HTMLInputElement>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
 
   // Countdown timer for OTP resend
   useEffect(() => {
@@ -73,12 +96,45 @@ export const LoginPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [resendCountdown]);
 
-  // Request OTP Handler
+  // Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSendTimerRef.current) {
+        clearTimeout(autoSendTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Format phone number cleanly and auto-dispatch OTP when 10 digits are completed
+  const handlePhoneChange = (val: string) => {
+    const cleanDigits = val.replace(/[^0-9]/g, '').slice(0, 10);
+    setPhoneNumber(cleanDigits);
+    setErrorMessage('');
+
+    if (otpSent && cleanDigits !== lastDispatchedPhoneRef.current) {
+      setOtpSent(false);
+      setOtpCode('');
+      setDetectedUser(null);
+    }
+
+    if (autoSendTimerRef.current) {
+      clearTimeout(autoSendTimerRef.current);
+    }
+
+    // Real-time detection: take mobile number as soon as 10 digits are entered
+    if (cleanDigits.length === 10 && cleanDigits !== lastDispatchedPhoneRef.current && !otpLoading) {
+      setInfoMessage('⚡ 10-digit mobile number detected. Taking number in real time and sending OTP...');
+      autoSendTimerRef.current = setTimeout(() => {
+        handleSendOtp(cleanDigits);
+      }, 350);
+    }
+  };
+
+  // Request Realtime OTP Handler
   const handleSendOtp = async (overridePhone?: string) => {
     const rawNumber = overridePhone || phoneNumber;
     setErrorMessage('');
     setInfoMessage('');
-    setNotRegisteredNotice(false);
 
     const digitsOnly = rawNumber.replace(/[^0-9]/g, '');
     if (digitsOnly.length < 10) {
@@ -86,25 +142,44 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
-    const fullPhone = `${phoneCountryCode} ${rawNumber.trim()}`;
+    lastDispatchedPhoneRef.current = digitsOnly;
+    const fullPhone = `${phoneCountryCode} ${digitsOnly}`;
     setOtpLoading(true);
 
     try {
       const result = await sendOtp(fullPhone, 'login');
       if (!result.success) {
-        if (result.notRegistered) {
-          setNotRegisteredNotice(true);
-          setErrorMessage('No AgriTrace account is linked to this mobile number.');
-        } else {
-          setErrorMessage(result.error || 'Failed to dispatch OTP. Please check the number.');
-        }
+        setErrorMessage(result.error || 'Failed to dispatch verification code. Please check the number.');
         setOtpSent(false);
       } else {
         setOtpSent(true);
         setResendCountdown(30);
         const code = result.otp || '123456';
-        setDemoOtpHint(code);
-        setInfoMessage(`Verification code sent to ${fullPhone}. Valid for 5 minutes.`);
+        
+        // Save user state from backend
+        setDetectedUser({
+          found: !!result.userName,
+          name: result.userName,
+          role: result.userRole
+        });
+
+        // Trigger realistic SMS notification banner at the top of the screen
+        setSmsNotification({
+          phone: fullPhone,
+          code,
+          purpose: 'login'
+        });
+
+        if (result.userName) {
+          setInfoMessage(`Verification code sent to ${fullPhone}. Welcome back, ${result.userName}!`);
+        } else {
+          setInfoMessage(`Real-time verification code dispatched to ${fullPhone}. Valid for 5 minutes.`);
+        }
+
+        // Auto-focus OTP input in the next render cycle
+        setTimeout(() => {
+          otpInputRef.current?.focus();
+        }, 120);
       }
     } catch (err: any) {
       setErrorMessage(err?.message || 'Verification service temporarily unavailable.');
@@ -118,16 +193,20 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
 
-    if (!otpCode.trim()) {
-      setErrorMessage('Please enter the 6-digit OTP verification code.');
+    if (!otpCode.trim() || otpCode.trim().length < 6) {
+      setErrorMessage('Please enter the complete 6-digit OTP code.');
       return;
     }
 
-    const fullPhone = `${phoneCountryCode} ${phoneNumber.trim()}`;
+    const cleanDigits = phoneNumber.replace(/[^0-9]/g, '');
+    const fullPhone = `${phoneCountryCode} ${cleanDigits}`;
     setIsLoading(true);
 
     try {
-      const result = await loginWithOtp(fullPhone, otpCode.trim());
+      const result = await loginWithOtp(fullPhone, otpCode.trim(), {
+        name: newUserName.trim() || undefined,
+        role: newUserRole
+      });
       if (!result.success) {
         setErrorMessage(result.error || 'Invalid or expired OTP code. Please try again.');
       }
@@ -170,6 +249,16 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto py-12 px-4 space-y-6">
+      {/* Realtime SMS Notification Overlay */}
+      <RealtimeSmsNotification 
+        sms={smsNotification}
+        onClose={() => setSmsNotification(null)}
+        onAutoFill={(code) => {
+          setOtpCode(code);
+          setErrorMessage('');
+        }}
+      />
+
       {/* Auth Guard Notice */}
       {authNotice && (
         <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between gap-3 shadow-xs">
@@ -203,7 +292,7 @@ export const LoginPage: React.FC = () => {
             Sign In to AgriTrace
           </h1>
           <p className="text-xs text-slate-500">
-            Agricultural Provenance & Value-Chain Platform
+            Real-Time Mobile Verification & Supply Chain Gateway
           </p>
         </div>
 
@@ -215,7 +304,6 @@ export const LoginPage: React.FC = () => {
               setAuthMethod('otp');
               setErrorMessage('');
               setInfoMessage('');
-              setNotRegisteredNotice(false);
             }}
             className={`py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer ${
               authMethod === 'otp'
@@ -232,7 +320,6 @@ export const LoginPage: React.FC = () => {
               setAuthMethod('password');
               setErrorMessage('');
               setInfoMessage('');
-              setNotRegisteredNotice(false);
             }}
             className={`py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer ${
               authMethod === 'password'
@@ -247,21 +334,9 @@ export const LoginPage: React.FC = () => {
 
         {/* Error Alert */}
         {errorMessage && (
-          <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 space-y-2">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
-              <span>{errorMessage}</span>
-            </div>
-            {notRegisteredNotice && (
-              <button
-                type="button"
-                onClick={() => navigate('/signup')}
-                className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <span>Sign Up with this Number</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            )}
+          <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+            <span>{errorMessage}</span>
           </div>
         )}
 
@@ -273,53 +348,21 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
-        {/* METHOD 1: MOBILE & OTP LOGIN */}
+        {/* METHOD 1: REALTIME MOBILE & OTP LOGIN */}
         {authMethod === 'otp' ? (
           <div className="space-y-5">
-            {/* Quick Demo Mobile Numbers */}
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
-              <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                <span>Quick-Fill Seeded Accounts</span>
-                <span className="text-[10px] text-emerald-700 font-normal">Registered Numbers</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                {demoMobileAccounts.map((acc) => (
-                  <button
-                    key={acc.phone}
-                    type="button"
-                    onClick={() => {
-                      setPhoneNumber(acc.phone);
-                      setOtpSent(false);
-                      setOtpCode('');
-                      setErrorMessage('');
-                      setInfoMessage(`Selected ${acc.label} (${acc.name} - ${acc.display})`);
-                    }}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-left border transition cursor-pointer shadow-2xs ${
-                      phoneNumber === acc.phone
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold ring-1 ring-emerald-400'
-                        : 'bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 border-slate-200 text-slate-700'
-                    }`}
-                  >
-                    <div className="font-bold text-[11px]">{acc.label}</div>
-                    <div className="text-[10px] text-slate-500 font-mono truncate">{acc.phone}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Mobile Form */}
             <form onSubmit={otpSent ? handleVerifyOtpLogin : (e) => { e.preventDefault(); handleSendOtp(); }} className="space-y-4">
               {/* Phone Input */}
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Registered Mobile Number
+                  Enter Mobile Number
                 </label>
                 <div className="flex gap-2">
                   <select
                     value={phoneCountryCode}
                     onChange={(e) => setPhoneCountryCode(e.target.value)}
                     disabled={otpSent}
-                    className="px-2.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:border-emerald-600 focus:outline-none transition disabled:opacity-60"
+                    className="px-2.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:border-emerald-600 focus:outline-none transition disabled:opacity-60 cursor-pointer"
                   >
                     <option value="+91">🇮🇳 +91</option>
                     <option value="+1">🇺🇸 +1</option>
@@ -329,28 +372,74 @@ export const LoginPage: React.FC = () => {
                   <div className="relative flex-1 flex items-center">
                     <Phone className="absolute left-3.5 w-4 h-4 text-slate-400" />
                     <input
+                      ref={phoneInputRef}
                       type="tel"
                       required
+                      autoFocus
                       disabled={otpSent}
                       value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="98230 45678"
-                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-600 focus:outline-none transition font-mono disabled:opacity-75"
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      placeholder="e.g. 98230 45678"
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-600 focus:outline-none transition font-mono disabled:opacity-75 tracking-wider font-semibold"
                     />
                   </div>
                 </div>
+
+                {!otpSent && (
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="flex items-center gap-1.5 text-slate-600">
+                        {phoneNumber.length === 10 ? (
+                          <span className="text-emerald-700 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>10 digits complete • {otpLoading ? 'Sending OTP in real time...' : 'Real-time auto-send active'}</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 flex items-center gap-1">
+                            <Zap className="w-3 h-3 text-amber-500" />
+                            <span>Real-time input: <strong className="font-mono text-slate-800">{phoneNumber.length}</strong>/10 digits</span>
+                          </span>
+                        )}
+                      </span>
+                      {phoneNumber.length === 10 && !otpLoading && (
+                        <button
+                          type="button"
+                          onClick={() => handleSendOtp(phoneNumber)}
+                          className="text-emerald-700 font-bold hover:underline cursor-pointer flex items-center gap-0.5"
+                        >
+                          <span>Send Now</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                    {/* Visual digit progress bar */}
+                    <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${
+                          phoneNumber.length === 10 ? 'bg-emerald-600' : 'bg-emerald-400'
+                        }`}
+                        style={{ width: `${(phoneNumber.length / 10) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {otpSent && (
-                  <div className="mt-1.5 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500">
-                      Code sent to <span className="font-semibold text-slate-800">{phoneCountryCode} {phoneNumber}</span>
+                  <div className="mt-2 flex items-center justify-between text-[11px] bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+                    <span className="text-slate-600 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      Code sent to <span className="font-semibold text-slate-900">{phoneCountryCode} {phoneNumber}</span>
                     </span>
                     <button
                       type="button"
                       onClick={() => {
+                        lastDispatchedPhoneRef.current = '';
                         setOtpSent(false);
                         setOtpCode('');
-                        setDemoOtpHint(null);
-                        setInfoMessage('You can change your mobile number and request a new code.');
+                        setSmsNotification(null);
+                        setDetectedUser(null);
+                        setInfoMessage('You can enter a different mobile number.');
+                        setTimeout(() => phoneInputRef.current?.focus(), 100);
                       }}
                       className="text-emerald-700 font-bold hover:underline cursor-pointer"
                     >
@@ -360,59 +449,91 @@ export const LoginPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Step 1: Send OTP Button (if not sent) */}
+              {/* Step 1: Send OTP Button (if not sent yet) */}
               {!otpSent ? (
                 <button
                   type="submit"
-                  disabled={otpLoading || !phoneNumber.trim()}
+                  disabled={otpLoading || phoneNumber.replace(/[^0-9]/g, '').length < 10}
                   className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-xl transition shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {otpLoading ? (
-                    <span>Sending Verification Code...</span>
+                    <span className="flex items-center gap-2">
+                      <RotateCcw className="w-4 h-4 animate-spin" />
+                      <span>Taking Mobile Number & Sending OTP...</span>
+                    </span>
                   ) : (
                     <>
                       <KeyRound className="w-4 h-4" />
-                      <span>Request One-Time Password (OTP)</span>
+                      <span>Send Verification Code (OTP)</span>
                     </>
                   )}
                 </button>
               ) : (
-                /* Step 2: OTP Verification Field & Demo Helper */
-                <div className="space-y-4 pt-1">
-                  {/* Demo Helper Banner with 1-click Auto Fill */}
-                  {demoOtpHint && (
-                    <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between gap-2 shadow-2xs">
+                /* Step 2: Enter 6-digit OTP verification code & optional setup */
+                <div className="space-y-4 pt-1 animate-in fade-in duration-200">
+                  
+                  {/* Account recognition status */}
+                  {detectedUser?.found ? (
+                    <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-900">
                       <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <div>
-                          <div className="text-[11px] font-bold text-emerald-900">
-                            Simulated SMS Received
-                          </div>
-                          <div className="text-xs font-mono font-extrabold text-emerald-800 tracking-wider">
-                            Code: {demoOtpHint}
-                          </div>
-                        </div>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Welcome back, <strong>{detectedUser.name}</strong></span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOtpCode(demoOtpHint);
-                          setErrorMessage('');
-                        }}
-                        className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg transition cursor-pointer shadow-2xs shrink-0"
-                      >
-                        Auto-Fill
-                      </button>
+                      <span className="capitalize px-2 py-0.5 bg-emerald-200 text-emerald-900 rounded-md font-bold text-[10px]">
+                        {detectedUser.role}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                          <span>New Mobile Account Setup</span>
+                        </span>
+                        <span className="text-[10px] text-slate-500">Pick your role:</span>
+                      </div>
+
+                      {/* Quick Role Selector */}
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {(['farmer', 'distributor', 'retailer', 'consumer'] as const).map((r) => (
+                          <button
+                            key={r}
+                            type="button"
+                            onClick={() => setNewUserRole(r)}
+                            className={`py-1.5 px-1 rounded-lg text-[11px] font-bold capitalize transition cursor-pointer text-center ${
+                              newUserRole === r
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50'
+                            }`}
+                          >
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Optional Name */}
+                      <div className="relative flex items-center">
+                        <User className="absolute left-2.5 w-3.5 h-3.5 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Your Full Name (optional)"
+                          value={newUserName}
+                          onChange={(e) => setNewUserName(e.target.value)}
+                          className="w-full pl-8 pr-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-600"
+                        />
+                      </div>
                     </div>
                   )}
 
+                  {/* OTP Code Input */}
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">
-                      Enter 6-Digit OTP Code
+                      Enter 6-Digit Verification Code
                     </label>
                     <div className="relative flex items-center">
                       <KeyRound className="absolute left-3.5 w-4 h-4 text-slate-400" />
                       <input
+                        ref={otpInputRef}
                         type="text"
                         maxLength={6}
                         required
@@ -420,11 +541,23 @@ export const LoginPage: React.FC = () => {
                         value={otpCode}
                         onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
                         placeholder="••••••"
-                        className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono tracking-widest text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-600 focus:outline-none transition"
+                        className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base font-mono tracking-widest text-slate-900 placeholder-slate-400 focus:bg-white focus:border-emerald-600 focus:outline-none transition font-bold"
                       />
                     </div>
+
+                    {/* Quick Autofill Chip */}
+                    {smsNotification?.code && smsNotification.code !== otpCode && (
+                      <button
+                        type="button"
+                        onClick={() => setOtpCode(smsNotification.code)}
+                        className="mt-2 w-full py-1.5 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
+                      >
+                        <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Autofill Received OTP: <strong className="font-mono tracking-wider">{smsNotification.code}</strong></span>
+                      </button>
+                    )}
                     <div className="flex items-center justify-between mt-1 text-[11px] text-slate-500">
-                      <span>Standard test OTP: <strong className="font-mono text-slate-700">123456</strong></span>
+                      <span>Check incoming SMS alert banner</span>
                       {resendCountdown > 0 ? (
                         <span>Resend in {resendCountdown}s</span>
                       ) : (
@@ -446,7 +579,10 @@ export const LoginPage: React.FC = () => {
                     className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-xl transition shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {isLoading ? (
-                      <span>Verifying & Signing In...</span>
+                      <span className="flex items-center gap-2">
+                        <RotateCcw className="w-4 h-4 animate-spin" />
+                        <span>Verifying & Signing In...</span>
+                      </span>
                     ) : (
                       <>
                         <span>Verify & Sign In</span>
@@ -461,31 +597,6 @@ export const LoginPage: React.FC = () => {
         ) : (
           /* METHOD 2: STANDARD EMAIL & PASSWORD LOGIN */
           <div className="space-y-5">
-            {/* Demo Accounts Quick-Fill */}
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
-              <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                Quick Fill Demo Email Credentials
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {demoEmailAccounts.map((acc) => (
-                  <button
-                    key={acc.label}
-                    type="button"
-                    onClick={() => {
-                      setEmail(acc.email);
-                      setPassword(acc.password);
-                      setErrorMessage('');
-                      setInfoMessage(`Filled ${acc.label} credentials (${acc.email})`);
-                    }}
-                    className="px-2.5 py-1 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 border border-slate-200 rounded-lg text-xs text-slate-700 font-medium transition cursor-pointer shadow-2xs"
-                  >
-                    {acc.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Email Form */}
             <form onSubmit={handleEmailLogin} className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">
@@ -511,7 +622,7 @@ export const LoginPage: React.FC = () => {
                   </label>
                   <button
                     type="button"
-                    onClick={() => setInfoMessage('For demo accounts, use password "password123".')}
+                    onClick={() => setInfoMessage('For default accounts, password is "password123".')}
                     className="text-[11px] text-emerald-700 hover:underline font-medium cursor-pointer"
                   >
                     Forgot Password?
@@ -560,7 +671,61 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
-        {/* Consumer Verification Note */}
+        {/* BACKUP OPTION: Quick Demo Test Profiles (Collapsible Accordion) */}
+        <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/60">
+          <button
+            type="button"
+            onClick={() => setShowDemoBackup(!showDemoBackup)}
+            className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-3.5 h-3.5 text-slate-500" />
+              <span>Demo Test Accounts (Backup for Testing)</span>
+            </div>
+            {showDemoBackup ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+
+          {showDemoBackup && (
+            <div className="p-3 border-t border-slate-200 bg-white space-y-2">
+              <p className="text-[11px] text-slate-500 leading-snug">
+                Click any profile to pre-fill credentials for quick automated testing:
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {backupAccounts.map((acc) => (
+                  <button
+                    key={acc.label}
+                    type="button"
+                    onClick={() => {
+                      if (authMethod === 'otp') {
+                        setPhoneNumber(acc.phone);
+                        setOtpSent(false);
+                        setOtpCode('');
+                        setErrorMessage('');
+                        handleSendOtp(acc.phone);
+                      } else {
+                        setEmail(acc.email);
+                        setPassword('password123');
+                        setErrorMessage('');
+                        setInfoMessage(`Filled ${acc.label} credentials (${acc.email})`);
+                      }
+                    }}
+                    className="p-2 text-left rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 transition cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-slate-800">{acc.label}</span>
+                      <span className="text-[10px] text-emerald-700 font-semibold">{acc.name}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                      {authMethod === 'otp' ? acc.display : acc.email}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Consumer Verification Link */}
         <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl text-[11px] text-emerald-900 flex items-center justify-between gap-2">
           <span>Are you a consumer verifying produce?</span>
           <button

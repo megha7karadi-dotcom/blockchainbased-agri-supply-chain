@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useApp } from '../../context/AppContext';
+import { useWallet } from '../../context/WalletContext';
 import { SupplyChainTimeline } from '../common/SupplyChainTimeline';
 import { PriceBreakdownCard } from '../common/PriceBreakdownCard';
 import { QRCodeModal } from '../common/QRCodeModal';
@@ -37,6 +38,7 @@ import { getContractAddress, SEPOLIA_EXPLORER_URL, isContractConfigured } from '
 
 export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> = ({ onOpenQRScanner }) => {
   const { batches, currentPath, navigate, selectedBatchId, setSelectedBatchId } = useApp();
+  const { addScanRecord, contractAddress } = useWallet();
   const [searchInput, setSearchInput] = useState('');
   const [activeSubTab, setActiveSubTab] = useState<'journey' | 'pricing' | 'origin' | 'blockchain' | 'qr' | 'feedback'>('journey');
   const [showQRModal, setShowQRModal] = useState(false);
@@ -225,6 +227,30 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const verificationUrl = batch ? `${origin}/verify/${batch.batchId}` : '';
 
+  // Log verified produce batch to Blockchain Wallet Context scan history
+  useEffect(() => {
+    if (batch) {
+      addScanRecord({
+        batchId: batch.batchId,
+        name: batch.name,
+        variety: batch.variety,
+        imageUrl: batch.imageUrl,
+        farmLocation: batch.farmerLocation || batch.farmLocation,
+        farmerName: batch.farmerName,
+        finalPrice: batch.pricing?.finalConsumerPrice,
+        farmerPrice: batch.pricing?.farmerPrice,
+        qualityGrade: batch.quality?.grade,
+        freshnessScore: batch.quality?.freshnessScore,
+        status: batch.status,
+        contractAddress: batch.blockchain?.contractAddress || contractAddress,
+        tokenId: batch.blockchain?.tokenId,
+        blockNumber: batch.blockchain?.blockNumber,
+        networkName: batch.blockchain?.consensusMechanism || 'Ethereum Sepolia',
+        isTamperEvident: true
+      });
+    }
+  }, [batch?.batchId, addScanRecord, contractAddress]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const query = searchInput.trim();
@@ -256,59 +282,59 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
     <div className="max-w-5xl mx-auto space-y-8 pb-16">
       
       {/* Search Header */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-4">
+      <div className="bg-white rounded-xl p-5 sm:p-6 border border-[#DCE5D9] shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-              Verify Agricultural Produce Provenance
+            <h1 className="text-xl sm:text-2xl font-bold text-[#263329] tracking-tight">
+              Verify Crop & Farm Origins
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Verify authentic farm origin, cold-chain integrity, and transparent price buildup without creating an account.
+            <p className="text-xs text-[#657267] mt-0.5">
+              Check the authentic farm origin, harvest date, transport journey, and fair price breakdown.
             </p>
           </div>
           <button
             type="button"
             onClick={onOpenQRScanner}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl transition shadow-xs self-start sm:self-auto cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#246B35] hover:bg-[#1B4332] text-white text-xs font-semibold rounded-lg transition shadow-xs self-start sm:self-auto cursor-pointer"
           >
-            <QrCode className="w-4 h-4 text-emerald-300" />
-            <span>Open Camera Scanner</span>
+            <QrCode className="w-4 h-4 text-emerald-200" />
+            <span>Scan QR Code</span>
           </button>
         </div>
 
         {/* Search input form */}
         <form onSubmit={handleSearch} className="flex gap-2">
           <div className="flex-1 relative">
-            <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-stone-400" />
             <input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Enter Batch ID (e.g., AGRI-2026-MNG-001) or paste verification link..."
-              className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:border-emerald-600 focus:bg-white outline-none font-mono"
+              className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#F0F7EC]/30 border border-[#DCE5D9] rounded-lg focus:border-[#246B35] focus:bg-white outline-none font-mono"
             >
             </input>
           </div>
           <button
             type="submit"
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition cursor-pointer shadow-xs"
+            className="px-5 py-2.5 bg-[#246B35] hover:bg-[#1B4332] text-white text-xs font-semibold rounded-lg transition cursor-pointer shadow-xs"
           >
-            Lookup Batch
+            Verify Crop
           </button>
         </form>
 
         {/* Quick Batch Selectors */}
         <div className="flex items-center gap-2 flex-wrap text-xs pt-1">
-          <span className="text-slate-400 font-medium">Verified Batches:</span>
+          <span className="text-[#657267] font-medium">Verified Batches:</span>
           {batches.map(b => (
             <button
               key={b.id}
               type="button"
               onClick={() => handleSelectBatch(b)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer ${
                 batch && b.batchId === batch.batchId
-                  ? 'bg-emerald-700 text-white font-semibold'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-[#246B35] text-white font-semibold'
+                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
               }`}
             >
               {b.cropName || b.name} ({b.batchId})
@@ -395,17 +421,17 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
         <div className="space-y-6">
           
           {/* Top Produce Summary Card */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-xl border border-[#DCE5D9] shadow-xs overflow-hidden">
             
             {/* Header Ribbon */}
-            <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-50 via-teal-50/50 to-slate-50 text-slate-900 border-b border-emerald-200/90 flex flex-wrap items-center justify-between gap-3">
+            <div className="p-4 sm:p-5 bg-[#F0F7EC] text-[#263329] border-b border-[#DCE5D9] flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <span className="font-mono text-sm font-bold text-slate-900">
+                <span className="font-mono text-sm font-bold text-[#246B35]">
                   Batch ID: {batch.batchId}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-xs text-emerald-800">
+                <span className="font-semibold text-xs text-[#246B35] bg-white px-2 py-0.5 rounded border border-[#DCE5D9]">
                   Status: {batch.status || 'Registered'}
                 </span>
               </div>
@@ -413,13 +439,23 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
 
             <div className="flex flex-col md:flex-row">
               {/* Product Image */}
-              <div className="w-full md:w-72 h-52 md:h-auto bg-slate-100 relative shrink-0">
+              <div className="w-full md:w-72 h-56 md:h-auto bg-slate-100 relative shrink-0 overflow-hidden">
                 <img 
-                  src={batch.imageUrl || 'https://images.unsplash.com/photo-1553279768-865429fa0078?auto=format&fit=crop&w=600&q=80'} 
+                  src={batch.imageUrl || '/assets/harvest_crates.svg'} 
                   alt={batch.cropName || batch.name} 
+                  onError={(e) => { e.currentTarget.src = '/assets/harvest_crates.svg'; }}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
+                {/* Official Verified Rosette Seal floating on the corner of the produce picture */}
+                <div className="absolute bottom-3 right-3 w-16 h-16 drop-shadow-md select-none pointer-events-none">
+                  <img 
+                    src="/assets/seal_organic.svg" 
+                    alt="AgriTrace Verified Organic Seal"
+                    className="w-full h-full object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
                 <div className="absolute top-3 left-3">
                   <span className="px-2 py-0.5 rounded text-xs font-semibold bg-slate-900/80 text-white backdrop-blur">
                     {batch.qualityGrade || batch.quality?.grade || 'Grade A'}
@@ -595,9 +631,9 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
               <SupplyChainTimeline timeline={batch.timeline || []} currentStatus={batch.status || 'Registered'} />
               
               {/* Custody History Card */}
-              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-4">
-                <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
-                  <FileCheck2 className="w-4 h-4 text-emerald-600" />
+              <div className="bg-white rounded-xl p-6 sm:p-7 border border-[#DCE5D9] shadow-xs space-y-4">
+                <h3 className="font-bold text-[#263329] text-sm sm:text-base flex items-center gap-2">
+                  <FileCheck2 className="w-4 h-4 text-[#246B35]" />
                   <span>Recorded Custody & Ownership Transfers</span>
                 </h3>
                 <div className="divide-y divide-slate-100 text-xs">
@@ -758,7 +794,7 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
                 <div>
                   <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                    <span>Cryptographic Provenance Record</span>
+                    <span>Verified Provenance Record</span>
                   </h3>
                   <p className="text-xs text-slate-500">Tamper-evident record and verification identifiers</p>
                 </div>

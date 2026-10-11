@@ -135,19 +135,22 @@ export const TraceProductsPage: React.FC<Props> = ({ onOpenQRScanner }) => {
             const farmerSharePct = Math.round((batch.pricing.farmerPrice / batch.pricing.finalConsumerPrice) * 100);
 
             return (
-              <div 
+              <motion.div 
                 key={batch.id}
-                className="bg-white rounded-3xl border border-slate-200 shadow-xs hover:shadow-md transition duration-200 flex flex-col overflow-hidden group"
+                whileHover={{ y: -6, scale: 1.015 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white rounded-3xl border border-slate-200 shadow-xs hover:shadow-md transition duration-200 flex flex-col overflow-hidden group hover:border-emerald-300"
               >
                 {/* Image & Badges */}
-                <div className="relative h-44 overflow-hidden bg-slate-100">
+                <div className="relative h-44 overflow-hidden bg-emerald-950/10">
                   <img 
-                    src={batch.imageUrl} 
+                    src={batch.imageUrl || '/assets/harvest_crates.svg'} 
                     alt={batch.name}
+                    onError={(e) => { e.currentTarget.src = '/assets/harvest_crates.svg'; }}
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-950/20 to-transparent"></div>
 
                   <div className="absolute top-3 left-3">
                     <span className="font-mono text-[11px] font-bold bg-white/95 text-slate-900 backdrop-blur-xs px-2.5 py-1 rounded-lg shadow-xs">
@@ -156,7 +159,7 @@ export const TraceProductsPage: React.FC<Props> = ({ onOpenQRScanner }) => {
                   </div>
 
                   <div className="absolute top-3 right-3 flex items-center gap-1">
-                    <span className="text-xs font-semibold text-white/90 flex items-center gap-1 drop-shadow-xs">
+                    <span className="text-xs font-semibold text-white/95 bg-slate-900/50 backdrop-blur-xs px-2 py-0.5 rounded-md flex items-center gap-1 drop-shadow-xs">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                       <span>Verified</span>
                     </span>
@@ -164,7 +167,7 @@ export const TraceProductsPage: React.FC<Props> = ({ onOpenQRScanner }) => {
 
                   <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between text-white">
                     <div>
-                      <span className="text-xs font-medium text-emerald-300 block">
+                      <span className="text-xs font-semibold text-emerald-300 block">
                         {batch.category}
                       </span>
                       <h3 className="font-bold text-base leading-tight drop-shadow-xs">
@@ -193,14 +196,14 @@ export const TraceProductsPage: React.FC<Props> = ({ onOpenQRScanner }) => {
                         <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                         <span>Harvest: {batch.harvestDate}</span>
                       </span>
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 font-semibold text-slate-700">
-                        {(batch.quality?.grade || 'Grade A').split(' ')[0]}
+                      <span className="text-xs font-medium text-slate-800">
+                        {(batch.quality?.grade || 'Grade A')}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-slate-600 pt-1 border-t border-slate-100">
-                      <span>Current Custody:</span>
-                      <span className="font-semibold text-slate-800 capitalize bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+                    <div className="flex items-center justify-between text-slate-600 pt-1 border-t border-slate-100 text-xs">
+                      <span className="text-slate-500">Current Custody</span>
+                      <span className="font-semibold text-slate-900 capitalize">
                         {batch.status}
                       </span>
                     </div>
@@ -248,7 +251,7 @@ export const TraceProductsPage: React.FC<Props> = ({ onOpenQRScanner }) => {
                   </div>
 
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>

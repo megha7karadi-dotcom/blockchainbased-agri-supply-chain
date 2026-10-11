@@ -9,7 +9,6 @@ import {
   Activity, 
   RefreshCw, 
   Sliders, 
-  Sparkles,
   Zap,
   TrendingUp,
   FileSpreadsheet,

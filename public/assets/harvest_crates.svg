@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGradHarvest" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f0fdf4" />
+      <stop offset="100%" stop-color="#dcfce7" />
+    </linearGradient>
+    <linearGradient id="woodGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#b45309" />
+      <stop offset="50%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#92400e" />
+    </linearGradient>
+    <linearGradient id="tomatoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#b91c1c" />
+    </linearGradient>
+    <linearGradient id="mangoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="60%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <filter id="crateShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#064e3b" flood-opacity="0.15" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="600" height="450" fill="url(#bgGradHarvest)" rx="24" />
+
+  <!-- Soft organic backdrop pattern -->
+  <g fill="#10b981" opacity="0.08">
+    <circle cx="100" cy="80" r="60" />
+    <circle cx="500" cy="90" r="80" />
+    <circle cx="300" cy="380" r="120" />
+  </g>
+
+  <!-- Rustic Wooden Harvest Crate -->
+  <g transform="translate(100, 160)" filter="url(#crateShadow)">
+    <!-- Base planks -->
+    <rect x="20" y="80" width="360" height="32" rx="4" fill="url(#woodGrad)" stroke="#78350f" stroke-width="1.5" />
+    <rect x="20" y="120" width="360" height="32" rx="4" fill="url(#woodGrad)" stroke="#78350f" stroke-width="1.5" />
+    <rect x="20" y="160" width="360" height="32" rx="4" fill="url(#woodGrad)" stroke="#78350f" stroke-width="1.5" />
+    <!-- Corner posts -->
+    <rect x="10" y="70" width="28" height="130" rx="3" fill="#78350f" />
+    <rect x="362" y="70" width="28" height="130" rx="3" fill="#78350f" />
+    <rect x="186" y="70" width="28" height="130" rx="3" fill="#78350f" />
+
+    <!-- Fresh Harvest Produce in Crate -->
+    <!-- Lush Green Leaves & Basil -->
+    <path d="M70 70 Q 50 30 90 20 Q 120 40 100 75 Z" fill="#15803d" />
+    <path d="M120 65 Q 110 20 150 15 Q 170 35 145 70 Z" fill="#16a34a" />
+    <path d="M250 65 Q 240 10 280 20 Q 300 45 270 75 Z" fill="#15803d" />
+    <path d="M300 70 Q 290 25 330 20 Q 350 40 325 75 Z" fill="#22c55e" />
+
+    <!-- Heirloom Ripe Red Tomatoes -->
+    <circle cx="80" cy="65" r="28" fill="url(#tomatoGrad)" />
+    <path d="M80 37 L77 44 M80 37 L83 44 M74 41 L86 41" stroke="#15803d" stroke-width="3" stroke-linecap="round" />
+
+    <circle cx="125" cy="55" r="30" fill="url(#tomatoGrad)" />
+    <path d="M125 25 L122 33 M125 25 L128 33 M119 30 L131 30" stroke="#15803d" stroke-width="3" stroke-linecap="round" />
+
+    <!-- Alphonso Golden Mangoes -->
+    <path d="M175 40 C 150 40, 150 80, 180 85 C 210 90, 220 55, 195 40 Z" fill="url(#mangoGrad)" />
+    <circle cx="230" cy="58" r="27" fill="url(#mangoGrad)" />
+    <circle cx="275" cy="65" r="28" fill="url(#tomatoGrad)" />
+    <circle cx="320" cy="60" r="27" fill="url(#mangoGrad)" />
+
+    <!-- Front Crate Stencil Badge -->
+    <rect x="110" y="125" width="180" height="22" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1" />
+    <text x="200" y="140" font-family="Inter, sans-serif" font-size="10" font-weight="800" fill="#92400e" text-anchor="middle" letter-spacing="1">100% ORGANIC CERTIFIED</text>
+  </g>
+
+  <!-- Attached Cryptographic QR Provenance Tag -->
+  <g transform="translate(380, 80)" filter="url(#crateShadow)">
+    <!-- String to crate -->
+    <path d="M40 0 C 30 30, -30 90, -40 120" stroke="#b45309" stroke-width="2" fill="none" stroke-dasharray="3 3" />
+    <!-- Tag body -->
+    <polygon points="40,20 150,20 170,50 150,160 40,160 20,90" fill="#ffffff" stroke="#10b981" stroke-width="2" />
+    <!-- Hole -->
+    <circle cx="40" cy="90" r="6" fill="#f0fdf4" stroke="#10b981" stroke-width="2" />
+
+    <!-- QR Code Graphic on Tag -->
+    <rect x="65" y="40" width="70" height="70" rx="6" fill="#064e3b" />
+    <rect x="75" y="50" width="20" height="20" fill="#ffffff" />
+    <rect x="79" y="54" width="12" height="12" fill="#064e3b" />
+    <rect x="105" y="50" width="20" height="20" fill="#ffffff" />
+    <rect x="109" y="54" width="12" height="12" fill="#064e3b" />
+    <rect x="75" y="80" width="20" height="20" fill="#ffffff" />
+    <rect x="79" y="84" width="12" height="12" fill="#064e3b" />
+    <rect x="105" y="80" width="10" height="10" fill="#34d399" />
+    <rect x="115" y="90" width="10" height="10" fill="#34d399" />
+
+    <text x="100" y="130" font-family="Inter, monospace" font-size="8.5" font-weight="bold" fill="#065f46" text-anchor="middle">AGRI-BATCH-001</text>
+    <text x="100" y="145" font-family="Inter, sans-serif" font-size="7.5" font-weight="bold" fill="#059669" text-anchor="middle">SCAN TO VERIFY</text>
+  </g>
+</svg>

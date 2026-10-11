@@ -17,7 +17,8 @@ import {
   Layers,
   Table as TableIcon,
   LayoutGrid,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Truck
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ProduceBatch } from '../../types/produce';
@@ -31,7 +32,6 @@ export const MyProduce: React.FC = () => {
   const [inspectBatch, setInspectBatch] = useState<ProduceBatch | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
-  // Filter batches for current farmer (or show default platform batches if new session)
   const farmerBatches = batches.filter(b => 
     b.farmerId === currentUser?.id || 
     b.farmerName === currentUser?.name || 
@@ -55,51 +55,52 @@ export const MyProduce: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 pb-16 max-w-6xl mx-auto">
+    <div className="space-y-6 pb-16 max-w-6xl mx-auto">
       
-      {/* =========================================================================
-          PAGE HEADER
-          ========================================================================= */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
-              <Package className="w-7 h-7 text-emerald-600" />
-              <span>My Produce Batches</span>
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-xl">
-              Manage your registered agricultural batches, view traceability status, and inspect farmgate records.
-            </p>
+      {/* Header */}
+      <div className="bg-white border border-[#DCE5D9] rounded-xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#246B35]"></span>
+            <span className="text-[11px] font-semibold text-[#246B35] uppercase tracking-wider">
+              Crop Directory
+            </span>
           </div>
-
-          <button
-            id="btn-register-new-batch"
-            onClick={() => navigate('/farmer/register-produce')}
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-2 self-start sm:self-auto cursor-pointer"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Register New Produce</span>
-          </button>
+          <h1 className="text-xl sm:text-2xl font-bold text-[#263329]">
+            My Crops
+          </h1>
+          <p className="text-xs text-[#657267]">
+            All crops logged by your farm. View packaging QR codes, check status, or transfer to buyers.
+          </p>
         </div>
+
+        <button
+          id="btn-register-new-batch"
+          onClick={() => navigate('/farmer/register-produce')}
+          className="px-4 py-2.5 bg-[#246B35] hover:bg-[#1B4332] text-white font-semibold text-xs sm:text-sm rounded-lg transition shadow-xs flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+        >
+          <PlusCircle className="w-4 h-4" />
+          <span>Add New Crop</span>
+        </button>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
+      <div className="bg-white p-4 rounded-xl border border-[#DCE5D9] shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
         <div className="relative w-full md:w-80">
-          <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-2.5 w-4 h-4 text-stone-400" />
           <input
             type="text"
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            placeholder="Search by crop, batch ID, location..."
-            className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:border-emerald-600 outline-none transition"
+            placeholder="Search crop, batch ID, town..."
+            className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-[#F0F7EC]/30 border border-[#DCE5D9] rounded-lg focus:border-[#246B35] focus:bg-white outline-none transition"
           />
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end overflow-x-auto">
           {/* Status Filter Chips */}
           <div className="flex items-center gap-1.5 text-xs overflow-x-auto">
-            <span className="text-slate-400 font-medium mr-1 flex items-center gap-1">
+            <span className="text-[#657267] font-medium mr-1 flex items-center gap-1">
               <Filter className="w-3.5 h-3.5" />
               <span>Status:</span>
             </span>
@@ -107,10 +108,10 @@ export const MyProduce: React.FC = () => {
               <button
                 key={st}
                 onClick={() => setFilterStatus(st)}
-                className={`px-3 py-1 rounded-xl whitespace-nowrap transition cursor-pointer text-xs font-semibold ${
+                className={`px-3 py-1 rounded-md whitespace-nowrap transition cursor-pointer text-xs font-semibold ${
                   filterStatus.toLowerCase() === st.toLowerCase()
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-[#246B35] text-white'
+                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                 }`}
               >
                 {st === 'all' ? 'All' : st}
@@ -119,11 +120,11 @@ export const MyProduce: React.FC = () => {
           </div>
 
           {/* View Toggle */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl shrink-0">
+          <div className="flex items-center bg-stone-100 p-0.5 rounded-lg shrink-0">
             <button
               onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg transition cursor-pointer ${
-                viewMode === 'table' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+              className={`p-1.5 rounded transition cursor-pointer ${
+                viewMode === 'table' ? 'bg-white text-[#246B35] shadow-xs' : 'text-stone-500 hover:text-stone-800'
               }`}
               title="Table View"
             >
@@ -131,8 +132,8 @@ export const MyProduce: React.FC = () => {
             </button>
             <button
               onClick={() => setViewMode('cards')}
-              className={`p-1.5 rounded-lg transition cursor-pointer ${
-                viewMode === 'cards' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+              className={`p-1.5 rounded transition cursor-pointer ${
+                viewMode === 'cards' ? 'bg-white text-[#246B35] shadow-xs' : 'text-stone-500 hover:text-stone-800'
               }`}
               title="Card View"
             >
@@ -142,49 +143,47 @@ export const MyProduce: React.FC = () => {
         </div>
       </div>
 
-      {/* =========================================================================
-          BATCHES DISPLAY (Section 13)
-          ========================================================================= */}
+      {/* Batches Display */}
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-3xl p-12 text-center border border-slate-200 space-y-4">
-          <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-            <Package className="w-7 h-7" />
+        <div className="bg-white rounded-xl p-10 text-center border border-[#DCE5D9] space-y-4">
+          <div className="w-12 h-12 rounded-full bg-stone-100 text-stone-400 flex items-center justify-center mx-auto">
+            <Package className="w-6 h-6" />
           </div>
           <div className="space-y-1">
-            <h3 className="font-bold text-slate-800 text-base">No produce batches found</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              No batches matched your current search or filter criteria.
+            <h3 className="font-bold text-[#263329] text-base">No crops found</h3>
+            <p className="text-xs text-[#657267] max-w-sm mx-auto">
+              No crops match your current search or filter.
             </p>
           </div>
           <button
             onClick={() => navigate('/farmer/register-produce')}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition inline-flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2 bg-[#246B35] hover:bg-[#1B4332] text-white font-semibold text-xs rounded-lg transition inline-flex items-center gap-1.5 cursor-pointer"
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            <span>Register Your First Batch</span>
+            <span>Add Your First Crop</span>
           </button>
         </div>
       ) : viewMode === 'table' ? (
-        /* TABLE VIEW (Section 13 exact specification) */
-        <div className="bg-white border border-slate-200 rounded-3xl shadow-xs overflow-hidden">
+        /* TABLE VIEW */
+        <div className="bg-white border border-[#DCE5D9] rounded-xl shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
+              <thead className="bg-[#F0F7EC]/60 border-b border-[#DCE5D9] text-[#263329] font-semibold uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3.5 px-4 font-bold">Batch ID</th>
-                  <th className="py-3.5 px-4 font-bold">Crop</th>
-                  <th className="py-3.5 px-4 font-bold">Quantity</th>
-                  <th className="py-3.5 px-4 font-bold">Harvest Date</th>
-                  <th className="py-3.5 px-4 font-bold">Quality</th>
-                  <th className="py-3.5 px-4 font-bold">Farm Location</th>
-                  <th className="py-3.5 px-4 font-bold">Farmgate Price</th>
-                  <th className="py-3.5 px-4 font-bold">Status</th>
-                  <th className="py-3.5 px-4 font-bold text-right">Action</th>
+                  <th className="py-3 px-4 font-bold">Batch ID</th>
+                  <th className="py-3 px-4 font-bold">Crop & Variety</th>
+                  <th className="py-3 px-4 font-bold">Quantity</th>
+                  <th className="py-3 px-4 font-bold">Harvest Date</th>
+                  <th className="py-3 px-4 font-bold">Quality</th>
+                  <th className="py-3 px-4 font-bold">Farm Location</th>
+                  <th className="py-3 px-4 font-bold">My Price</th>
+                  <th className="py-3 px-4 font-bold">Status</th>
+                  <th className="py-3 px-4 font-bold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-stone-100 text-stone-800">
                 {filtered.map(batch => {
-                  const cropTitle = batch.cropName || batch.name || 'Agricultural Produce';
+                  const cropTitle = batch.cropName || batch.name || 'Produce';
                   const variety = batch.cropVariety || batch.variety || '';
                   const qty = batch.quantity || batch.quantityKg || 0;
                   const unit = batch.unit || 'kg';
@@ -193,80 +192,69 @@ export const MyProduce: React.FC = () => {
                   const quality = batch.qualityGrade || (batch.quality?.grade?.includes('A') ? 'Grade A' : 'Grade B');
 
                   return (
-                    <tr key={batch.id} className="hover:bg-slate-50/70 transition">
-                      {/* Batch ID */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
-                          {batch.batchId}
-                        </span>
+                    <tr key={batch.id} className="hover:bg-stone-50/80 transition">
+                      <td className="py-3 px-4 whitespace-nowrap font-mono font-bold text-[#246B35]">
+                        {batch.batchId}
                       </td>
 
-                      {/* Crop */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="font-bold text-slate-900">{cropTitle}</div>
-                        {variety && <div className="text-[11px] text-slate-500 font-normal">{variety}</div>}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <div className="font-bold text-[#263329]">{cropTitle}</div>
+                        {variety && <div className="text-[11px] text-[#657267] font-normal">{variety}</div>}
                       </td>
 
-                      {/* Quantity */}
-                      <td className="py-3.5 px-4 whitespace-nowrap font-medium text-slate-800">
+                      <td className="py-3 px-4 whitespace-nowrap font-semibold text-stone-900 font-mono">
                         {qty} {unit}
                       </td>
 
-                      {/* Harvest Date */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-slate-600">
+                      <td className="py-3 px-4 whitespace-nowrap text-stone-600">
                         {batch.harvestDate}
                       </td>
 
-                      {/* Quality */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-stone-100 text-stone-700 border border-stone-200">
                           {quality}
                         </span>
                       </td>
 
-                      {/* Farm Location */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-slate-600 max-w-[160px] truncate" title={location}>
+                      <td className="py-3 px-4 whitespace-nowrap text-stone-600 max-w-[150px] truncate" title={location}>
                         {location}
                       </td>
 
-                      {/* Farmgate Price */}
-                      <td className="py-3.5 px-4 whitespace-nowrap font-bold text-emerald-700">
+                      <td className="py-3 px-4 whitespace-nowrap font-bold text-[#246B35] font-mono">
                         ₹{price} / {unit}
                       </td>
 
-                      {/* Status */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="text-xs font-semibold text-emerald-700">
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span className="text-[11px] font-medium text-stone-700 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
                           {batch.status || 'Registered'}
                         </span>
                       </td>
 
-                      {/* Action: "View Details", "Transfer", "QR" */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-right space-x-1.5">
+                      <td className="py-3 px-4 whitespace-nowrap text-right space-x-1.5">
                         <button
                           onClick={() => handleViewDetails(batch)}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer shadow-xs"
+                          className="px-2.5 py-1 rounded bg-[#246B35] hover:bg-[#1B4332] text-white text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
-                          <span>View Details</span>
+                          <span>Details</span>
                         </button>
                         <button
                           onClick={() => {
                             setSelectedBatchId(batch.id);
                             navigate('/farmer/transfers');
                           }}
-                          title="Transfer to Distributor"
-                          className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer"
+                          title="Transfer to Buyer or Transporter"
+                          className="px-2.5 py-1 rounded bg-stone-100 hover:bg-stone-200 text-[#263329] text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer border border-stone-200"
                         >
-                          <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-700" />
+                          <Truck className="w-3.5 h-3.5 text-[#246B35]" />
                           <span>Transfer</span>
                         </button>
                         <button
                           onClick={() => setActiveQRBatch(batch)}
-                          title="Generate QR Code"
-                          className="p-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-600 text-xs transition inline-flex items-center cursor-pointer"
+                          title="View QR Code"
+                          className="p-1 rounded border border-stone-300 hover:bg-stone-100 text-[#246B35] transition inline-flex items-center cursor-pointer"
                         >
-                          <QrCode className="w-3.5 h-3.5 text-emerald-700" />
+                          <QrCode className="w-3.5 h-3.5" />
                         </button>
                       </td>
                     </tr>
@@ -278,9 +266,9 @@ export const MyProduce: React.FC = () => {
         </div>
       ) : (
         /* CARDS VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map(batch => {
-            const cropTitle = batch.cropName || batch.name || 'Agricultural Produce';
+            const cropTitle = batch.cropName || batch.name || 'Produce';
             const variety = batch.cropVariety || batch.variety || '';
             const qty = batch.quantity || batch.quantityKg || 0;
             const unit = batch.unit || 'kg';
@@ -291,71 +279,65 @@ export const MyProduce: React.FC = () => {
             return (
               <div
                 key={batch.id}
-                className="bg-white rounded-3xl border border-slate-200 shadow-xs hover:shadow-md transition overflow-hidden flex flex-col justify-between"
+                className="bg-white rounded-xl border border-[#DCE5D9] shadow-xs hover:border-[#4F9D45] transition overflow-hidden flex flex-col justify-between"
               >
                 <div className="p-5 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-slate-700">
+                    <span className="font-mono text-xs font-bold text-[#246B35]">
                       {batch.batchId}
                     </span>
-                    <span className="text-xs font-semibold text-emerald-700">
-                      {batch.status || 'Registered'}
+                    <span className="text-[11px] px-2 py-0.5 rounded bg-stone-100 text-stone-700 font-medium border border-stone-200">
+                      {batch.status}
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="font-bold text-slate-900 text-base">{cropTitle}</h3>
-                    {variety && <p className="text-xs text-slate-500 line-clamp-1">{variety}</p>}
+                    <h3 className="font-bold text-[#263329] text-base">{cropTitle}</h3>
+                    {variety && <p className="text-xs text-[#657267]">{variety}</p>}
                   </div>
 
-                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-1.5 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Quantity:</span>
-                      <span className="font-bold text-slate-800">{qty} {unit}</span>
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-stone-100">
+                    <div>
+                      <span className="text-stone-400 block text-[10px] uppercase">Quantity</span>
+                      <strong className="text-stone-900 font-mono">{qty} {unit}</strong>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Harvest Date:</span>
-                      <span className="font-medium text-slate-700">{batch.harvestDate}</span>
+                    <div>
+                      <span className="text-stone-400 block text-[10px] uppercase">Price</span>
+                      <strong className="text-[#246B35] font-mono">₹{price}/{unit}</strong>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Quality:</span>
-                      <span className="font-bold text-slate-800">{quality}</span>
+                    <div>
+                      <span className="text-stone-400 block text-[10px] uppercase">Harvest</span>
+                      <span className="text-stone-600">{batch.harvestDate}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Location:</span>
-                      <span className="font-medium text-slate-700 truncate max-w-[140px]">{location}</span>
-                    </div>
-                    <div className="flex justify-between border-t border-slate-200/60 pt-1.5">
-                      <span className="text-slate-500 font-medium">Farmgate Price:</span>
-                      <span className="font-bold text-emerald-700">₹{price} / {unit}</span>
+                    <div>
+                      <span className="text-stone-400 block text-[10px] uppercase">Grade</span>
+                      <span className="text-stone-600">{quality}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-5 pt-0 grid grid-cols-3 gap-1.5">
+                <div className="p-3 bg-[#F0F7EC]/50 border-t border-[#DCE5D9] flex items-center justify-between gap-2">
                   <button
-                    onClick={() => setActiveQRBatch(batch)}
-                    className="py-2 px-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                    onClick={() => handleViewDetails(batch)}
+                    className="flex-1 py-1.5 px-3 bg-white hover:bg-stone-50 border border-[#DCE5D9] rounded text-xs font-semibold text-[#263329] transition text-center cursor-pointer"
                   >
-                    <QrCode className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>QR</span>
+                    Details
                   </button>
                   <button
                     onClick={() => {
                       setSelectedBatchId(batch.id);
                       navigate('/farmer/transfers');
                     }}
-                    className="py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                    className="flex-1 py-1.5 px-3 bg-[#246B35] hover:bg-[#1B4332] text-white rounded text-xs font-semibold transition text-center cursor-pointer"
                   >
-                    <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>Transfer</span>
+                    Transfer
                   </button>
                   <button
-                    onClick={() => handleViewDetails(batch)}
-                    className="py-2 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer shadow-xs"
+                    onClick={() => setActiveQRBatch(batch)}
+                    className="p-1.5 bg-white hover:bg-stone-50 border border-[#DCE5D9] rounded text-[#246B35] transition cursor-pointer"
+                    title="View QR Code"
                   >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Details</span>
+                    <QrCode className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -364,141 +346,85 @@ export const MyProduce: React.FC = () => {
         </div>
       )}
 
-      {/* =========================================================================
-          VIEW DETAILS MODAL
-          ========================================================================= */}
+      {/* Batch Details Inspection Modal */}
       {inspectBatch && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-xl border border-slate-200 space-y-6 max-h-[90vh] overflow-y-auto">
-            
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl border border-[#DCE5D9] max-w-xl w-full p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-200">
               <div>
-                <span className="text-xs font-mono font-bold text-slate-800">
-                  {inspectBatch.batchId}
-                </span>
-                <h2 className="text-xl font-extrabold text-slate-900 mt-1">
-                  {inspectBatch.cropName || inspectBatch.name}
-                </h2>
-                {inspectBatch.cropVariety && (
-                  <p className="text-xs text-slate-500">{inspectBatch.cropVariety}</p>
-                )}
+                <span className="text-[11px] font-mono font-bold text-[#246B35]">{inspectBatch.batchId}</span>
+                <h3 className="text-lg font-bold text-[#263329]">
+                  {inspectBatch.cropName || inspectBatch.name} {inspectBatch.cropVariety && `(${inspectBatch.cropVariety})`}
+                </h3>
               </div>
-              <button
+              <button 
                 onClick={() => setInspectBatch(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer"
+                className="p-1 hover:bg-stone-100 rounded text-stone-500 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Detailed Grid */}
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
-                <span className="text-slate-400 block text-[11px]">Quantity</span>
-                <span className="text-sm font-bold text-slate-900">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 bg-stone-50 rounded border border-stone-200">
+                <span className="text-stone-400 block text-[10px] uppercase">Quantity</span>
+                <span className="font-bold text-stone-900 text-sm font-mono">
                   {inspectBatch.quantity || inspectBatch.quantityKg} {inspectBatch.unit || 'kg'}
                 </span>
               </div>
-
-              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
-                <span className="text-slate-400 block text-[11px]">Farmgate Price</span>
-                <span className="text-sm font-bold text-emerald-700">
+              <div className="p-3 bg-stone-50 rounded border border-stone-200">
+                <span className="text-stone-400 block text-[10px] uppercase">Farmer Price</span>
+                <span className="font-bold text-[#246B35] text-sm font-mono">
                   ₹{inspectBatch.farmgatePrice || inspectBatch.pricing?.farmerPrice} / {inspectBatch.unit || 'kg'}
                 </span>
               </div>
-
-              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
-                <span className="text-slate-400 block text-[11px]">Quality Grade</span>
-                <span className="text-xs font-bold text-slate-800">
-                  {inspectBatch.qualityGrade || inspectBatch.quality?.grade || 'Grade A'}
-                </span>
+              <div className="p-3 bg-stone-50 rounded border border-stone-200">
+                <span className="text-stone-400 block text-[10px] uppercase">Origin Village</span>
+                <span className="font-semibold text-stone-800">{inspectBatch.farmLocation || inspectBatch.farmerLocation}</span>
               </div>
-
-              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
-                <span className="text-slate-400 block text-[11px]">Harvest Date</span>
-                <span className="text-xs font-bold text-slate-800">
-                  {inspectBatch.harvestDate}
-                </span>
-              </div>
-
-              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 col-span-2">
-                <span className="text-slate-400 block text-[11px]">Farm & Location</span>
-                <span className="text-xs font-medium text-slate-800">
-                  {inspectBatch.farmName ? `${inspectBatch.farmName}, ` : ''}{inspectBatch.farmLocation || inspectBatch.farmerLocation}
-                  {inspectBatch.state ? `, ${inspectBatch.state}` : ''}
-                </span>
-              </div>
-
-              {inspectBatch.certification && (
-                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 col-span-2">
-                  <span className="text-slate-400 block text-[11px]">Certification / Standard</span>
-                  <span className="text-xs font-medium text-emerald-800">
-                    {inspectBatch.certification}
-                  </span>
-                </div>
-              )}
-
-              {inspectBatch.notes && (
-                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 col-span-2">
-                  <span className="text-slate-400 block text-[11px]">Farmer Notes</span>
-                  <p className="text-xs text-slate-700 mt-1 leading-relaxed">
-                    {inspectBatch.notes}
-                  </p>
-                </div>
-              )}
-
-              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 col-span-2 flex items-center justify-between">
-                <div>
-                  <span className="text-slate-400 block text-[11px]">Registration Status</span>
-                  <span className="text-xs font-bold text-slate-900">{inspectBatch.status || 'Registered'}</span>
-                </div>
-                <span className="text-[11px] text-slate-400 font-mono">
-                  {inspectBatch.createdAt ? new Date(inspectBatch.createdAt).toLocaleString() : 'Recent'}
-                </span>
+              <div className="p-3 bg-stone-50 rounded border border-stone-200">
+                <span className="text-stone-400 block text-[10px] uppercase">Harvest Date</span>
+                <span className="font-semibold text-stone-800">{inspectBatch.harvestDate}</span>
               </div>
             </div>
 
-            {/* Modal Actions */}
-            <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-stone-200">
               <button
-                type="button"
                 onClick={() => {
-                  const targetId = inspectBatch.batchId;
+                  const b = inspectBatch;
                   setInspectBatch(null);
-                  navigateToVerification(targetId);
+                  setActiveQRBatch(b);
                 }}
-                className="px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-[#263329] font-semibold text-xs rounded-lg transition flex items-center gap-1.5 cursor-pointer"
               >
-                <ExternalLink className="w-4 h-4 text-emerald-700" />
-                <span>Verify on Public Portal</span>
+                <QrCode className="w-3.5 h-3.5 text-[#246B35]" />
+                <span>View QR Code</span>
               </button>
+
               <button
-                type="button"
                 onClick={() => {
+                  const b = inspectBatch;
                   setInspectBatch(null);
-                  setActiveQRBatch(inspectBatch);
+                  setSelectedBatchId(b.id);
+                  navigate('/farmer/transfers');
                 }}
-                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 bg-[#246B35] hover:bg-[#1B4332] text-white font-semibold text-xs rounded-lg transition flex items-center gap-1.5 cursor-pointer"
               >
-                <QrCode className="w-4 h-4" />
-                <span>Generate QR Code</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setInspectBatch(null)}
-                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition cursor-pointer"
-              >
-                Close
+                <Truck className="w-3.5 h-3.5" />
+                <span>Transfer Produce</span>
               </button>
             </div>
-
           </div>
         </div>
       )}
 
-      {/* QR Code Tag Modal */}
+      {/* QR Code Modal */}
       {activeQRBatch && (
-        <QRCodeModal batch={activeQRBatch} onClose={() => setActiveQRBatch(null)} />
+        <QRCodeModal
+          isOpen={!!activeQRBatch}
+          onClose={() => setActiveQRBatch(null)}
+          batch={activeQRBatch}
+        />
       )}
 
     </div>

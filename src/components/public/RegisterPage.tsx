@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   UserPlus, 
   Sprout, 
@@ -13,10 +13,14 @@ import {
   CheckCircle2,
   KeyRound,
   RotateCcw,
-  Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+  UserCheck,
+  Zap
 } from 'lucide-react';
 import { useApp, RegisterFormData, RegisterMobileFormData } from '../../context/AppContext';
+import { RealtimeSmsNotification } from '../common/RealtimeSmsNotification';
 
 export const RegisterPage: React.FC = () => {
   const { registerUser, registerWithOtp, sendOtp, navigate, isAuthenticated, currentRole } = useApp();
@@ -33,6 +37,33 @@ export const RegisterPage: React.FC = () => {
 
   // Common Role Selection
   const [selectedRole, setSelectedRole] = useState<'farmer' | 'distributor' | 'retailer' | 'consumer'>('farmer');
+
+  // Realtime SMS notification state
+  const [smsNotification, setSmsNotification] = useState<{
+    phone: string;
+    code: string;
+    purpose: 'login' | 'signup';
+  } | null>(null);
+
+  // Active SMS Gateway Provider Info
+  const [smsProviderInfo, setSmsProviderInfo] = useState<{
+    name: string;
+    isConfigured: boolean;
+  }>({ name: 'AgriTrace Verified SMS Gateway', isConfigured: false });
+
+  useEffect(() => {
+    fetch('/api/auth/otp/provider')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.name) {
+          setSmsProviderInfo({ name: data.name, isConfigured: !!data.isConfigured });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Backup preset toggle
+  const [showBackupPresets, setShowBackupPresets] = useState<boolean>(false);
 
   // Mobile OTP Sign Up State
   const [mobileData, setMobileData] = useState<{
@@ -79,6 +110,12 @@ export const RegisterPage: React.FC = () => {
   const [successNotice, setSuccessNotice] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // Refs for tracking real-time registration dispatch & input focus
+  const lastDispatchedRegisterPhoneRef = useRef<string>('');
+  const autoSendRegisterTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const registerOtpInputRef = useRef<HTMLInputElement>(null);
+  const registerPhoneInputRef = useRef<HTMLInputElement>(null);
+
   // Resend Countdown
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -87,6 +124,15 @@ export const RegisterPage: React.FC = () => {
     }
     return () => clearTimeout(timer);
   }, [resendCountdown]);
+
+  // Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSendRegisterTimerRef.current) {
+        clearTimeout(autoSendRegisterTimerRef.current);
+      }
+    };
+  }, []);
 
   // Handle role switch
   const handleRoleChange = (role: 'farmer' | 'distributor' | 'retailer' | 'consumer') => {
@@ -101,8 +147,39 @@ export const RegisterPage: React.FC = () => {
     }
   };
 
-  // Update Mobile Data field
+  // Update Mobile Data field with real-time 10-digit auto-dispatch
   const updateMobileField = (field: keyof typeof mobileData, value: string) => {
+    if (field === 'phoneNumber') {
+      const cleanDigits = value.replace(/[^0-9]/g, '').slice(0, 10);
+      setMobileData(prev => ({ ...prev, phoneNumber: cleanDigits }));
+
+      if (fieldErrors.phoneNumber) {
+        setFieldErrors(prev => {
+          const next = { ...prev };
+          delete next.phoneNumber;
+          return next;
+        });
+      }
+
+      if (otpSent && cleanDigits !== lastDispatchedRegisterPhoneRef.current) {
+        setOtpSent(false);
+        setMobileData(prev => ({ ...prev, otpCode: '' }));
+      }
+
+      if (autoSendRegisterTimerRef.current) {
+        clearTimeout(autoSendRegisterTimerRef.current);
+      }
+
+      // Real-time dispatch when 10 digits are reached
+      if (cleanDigits.length === 10 && cleanDigits !== lastDispatchedRegisterPhoneRef.current && !otpLoading) {
+        setSuccessNotice('⚡ 10-digit mobile number detected. Taking number in real time and sending OTP...');
+        autoSendRegisterTimerRef.current = setTimeout(() => {
+          handleSendMobileOtp(cleanDigits);
+        }, 350);
+      }
+      return;
+    }
+
     setMobileData(prev => ({ ...prev, [field]: value }));
     if (fieldErrors[field]) {
       setFieldErrors(prev => {
@@ -126,27 +203,27 @@ export const RegisterPage: React.FC = () => {
   };
 
   // Send OTP for Mobile Signup
-  const handleSendMobileOtp = async () => {
+  const handleSendMobileOtp = async (overridePhone?: string) => {
     setGeneralError('');
     setFieldErrors({});
 
-    if (!mobileData.fullName.trim()) {
-      setFieldErrors(prev => ({ ...prev, fullName: 'Please enter your full name first.' }));
-      return;
-    }
-
-    const rawPhone = mobileData.phoneNumber.replace(/[^0-9]/g, '');
+    const phoneToUse = overridePhone || mobileData.phoneNumber;
+    const rawPhone = phoneToUse.replace(/[^0-9]/g, '');
     if (rawPhone.length < 10) {
       setFieldErrors(prev => ({ ...prev, phoneNumber: 'Please enter a valid 10-digit mobile number.' }));
       return;
     }
 
-    const fullPhone = `${mobileData.phoneCountryCode} ${mobileData.phoneNumber.trim()}`;
+    lastDispatchedRegisterPhoneRef.current = rawPhone;
+    const fullPhone = `${mobileData.phoneCountryCode} ${rawPhone}`;
     setOtpLoading(true);
 
     try {
       const result = await sendOtp(fullPhone, 'signup');
       if (!result.success) {
+        if (result.cooldownSeconds) {
+          setResendCountdown(result.cooldownSeconds);
+        }
         if (result.alreadyRegistered) {
           setGeneralError('An account with this mobile number already exists. Please sign in instead.');
         } else {
@@ -156,8 +233,18 @@ export const RegisterPage: React.FC = () => {
         setOtpSent(true);
         setResendCountdown(30);
         const code = result.otp || '123456';
-        setDemoOtpHint(code);
-        setSuccessNotice(`Verification code sent to ${fullPhone}. Valid for 5 minutes.`);
+        setSmsNotification({
+          phone: fullPhone,
+          code,
+          purpose: 'signup'
+        });
+        const providerText = result.provider ? ` via ${result.provider}` : '';
+        setSuccessNotice(`Verification passcode dispatched${providerText} to ${fullPhone}. Valid for 5 minutes.`);
+
+        // Auto-focus the OTP input
+        setTimeout(() => {
+          registerOtpInputRef.current?.focus();
+        }, 120);
       }
     } catch (err: any) {
       setGeneralError(err?.message || 'Verification service temporarily unavailable.');
@@ -306,6 +393,16 @@ export const RegisterPage: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto py-12 px-4 space-y-6">
+      {/* Realtime SMS Notification Overlay */}
+      <RealtimeSmsNotification 
+        sms={smsNotification}
+        onClose={() => setSmsNotification(null)}
+        onAutoFill={(code) => {
+          updateMobileField('otpCode', code);
+          setGeneralError('');
+        }}
+      />
+
       <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-xl space-y-8">
         
         {/* Header */}
@@ -413,10 +510,16 @@ export const RegisterPage: React.FC = () => {
         {authMethod === 'otp' ? (
           <form onSubmit={handleMobileSubmit} className="space-y-6">
             <div className="space-y-4">
-              <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
-                <span>2. Mobile Verification ({selectedRole.toUpperCase()})</span>
-                <span className="text-[11px] text-slate-500 font-normal">SMS OTP Verification</span>
-              </h2>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>2. Mobile Verification ({selectedRole.toUpperCase()})</span>
+                </h2>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] text-emerald-800">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>SMS Gateway: <strong>{smsProviderInfo.name}</strong></span>
+                </div>
+              </div>
 
               {/* Full Name & Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -460,6 +563,7 @@ export const RegisterPage: React.FC = () => {
                     <div className="relative flex-1 flex items-center">
                       <Phone className="absolute left-3.5 w-4 h-4 text-slate-400" />
                       <input
+                        ref={registerPhoneInputRef}
                         type="tel"
                         disabled={otpSent}
                         value={mobileData.phoneNumber}
@@ -474,6 +578,44 @@ export const RegisterPage: React.FC = () => {
                   {fieldErrors.phoneNumber && (
                     <p className="text-[11px] text-rose-600 mt-1">{fieldErrors.phoneNumber}</p>
                   )}
+
+                  {!otpSent && (
+                    <div className="mt-2 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="flex items-center gap-1.5 text-slate-600">
+                          {mobileData.phoneNumber.length === 10 ? (
+                            <span className="text-emerald-700 font-bold flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>10 digits complete • {otpLoading ? 'Dispatching OTP in real time...' : 'Real-time auto-send active'}</span>
+                            </span>
+                          ) : (
+                            <span className="text-slate-500 flex items-center gap-1">
+                              <Zap className="w-3 h-3 text-amber-500" />
+                              <span>Real-time input: <strong className="font-mono text-slate-800">{mobileData.phoneNumber.length}</strong>/10 digits</span>
+                            </span>
+                          )}
+                        </span>
+                        {mobileData.phoneNumber.length === 10 && !otpLoading && (
+                          <button
+                            type="button"
+                            onClick={() => handleSendMobileOtp(mobileData.phoneNumber)}
+                            className="text-emerald-700 font-bold hover:underline cursor-pointer flex items-center gap-0.5"
+                          >
+                            <span>Send Now</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-300 ${
+                            mobileData.phoneNumber.length === 10 ? 'bg-emerald-600' : 'bg-emerald-400'
+                          }`}
+                          style={{ width: `${(mobileData.phoneNumber.length / 10) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -481,17 +623,20 @@ export const RegisterPage: React.FC = () => {
               {!otpSent ? (
                 <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div className="text-xs text-emerald-900">
-                    <div className="font-bold">Verify your mobile to proceed</div>
-                    <div className="text-[11px] text-emerald-700">We will dispatch a 6-digit OTP code to confirm your device.</div>
+                    <div className="font-bold">Real-time mobile verification</div>
+                    <div className="text-[11px] text-emerald-700">Enter 10 digits above to automatically dispatch your 6-digit OTP passcode.</div>
                   </div>
                   <button
                     type="button"
-                    onClick={handleSendMobileOtp}
+                    onClick={() => handleSendMobileOtp()}
                     disabled={otpLoading || !mobileData.phoneNumber.trim()}
                     className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shrink-0 shadow-xs"
                   >
                     {otpLoading ? (
-                      <span>Sending OTP...</span>
+                      <span className="flex items-center gap-1.5">
+                        <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Sending OTP in Real-Time...</span>
+                      </span>
                     ) : (
                       <>
                         <KeyRound className="w-4 h-4" />
@@ -501,27 +646,7 @@ export const RegisterPage: React.FC = () => {
                   </button>
                 </div>
               ) : (
-                <div className="p-4 bg-emerald-50/80 border border-emerald-300 rounded-2xl space-y-3">
-                  {/* Demo Code Helper */}
-                  {demoOtpHint && (
-                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-emerald-200 shadow-2xs">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <div>
-                          <div className="text-[11px] font-bold text-slate-900">Simulated SMS Delivery</div>
-                          <div className="text-xs font-mono font-bold text-emerald-800">Verification Code: {demoOtpHint}</div>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => updateMobileField('otpCode', demoOtpHint)}
-                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
-                      >
-                        Auto-Fill
-                      </button>
-                    </div>
-                  )}
-
+                <div className="p-4 bg-emerald-50/50 border border-emerald-200 rounded-2xl space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
                     <div>
                       <label className="text-xs font-bold text-slate-700 block mb-1">
@@ -530,8 +655,10 @@ export const RegisterPage: React.FC = () => {
                       <div className="relative flex items-center">
                         <KeyRound className="absolute left-3.5 w-4 h-4 text-slate-400" />
                         <input
+                          ref={registerOtpInputRef}
                           type="text"
                           maxLength={6}
+                          autoFocus
                           value={mobileData.otpCode}
                           onChange={(e) => updateMobileField('otpCode', e.target.value.replace(/[^0-9]/g, ''))}
                           placeholder="••••••"
@@ -540,6 +667,18 @@ export const RegisterPage: React.FC = () => {
                       </div>
                       {fieldErrors.otpCode && (
                         <p className="text-[11px] text-rose-600 mt-1">{fieldErrors.otpCode}</p>
+                      )}
+
+                      {/* Quick Autofill button if SMS received */}
+                      {smsNotification?.code && smsNotification.code !== mobileData.otpCode && (
+                        <button
+                          type="button"
+                          onClick={() => updateMobileField('otpCode', smsNotification.code)}
+                          className="mt-2 py-1 px-2.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                        >
+                          <Zap className="w-3 h-3 text-emerald-700" />
+                          <span>Autofill received code: <strong className="font-mono">{smsNotification.code}</strong></span>
+                        </button>
                       )}
                     </div>
 
@@ -550,7 +689,7 @@ export const RegisterPage: React.FC = () => {
                         ) : (
                           <button
                             type="button"
-                            onClick={handleSendMobileOtp}
+                            onClick={() => handleSendMobileOtp()}
                             className="text-emerald-700 font-bold hover:underline flex items-center gap-1 cursor-pointer"
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
@@ -561,9 +700,11 @@ export const RegisterPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => {
+                          lastDispatchedRegisterPhoneRef.current = '';
                           setOtpSent(false);
                           updateMobileField('otpCode', '');
-                          setDemoOtpHint(null);
+                          setSmsNotification(null);
+                          setTimeout(() => registerPhoneInputRef.current?.focus(), 100);
                         }}
                         className="text-slate-500 hover:text-slate-800 font-medium hover:underline cursor-pointer"
                       >
@@ -975,6 +1116,79 @@ export const RegisterPage: React.FC = () => {
             </div>
           </form>
         )}
+
+        {/* BACKUP OPTION: Quick Demo Registration Presets (Collapsible Accordion) */}
+        <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/60">
+          <button
+            type="button"
+            onClick={() => setShowBackupPresets(!showBackupPresets)}
+            className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-3.5 h-3.5 text-slate-500" />
+              <span>Demo Test Presets (Backup for Testing)</span>
+            </div>
+            {showBackupPresets ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+
+          {showBackupPresets && (
+            <div className="p-3 border-t border-slate-200 bg-white space-y-2">
+              <p className="text-[11px] text-slate-500 leading-snug">
+                Click any role to autofill sample onboarding credentials for rapid testing:
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { role: 'farmer' as const, name: 'Suresh More', phone: '9821122334', org: 'Sahyadri Mango Farm', loc: 'Ratnagiri, MH', crops: 'Alphonso Mango' },
+                  { role: 'distributor' as const, name: 'Aditya Birla Logix', phone: '9822233445', org: 'Konkan Cold Fleet Ltd', loc: 'Navi Mumbai Hub', cert: 'LOGIX-MH-8812' },
+                  { role: 'retailer' as const, name: 'Kavita Patel', phone: '9833344556', org: 'GreenLeaf Organics', loc: 'Andheri West, Mumbai', cert: 'RET-MUM-4491' },
+                  { role: 'consumer' as const, name: 'Devendra Joshi', phone: '9844455667', org: 'Consumer Guild', loc: 'Dadar, Mumbai' },
+                ].map((preset) => (
+                  <button
+                    key={preset.role}
+                    type="button"
+                    onClick={() => {
+                      handleRoleChange(preset.role);
+                      if (authMethod === 'otp') {
+                        setMobileData({
+                          fullName: preset.name,
+                          phoneCountryCode: '+91',
+                          phoneNumber: preset.phone,
+                          otpCode: '',
+                          organizationName: preset.org,
+                          location: preset.loc,
+                          primaryCrops: preset.crops || '',
+                          certificationNumber: preset.cert || '',
+                        });
+                        setOtpSent(false);
+                        setGeneralError('');
+                        setSuccessNotice(`Pre-filled ${preset.role} demo data for ${preset.name}.`);
+                      } else {
+                        setEmailData({
+                          role: preset.role,
+                          fullName: preset.name,
+                          email: `${preset.phone}@test.agritrace.org`,
+                          password: 'password123',
+                          confirmPassword: 'password123',
+                          phone: preset.phone,
+                          organizationName: preset.org,
+                          location: preset.loc,
+                          primaryCrops: preset.crops,
+                          certificationNumber: preset.cert,
+                        });
+                        setGeneralError('');
+                        setSuccessNotice(`Pre-filled email signup fields for ${preset.name}.`);
+                      }
+                    }}
+                    className="p-2 text-left rounded-xl border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50 transition cursor-pointer text-xs"
+                  >
+                    <div className="font-bold text-slate-800 capitalize">{preset.role}</div>
+                    <div className="text-[10px] text-slate-500 font-mono">{preset.phone}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Existing Account Footer */}
         <div className="text-center pt-4 border-t border-slate-100 text-xs text-slate-500">

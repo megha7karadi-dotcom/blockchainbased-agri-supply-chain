@@ -15,11 +15,9 @@ import {
   Filter,
   Check,
   X,
-  Sparkles,
   Layers
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { CryptoHashDisplay } from '../common/CryptoHashDisplay';
 
 export interface EscrowTransaction {
   id: string;
@@ -338,7 +336,7 @@ export const FarmerTransactions: React.FC = () => {
                 <th className="py-3 px-3">Counterparty</th>
                 <th className="py-3 px-3">Amount</th>
                 <th className="py-3 px-3">Settlement Status</th>
-                <th className="py-3 px-3">On-Chain Tx Hash</th>
+                <th className="py-3 px-3">Audit Reference</th>
                 <th className="py-3 px-3 text-right">Receipt</th>
               </tr>
             </thead>
@@ -374,7 +372,7 @@ export const FarmerTransactions: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3.5 px-3 whitespace-nowrap">
-                      <CryptoHashDisplay hash={tx.hash} truncateLength={6} />
+                      <span className="text-slate-600 font-mono text-[11px] font-medium">#{tx.id.toUpperCase()}</span>
                     </td>
                     <td className="py-3.5 px-3 text-right font-sans whitespace-nowrap">
                       <button
@@ -560,16 +558,24 @@ export const FarmerTransactions: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 bg-emerald-50/50 rounded-2xl border border-emerald-100/80 space-y-1.5 font-mono text-[11px]">
-                <div className="text-emerald-950 font-bold font-sans text-xs">Blockchain Telemetry</div>
-                <div className="truncate text-slate-600">Tx Hash: {selectedReceiptTx.hash}</div>
-                <div className="text-slate-600">Block Height: #{selectedReceiptTx.block}</div>
-                <div className="text-slate-600">Bank UTR: {selectedReceiptTx.utrNumber}</div>
-                <div className="text-slate-600">Consortium Gas: {selectedReceiptTx.gasUsed}</div>
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1.5 text-xs">
+                <div className="text-slate-900 font-bold">Banking & Ledger Audit Details</div>
+                <div className="text-slate-600 flex justify-between">
+                  <span>Bank Transfer UTR:</span>
+                  <span className="font-mono font-semibold text-slate-800">{selectedReceiptTx.utrNumber}</span>
+                </div>
+                <div className="text-slate-600 flex justify-between">
+                  <span>Settlement Status:</span>
+                  <span className="text-emerald-700 font-medium">AgriTrace Verified & Settled</span>
+                </div>
+                <div className="text-slate-600 flex justify-between">
+                  <span>Ledger Audit Ref:</span>
+                  <span className="font-mono text-slate-700">AUDIT-{selectedReceiptTx.id.toUpperCase()}</span>
+                </div>
               </div>
 
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                *Agricultural produce realization is 100% exempt from Central Income Tax under Section 10(1) of the Indian Income Tax Act, 1961. This cryptographically timestamped receipt serves as official audit proof.
+                *Agricultural produce realization is 100% exempt from Central Income Tax under Section 10(1) of the Indian Income Tax Act, 1961. This timestamped receipt serves as official audit proof.
               </p>
             </div>
 

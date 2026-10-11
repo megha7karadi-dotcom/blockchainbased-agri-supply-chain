@@ -12,7 +12,6 @@ import {
   ExternalLink,
   TrendingUp,
   Scale,
-  Sparkles,
   RefreshCw
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -46,7 +45,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ onSelectTab 
     setIntegrityStatus(null);
     setTimeout(() => {
       setIsVerifyingIntegrity(false);
-      setIntegrityStatus('Cryptographic Merkle Root Validated: 100% of ERC-1155 tokens and state transitions match Ethereum Sepolia state #18,946,050.');
+      setIntegrityStatus('Ledger Data Integrity Verified: 100% of produce batches, custody handoffs, and laboratory certificates are synchronized and tamper-evident.');
     }, 900);
   };
 
@@ -54,7 +53,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ onSelectTab 
   const handleExportReport = () => {
     const reportData = {
       exportTimestamp: new Date().toISOString(),
-      governanceNetwork: 'AgriTrace Sepolia Consortium v4.2',
+      governanceNetwork: 'AgriTrace Agricultural Ledger v4.2',
       systemPolicies,
       metrics: {
         totalBatches: batches.length,
@@ -167,7 +166,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ onSelectTab 
               Autonomous Smart Contract Integrity Engine
             </h3>
             <p className="text-xs text-slate-600 max-w-xl">
-              Cryptographically verifies Merkle proofs, fair-price index ceilings, and IoT sensor thermal tolerances across every batch transaction.
+              Independently verifies custody records, fair-price index ceilings, and IoT sensor thermal tolerances across every batch transaction.
             </p>
           </div>
 
@@ -178,7 +177,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({ onSelectTab 
               className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isVerifyingIntegrity ? 'animate-spin' : ''}`} />
-              <span>{isVerifyingIntegrity ? 'Auditing Ledger...' : 'Run Cryptographic Audit'}</span>
+              <span>{isVerifyingIntegrity ? 'Auditing Ledger...' : 'Run Ledger Audit'}</span>
             </button>
 
             <button

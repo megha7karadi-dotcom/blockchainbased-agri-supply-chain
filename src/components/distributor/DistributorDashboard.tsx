@@ -3,28 +3,22 @@ import {
   Truck, 
   ThermometerSnowflake, 
   Package, 
-  TrendingUp, 
   ArrowRight, 
-  AlertCircle, 
   CheckCircle2, 
-  Layers,
-  Search,
-  ShoppingCart,
-  BadgePercent,
-  ArrowRightLeft,
-  History,
-  FileCheck2,
+  ShoppingCart, 
+  ArrowRightLeft, 
+  Radio, 
+  ExternalLink,
+  ChevronRight,
   ShieldCheck,
-  Radio,
-  ExternalLink
+  MapPin,
+  Calendar
 } from 'lucide-react';
-import { motion } from 'motion/react';
 import { useApp } from '../../context/AppContext';
 import { ProduceBatch } from '../../types/produce';
-import { CryptoHashDisplay } from '../common/CryptoHashDisplay';
 
 export const DistributorDashboard: React.FC = () => {
-  const { batches, currentUser, navigate, setSelectedBatchId, distributorProcureProduce, navigateToVerification } = useApp();
+  const { batches, currentUser, navigate, distributorProcureProduce, navigateToVerification } = useApp();
 
   const [procuringBatch, setProcuringBatch] = useState<ProduceBatch | null>(null);
   const [logisticsCost, setLogisticsCost] = useState<number>(25);
@@ -40,398 +34,373 @@ export const DistributorDashboard: React.FC = () => {
   // Delivered / Handed over
   const handedOverBatches = batches.filter(b => b.status === 'Delivered to Retailer' || b.status === 'On Retail Shelf');
 
+  const totalTransitKg = inTransitBatches.reduce((acc, b) => acc + (b.quantityKg || b.quantity || 0), 0);
+
   const handleConfirmProcurement = (e: React.FormEvent) => {
     e.preventDefault();
     if (!procuringBatch) return;
 
     distributorProcureProduce(procuringBatch.id, logisticsCost, distributorMargin, vehicleNumber, targetTemp);
-    setProcureAlert(`Procurement successful: ${procuringBatch.name} (${procuringBatch.batchId}) assigned to vehicle ${vehicleNumber}. Escrow locked.`);
+    setProcureAlert(`Procurement confirmed: ${procuringBatch.name} (${procuringBatch.batchId}) assigned to reefer unit ${vehicleNumber}. Custody locked on ledger.`);
     setProcuringBatch(null);
   };
 
-  const featureCards = [
-    {
-      title: 'Available Produce',
-      desc: 'Browse tokenized farm harvests awaiting collection and lock fair-trade escrows.',
-      icon: <ShoppingCart className="w-5 h-5 text-blue-600" />,
-      path: '/distributor/available-produce',
-      badge: `${availableBatches.length} Ready`,
-      badgeColor: 'bg-blue-100 text-blue-800'
-    },
-    {
-      title: 'Receive Produce',
-      desc: 'Perform QA gate inspection, check moisture, certify weight, and accept batch custody.',
-      icon: <CheckCircle2 className="w-5 h-5 text-emerald-600" />,
-      path: '/distributor/receive-produce',
-      badge: 'Dock QA',
-      badgeColor: 'bg-emerald-100 text-emerald-800'
-    },
-    {
-      title: 'Shipments & Fleet Tracker',
-      desc: 'Monitor real-time reefer consignments, vehicle route progress, and ETA updates.',
-      icon: <Package className="w-5 h-5 text-indigo-600" />,
-      path: '/distributor/shipments',
-      badge: `${inTransitBatches.length} En Route`,
-      badgeColor: 'bg-indigo-100 text-indigo-800'
-    },
-    {
-      title: 'Cold-Chain IoT Telemetry',
-      desc: 'Live BLE sensor feeds, temperature threshold alerts, and Chainlink oracle sync.',
-      icon: <Radio className="w-5 h-5 text-cyan-600" />,
-      path: '/distributor/transportation',
-      badge: 'Live Oracles',
-      badgeColor: 'bg-cyan-100 text-cyan-800'
-    },
-    {
-      title: 'Update Price & Margin',
-      desc: 'Configure itemized cold logistics costs and fair margins published to the public ledger.',
-      icon: <BadgePercent className="w-5 h-5 text-amber-600" />,
-      path: '/distributor/update-price',
-      badge: 'Zero Hidden Cuts',
-      badgeColor: 'bg-amber-100 text-amber-800'
-    },
-    {
-      title: 'Transfer Custody',
-      desc: 'Cryptographic handoff to retail partner distribution centers with automated receipt.',
-      icon: <ArrowRightLeft className="w-5 h-5 text-purple-600" />,
-      path: '/distributor/ownership-transfer',
-      badge: 'Smart Contract',
-      badgeColor: 'bg-purple-100 text-purple-800'
-    },
-    {
-      title: 'Transaction History',
-      desc: 'Complete financial ledger of farmer payments, logistics margins, and gas receipts.',
-      icon: <History className="w-5 h-5 text-slate-600" />,
-      path: '/distributor/transactions',
-      badge: 'Verified Ledger',
-      badgeColor: 'bg-slate-100 text-slate-700'
-    }
-  ];
-
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-8 pb-12"
-    >
+    <div className="space-y-8 pb-16 max-w-7xl mx-auto">
       
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-br from-blue-50/90 via-slate-50 to-indigo-50/50 text-slate-900 rounded-3xl p-6 sm:p-8 border border-blue-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-            {currentUser?.organization || 'Maha-Agro Logistics Hub'}
-          </h1>
-          <p className="text-slate-600 text-xs sm:text-sm mt-1">
-            Director: {currentUser?.name || 'Vikramaditya Shinde'} • Active GPS & Telemetry Oracles Synced
-          </p>
-        </div>
+      {/* 1. NODE HEADER & PRIMARY LOGISTICS ACTIONS */}
+      <div className="bg-white border border-stone-200 rounded-lg p-6 sm:p-8 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-700"></span>
+              <span className="text-xs font-semibold text-emerald-900 uppercase tracking-wider">
+                Logistics & Fleet Operations Hub
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">
+              {currentUser?.organization || 'Maha-Agro Logistics Hub'}
+            </h1>
+            <p className="text-xs sm:text-sm text-stone-600">
+              Operations Lead: {currentUser?.name || 'Vikramaditya Shinde'} • <span className="text-stone-500">Fleet Cold Oracles Active</span>
+            </p>
+          </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => navigate('/distributor/available-produce')}
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
-          >
-            <ShoppingCart className="w-4 h-4" />
-            <span>Procure Farm Harvests ({availableBatches.length})</span>
-          </button>
-          <button
-            onClick={() => navigate('/distributor/transportation')}
-            className="px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-800 font-semibold text-xs rounded-xl border border-slate-300 shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
-          >
-            <ThermometerSnowflake className="w-4 h-4 text-blue-600" />
-            <span>IoT Cold Telemetry</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={() => navigate('/distributor/available-produce')}
+              className="px-4 py-2 bg-[#1b4332] hover:bg-[#2d5a3f] text-white font-semibold text-xs sm:text-sm rounded-md transition shadow-xs flex items-center gap-2 cursor-pointer"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <span>Procure Farm Harvests ({availableBatches.length})</span>
+            </button>
+            <button
+              onClick={() => navigate('/distributor/transportation')}
+              className="px-3.5 py-2 bg-white hover:bg-stone-50 border border-stone-300 text-stone-800 font-semibold text-xs sm:text-sm rounded-md transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Radio className="w-4 h-4 text-emerald-800" />
+              <span>IoT Telemetry Feed</span>
+            </button>
+            <button
+              onClick={() => navigate('/distributor/transfer-to-retailer')}
+              className="px-3.5 py-2 bg-white hover:bg-stone-50 border border-stone-300 text-stone-800 font-semibold text-xs sm:text-sm rounded-md transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <ArrowRightLeft className="w-4 h-4 text-emerald-800" />
+              <span>Transfer to Retailer</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Procurement Alert */}
+      {/* Procurement Toast Alert */}
       {procureAlert && (
-        <motion.div 
-          initial={{ opacity: 0, y: -6 }} 
-          animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center justify-between gap-3 text-emerald-900 text-xs"
-        >
+        <div className="p-3.5 bg-emerald-50 border border-emerald-300 text-emerald-950 rounded-md flex items-center justify-between gap-3 text-xs font-semibold shadow-xs">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-            <span className="font-semibold">{procureAlert}</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-800 shrink-0" />
+            <span>{procureAlert}</span>
           </div>
           <button 
+            type="button"
             onClick={() => setProcureAlert(null)} 
-            className="text-emerald-700 hover:text-emerald-900 font-bold cursor-pointer"
+            className="text-emerald-800 hover:text-emerald-950 font-bold cursor-pointer"
           >
             ✕
           </button>
-        </motion.div>
+        </div>
       )}
 
-      {/* Metric Cards */}
+      {/* 2. OPERATIONAL LOGISTICS METRICS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold">Active Reefer Fleet</span>
-            <Truck className="w-4 h-4 text-blue-600" />
-          </div>
-          <div className="text-2xl font-black text-slate-900">4 <span className="text-xs font-normal text-slate-500">vehicles</span></div>
-          <div className="text-[11px] text-blue-700 font-medium mt-1">100% GPS connected</div>
+        <div className="bg-white p-4 rounded-lg border border-stone-200">
+          <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Active Reefer Fleet</div>
+          <div className="text-2xl font-bold text-stone-900 mt-1 font-mono">4 <span className="text-xs font-sans text-stone-500 font-normal">vehicles</span></div>
+          <div className="text-[11px] text-emerald-800 font-medium mt-0.5">100% telemetry synced</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold">Average Reefer Temp</span>
-            <ThermometerSnowflake className="w-4 h-4 text-cyan-600" />
-          </div>
-          <div className="text-2xl font-black text-cyan-800">11.8°C</div>
-          <div className="text-[11px] text-slate-500 mt-1">Optimal cold-chain window</div>
+        <div className="bg-white p-4 rounded-lg border border-stone-200">
+          <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Cargo in Transit</div>
+          <div className="text-2xl font-bold text-stone-900 mt-1 font-mono">{totalTransitKg > 0 ? `${totalTransitKg} kg` : `${inTransitBatches.length} lots`}</div>
+          <div className="text-[11px] text-stone-500 mt-0.5">En route to distribution centres</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold">Batches In Transit</span>
-            <Package className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div className="text-2xl font-black text-slate-900">{inTransitBatches.length}</div>
-          <div className="text-[11px] text-slate-500 mt-1">En route to wholesale hubs</div>
+        <div className="bg-white p-4 rounded-lg border border-stone-200">
+          <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Average Cargo Temp</div>
+          <div className="text-2xl font-bold text-stone-900 mt-1 font-mono">11.8°C</div>
+          <div className="text-[11px] text-emerald-800 font-medium mt-0.5">Optimal cold-chain window</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold">Logistics Compliance</span>
-            <CheckCircle2 className="w-4 h-4 text-blue-600" />
-          </div>
-          <div className="text-2xl font-black text-slate-900">99.4%</div>
-          <div className="text-[11px] text-emerald-700 font-medium mt-1">Zero thermal excursion breaches</div>
+        <div className="bg-white p-4 rounded-lg border border-stone-200">
+          <div className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Thermal Compliance</div>
+          <div className="text-2xl font-bold text-stone-900 mt-1 font-mono">99.4%</div>
+          <div className="text-[11px] text-stone-500 mt-0.5">Zero unhandled temperature spikes</div>
         </div>
       </div>
 
-      {/* Complete Distributor Feature Operations Grid */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      {/* 3. CONSIGNMENTS CURRENTLY IN TRANSIT (TABLE) */}
+      <section className="bg-white rounded-lg border border-stone-200 p-6 sm:p-8 space-y-4 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900">Distributor Operations Hub</h2>
-            <p className="text-xs text-slate-500">Access and execute all cold-chain logistics, intake QA, pricing, and handoff modules</p>
+            <h2 className="text-lg font-bold text-stone-900">Active Consignments in Transit</h2>
+            <p className="text-xs text-stone-500">Live custody tracking of reefer vehicles, sensor telemetry, and wholesale destinations</p>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {featureCards.map((feat, index) => (
-            <div
-              key={index}
-              onClick={() => navigate(feat.path)}
-              className="p-5 bg-white rounded-2xl border border-slate-200 shadow-xs hover:border-blue-300 hover:shadow-md transition cursor-pointer flex flex-col justify-between group"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-blue-50 transition">
-                    {feat.icon}
-                  </div>
-                  <span className="text-xs font-medium text-slate-500">
-                    {feat.badge}
-                  </span>
-                </div>
-
-                <h3 className="font-bold text-slate-900 text-sm group-hover:text-blue-600 transition">
-                  {feat.title}
-                </h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  {feat.desc}
-                </p>
-              </div>
-
-              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-blue-600 group-hover:text-blue-700">
-                <span>Launch Workspace</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Available Farm Lots Awaiting Procurement */}
-      <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900">Farm Harvests Ready for Procurement</h2>
-            <p className="text-xs text-slate-500">Farmers requesting cold-chain pickup & distribution</p>
-          </div>
           <button
-            onClick={() => navigate('/distributor/available-produce')}
-            className="text-xs font-semibold text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"
+            type="button"
+            onClick={() => navigate('/distributor/transportation')}
+            className="text-xs font-semibold text-emerald-900 hover:underline flex items-center gap-1 cursor-pointer self-start sm:self-auto"
           >
-            <span>View All ({availableBatches.length})</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>Live sensor telemetry feed</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {inTransitBatches.length === 0 ? (
+          <div className="p-8 text-center text-stone-500 border border-stone-200 rounded-md bg-stone-50/50 text-xs">
+            No consignments currently in transit. Procure farm harvests below to dispatch vehicles.
+          </div>
+        ) : (
+          <div className="overflow-x-auto border border-stone-200 rounded-md">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-stone-50 border-b border-stone-200 text-stone-700 font-semibold uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th className="py-3 px-4">Consignment / Batch</th>
+                  <th className="py-3 px-4">Commodity</th>
+                  <th className="py-3 px-4">Reefer Unit</th>
+                  <th className="py-3 px-4 text-right">Cargo Weight</th>
+                  <th className="py-3 px-4 text-center">Current Temp</th>
+                  <th className="py-3 px-4 text-center">Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-200 text-stone-800">
+                {inTransitBatches.map(batch => (
+                  <tr key={batch.id} className="hover:bg-stone-50/70 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-stone-900 whitespace-nowrap">
+                      {batch.batchId}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="font-semibold text-stone-900">{batch.name}</div>
+                      <div className="text-[11px] text-stone-500">{batch.farmerLocation || 'Origin Hub'}</div>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-stone-700 whitespace-nowrap">
+                      {batch.distributorDetails?.vehicleNumber || 'MH-04-TR-9182'}
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono font-medium whitespace-nowrap">
+                      {batch.quantityKg || batch.quantity} kg
+                    </td>
+                    <td className="py-3 px-4 text-center whitespace-nowrap font-mono font-semibold text-emerald-800">
+                      {batch.distributorDetails?.temperature || '11.8°C'}
+                    </td>
+                    <td className="py-3 px-4 text-center whitespace-nowrap">
+                      <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-900 border border-emerald-300">
+                        In Transit
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => navigate('/distributor/transportation')}
+                          className="px-2.5 py-1 bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 rounded text-[11px] font-medium transition cursor-pointer"
+                        >
+                          Telemetry
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/distributor/transfer-to-retailer')}
+                          className="px-2.5 py-1 bg-[#1b4332] hover:bg-[#2d5a3f] text-white rounded text-[11px] font-medium transition cursor-pointer"
+                        >
+                          Transfer to Retail
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* 4. FARM HARVESTS AWAITING LOGISTICS INTAKE (STRUCTURED TABLE) */}
+      <section className="bg-white rounded-lg border border-stone-200 p-6 sm:p-8 space-y-4 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-stone-900">Farm Harvests Ready for Intake</h2>
+            <p className="text-xs text-stone-500">Growers requesting cold transport collection with fixed farmgate payouts</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigate('/distributor/available-produce')}
+            className="text-xs font-semibold text-emerald-900 hover:underline flex items-center gap-1 cursor-pointer self-start sm:self-auto"
+          >
+            <span>View all registered harvests ({availableBatches.length})</span>
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {availableBatches.length === 0 ? (
-          <div className="p-8 text-center text-slate-400 text-xs">
-            No batches currently awaiting procurement. Check back once farmers register new harvests.
+          <div className="p-8 text-center text-stone-500 border border-stone-200 rounded-md bg-stone-50/50 text-xs">
+            No farm batches currently awaiting procurement. Check back once farmers register new harvests.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {availableBatches.slice(0, 3).map(batch => (
-              <motion.div 
-                key={batch.id} 
-                whileHover={{ y: -4 }}
-                transition={{ duration: 0.2 }}
-                className="rounded-3xl border border-slate-200 bg-white overflow-hidden hover:border-blue-300 hover:shadow-md transition flex flex-col justify-between"
-              >
-                <div>
-                  <div className="h-36 relative bg-slate-100 overflow-hidden">
-                    <img 
-                      src={batch.imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80'} 
-                      alt={batch.name}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute top-2.5 left-2.5">
-                      <span className="font-mono text-[11px] font-bold text-slate-900 bg-white/95 px-2 py-0.5 rounded-md shadow-xs">
-                        {batch.batchId}
-                      </span>
-                    </div>
-                    <div className="absolute top-2.5 right-2.5">
-                      <span className="text-[11px] font-bold text-white bg-slate-900/80 backdrop-blur-xs px-2 py-0.5 rounded-md">
-                        {batch.quantityKg || batch.quantity} kg
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 space-y-2.5">
-                    <h3 className="font-bold text-slate-900 text-sm">{batch.name}</h3>
-                    <div className="text-xs text-slate-500">
-                      <strong>Farmer:</strong> {batch.farmerName} • {(batch.farmerLocation || batch.farmLocation || 'Maharashtra').split(',')[0]}
-                    </div>
-
-                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs flex justify-between">
-                      <span className="text-slate-500">Farmer Price Floor:</span>
-                      <span className="font-bold text-emerald-800">₹{batch.pricing?.farmerPrice || batch.farmgatePrice || 40}/kg</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 pt-0 space-y-1.5">
-                  <button
-                    onClick={() => setProcuringBatch(batch)}
-                    className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-                  >
-                    <Truck className="w-3.5 h-3.5" />
-                    <span>Accept Custody & Dispatch Reefer</span>
-                  </button>
-
-                  <button
-                    onClick={() => navigateToVerification(batch.batchId || batch.id)}
-                    className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    <span>View Provenance</span>
-                  </button>
-                </div>
-              </motion.div>
-            ))}
+          <div className="overflow-x-auto border border-stone-200 rounded-md">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-stone-50 border-b border-stone-200 text-stone-700 font-semibold uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th className="py-3 px-4">Batch ID</th>
+                  <th className="py-3 px-4">Crop & Variety</th>
+                  <th className="py-3 px-4">Grower & Location</th>
+                  <th className="py-3 px-4 text-right">Available Volume</th>
+                  <th className="py-3 px-4 text-right">Agreed Farm Payout</th>
+                  <th className="py-3 px-4 text-right">Contract Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-200 text-stone-800">
+                {availableBatches.map(batch => (
+                  <tr key={batch.id} className="hover:bg-stone-50/70 transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-bold text-stone-900 whitespace-nowrap">
+                      {batch.batchId}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="font-semibold text-stone-900">{batch.name}</div>
+                      <div className="text-[11px] text-stone-500">{batch.cropVariety || batch.variety}</div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="text-stone-900">{batch.farmerName}</div>
+                      <div className="text-[11px] text-stone-500">{batch.farmerLocation || batch.farmLocation || 'India'}</div>
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-mono font-medium whitespace-nowrap">
+                      {batch.quantityKg || batch.quantity} kg
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-950 whitespace-nowrap">
+                      ₹{batch.pricing?.farmerPrice || batch.farmgatePrice || 40}/kg
+                    </td>
+                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => navigateToVerification(batch.batchId || batch.id)}
+                          className="px-2.5 py-1.5 bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 rounded text-[11px] font-semibold transition cursor-pointer"
+                        >
+                          Passport
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setProcuringBatch(batch)}
+                          className="px-3 py-1.5 bg-[#1b4332] hover:bg-[#2d5a3f] text-white rounded text-[11px] font-semibold transition flex items-center gap-1 cursor-pointer"
+                        >
+                          <Truck className="w-3.5 h-3.5" />
+                          <span>Accept & Dispatch</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Procurement Modal */}
+      {/* 5. PROCUREMENT MODAL DIALOG */}
       {procuringBatch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-slate-200 shadow-2xl space-y-5"
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-lg p-6 sm:p-8 max-w-lg w-full border border-stone-200 shadow-xl space-y-5 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Procure & Dispatch Cold-Chain</h3>
-                <p className="text-xs text-slate-500">{procuringBatch.name} ({procuringBatch.batchId})</p>
+                <h3 className="text-base font-bold text-stone-900">Procure & Assign Reefer Transport</h3>
+                <p className="text-xs text-stone-500">{procuringBatch.name} • Batch ID: {procuringBatch.batchId}</p>
               </div>
               <button 
+                type="button"
                 onClick={() => setProcuringBatch(null)} 
-                className="w-7 h-7 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center text-sm font-bold cursor-pointer"
+                className="w-7 h-7 rounded bg-stone-100 text-stone-500 hover:text-stone-900 flex items-center justify-center text-sm font-bold cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleConfirmProcurement} className="space-y-4 text-xs">
-              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 space-y-1">
-                <div className="flex justify-between font-bold text-emerald-950">
-                  <span>Farmer Payout (Base Gate Price):</span>
-                  <span className="font-mono">₹{procuringBatch.pricing?.farmerPrice || procuringBatch.farmgatePrice || 40}/kg</span>
+              <div className="p-3 bg-stone-50 rounded border border-stone-200 space-y-1">
+                <div className="flex justify-between font-bold text-stone-900">
+                  <span>Guaranteed Farmgate Payout:</span>
+                  <span className="font-mono text-emerald-950">₹{procuringBatch.pricing?.farmerPrice || procuringBatch.farmgatePrice || 40}/kg</span>
                 </div>
-                <div className="text-[11px] text-emerald-800">
-                  Total contract escrow value: ₹{((procuringBatch.pricing?.farmerPrice || procuringBatch.farmgatePrice || 40) * (procuringBatch.quantityKg || procuringBatch.quantity || 500)).toLocaleString()}
+                <div className="text-[11px] text-stone-600">
+                  Total contract value: ₹{((procuringBatch.pricing?.farmerPrice || procuringBatch.farmgatePrice || 40) * (procuringBatch.quantityKg || procuringBatch.quantity || 500)).toLocaleString('en-IN')}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Logistics Cost (₹/kg)</label>
+                  <label className="block font-semibold text-stone-700 mb-1">Freight Logistics Markup (₹/kg)</label>
                   <input
                     type="number"
                     min={1}
                     value={logisticsCost}
                     onChange={(e) => setLogisticsCost(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:bg-white focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded font-mono outline-none focus:bg-white focus:border-emerald-800"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Distributor Margin (₹/kg)</label>
+                  <label className="block font-semibold text-stone-700 mb-1">Distributor Margin (₹/kg)</label>
                   <input
                     type="number"
                     min={1}
                     value={distributorMargin}
                     onChange={(e) => setDistributorMargin(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:bg-white focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded font-mono outline-none focus:bg-white focus:border-emerald-800"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Reefer Truck License #</label>
+                  <label className="block font-semibold text-stone-700 mb-1">Reefer Truck License Plate</label>
                   <input
                     type="text"
                     value={vehicleNumber}
                     onChange={(e) => setVehicleNumber(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl outline-none font-mono focus:bg-white focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded outline-none font-mono focus:bg-white focus:border-emerald-800"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Target Reefer Temp</label>
+                  <label className="block font-semibold text-stone-700 mb-1">Target Reefer Temp</label>
                   <input
                     type="text"
                     value={targetTemp}
                     onChange={(e) => setTargetTemp(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:bg-white focus:border-blue-500"
+                    className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded font-mono outline-none focus:bg-white focus:border-emerald-800"
                   />
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-slate-600 text-[11px] leading-relaxed">
-                Transparent Wholesale Price to Retailer will be: <strong>₹{(procuringBatch.pricing?.farmerPrice || procuringBatch.farmgatePrice || 40) + Number(logisticsCost) + Number(distributorMargin)}/kg</strong>. All values are published to the smart contract.
+              <div className="p-3 bg-stone-50 rounded border border-stone-200 text-stone-600 text-[11px] leading-relaxed">
+                Audited Wholesale Price to Retailer: <strong>₹{(procuringBatch.pricing?.farmerPrice || procuringBatch.farmgatePrice || 40) + Number(logisticsCost) + Number(distributorMargin)}/kg</strong>. Itemized figures are permanently registered on the blockchain.
               </div>
 
               <div className="flex gap-2 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition shadow-xs cursor-pointer"
+                  className="flex-1 py-2.5 bg-[#1b4332] hover:bg-[#2d5a3f] text-white font-semibold rounded transition cursor-pointer shadow-xs"
                 >
-                  Sign Smart Contract & Dispatch
+                  Record Custody & Dispatch Reefer
                 </button>
                 <button
                   type="button"
                   onClick={() => setProcuringBatch(null)}
-                  className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition cursor-pointer"
+                  className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold rounded transition cursor-pointer"
                 >
                   Cancel
                 </button>
               </div>
             </form>
-          </motion.div>
+          </div>
         </div>
       )}
 
-    </motion.div>
+    </div>
   );
 };

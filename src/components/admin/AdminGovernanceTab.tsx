@@ -11,7 +11,6 @@ import {
   Scale, 
   Lock, 
   Check, 
-  Sparkles,
   ExternalLink
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -249,7 +248,7 @@ export const AdminGovernanceTab: React.FC = () => {
 
           <div className="bg-emerald-50/80 text-slate-900 rounded-3xl p-6 border border-emerald-200/80 shadow-xs space-y-3">
             <div className="flex items-center gap-2 text-emerald-800 text-xs font-semibold">
-              <Sparkles className="w-4 h-4 text-emerald-700" />
+              <ShieldCheck className="w-4 h-4 text-emerald-700" />
               <span>Smart Contract Autonomy Note</span>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed">

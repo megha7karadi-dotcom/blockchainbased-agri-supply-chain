@@ -248,7 +248,7 @@ export const DistributorTransactions: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search Tx Hash, counterparty, or crop..."
+            placeholder="Search by transaction, counterparty, or crop..."
             className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white"
           />
         </div>
@@ -294,8 +294,8 @@ export const DistributorTransactions: React.FC = () => {
                         <span className={`w-2 h-2 rounded-full ${isInflow ? 'bg-emerald-500' : 'bg-blue-500'}`} />
                         <span className="font-bold text-slate-900">{tx.type}</span>
                       </div>
-                      <div className="font-mono text-[10px] text-slate-400">
-                        {tx.txHash.slice(0, 10)}...{tx.txHash.slice(-8)} • Block #{tx.blockNumber}
+                      <div className="text-[11px] text-slate-500">
+                        Ref: #{tx.id.toUpperCase()} · Verified
                       </div>
                       <div className="text-[10px] text-slate-400">{tx.date}</div>
                     </td>

@@ -8,7 +8,7 @@ const connectDB = async () => {
     console.log('MongoDB connected successfully');
     return conn;
   } catch (error) {
-    console.info(`[AgriTrace] MongoDB connection notice: ${error.message}. Running in fallback mode.`);
+    console.log('[AgriTrace] Storage Engine: Running in resilient in-memory mode.');
     return null;
   }
 };

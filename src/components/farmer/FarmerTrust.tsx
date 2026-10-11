@@ -13,7 +13,6 @@ import {
   MapPin, 
   Calendar,
   MessageSquare,
-  Sparkles,
   X,
   AlertCircle
 } from 'lucide-react';
@@ -411,7 +410,7 @@ export const FarmerTrust: React.FC = () => {
               </div>
 
               <div className="p-3 bg-emerald-50 rounded-xl text-[11px] text-emerald-900 flex items-start gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <span>Test results will be cryptographically anchored to your AgriTrace account upon lab completion.</span>
               </div>
 

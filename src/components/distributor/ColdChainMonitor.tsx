@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useApp } from '../../context/AppContext';
-import { CryptoHashDisplay } from '../common/CryptoHashDisplay';
 
 export const ColdChainMonitor: React.FC = () => {
   const { batches, reportFraudAlert } = useApp();
@@ -225,11 +224,15 @@ export const ColdChainMonitor: React.FC = () => {
                   <span className="font-medium text-slate-800">{truck.driver}</span>
                 </div>
                 <div className="flex justify-between text-slate-500">
-                  <span>Last Oracle Ping:</span>
+                  <span>Last Sensor Ping:</span>
                   <span className="font-mono text-emerald-700 font-semibold">{truck.lastPing}</span>
                 </div>
-                <div className="pt-1">
-                  <CryptoHashDisplay hash={truck.oracleHash} label="Oracle State Hash" truncateLength={6} />
+                <div className="flex justify-between items-center text-slate-500 pt-1">
+                  <span>Reefer Logger:</span>
+                  <span className="text-emerald-700 font-medium flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Active Telemetry Sync</span>
+                  </span>
                 </div>
               </div>
             </div>

@@ -20,8 +20,7 @@ import {
   User, 
   LogOut,
   BadgePercent,
-  Layers,
-  Sparkles
+  Layers
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types/produce';
@@ -68,11 +67,11 @@ export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
       case 'farmer':
         return [
           { path: '/farmer/dashboard', label: 'Home', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { path: '/farmer/register-produce', label: 'Add Produce', icon: <PlusCircle className="w-4 h-4" /> },
-          { path: '/farmer/price-prediction', label: 'Price Prediction', icon: <TrendingUp className="w-4 h-4" /> },
-          { path: '/farmer/my-produce', label: 'My Produce', icon: <Package className="w-4 h-4" />, badge: safeBatches.filter(b => b.farmerId === currentUser?.id || b.farmerId === 'usr-farmer-01').length },
-          { path: '/farmer/transfers', label: 'Transfers', icon: <ArrowRightLeft className="w-4 h-4" /> },
-          { path: '/farmer/qr-codes', label: 'QR Codes', icon: <QrCode className="w-4 h-4" /> },
+          { path: '/farmer/register-produce', label: 'Add New Crop', icon: <PlusCircle className="w-4 h-4" /> },
+          { path: '/farmer/my-produce', label: 'My Crops', icon: <Package className="w-4 h-4" />, badge: safeBatches.filter(b => b.farmerId === currentUser?.id || b.farmerId === 'usr-farmer-01').length },
+          { path: '/farmer/transfers', label: 'Transfer Produce', icon: <ArrowRightLeft className="w-4 h-4" /> },
+          { path: '/farmer/price-prediction', label: 'Check Market Prices', icon: <TrendingUp className="w-4 h-4" /> },
+          { path: '/farmer/qr-codes', label: 'View QR Code', icon: <QrCode className="w-4 h-4" /> },
           { path: '/farmer/profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
         ];
       case 'distributor':
@@ -121,15 +120,18 @@ export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
   const navItems = getNavItems(currentRole);
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-white text-slate-700 border-r border-slate-200 w-64 shadow-2xs">
+    <div className="flex flex-col h-full bg-white text-stone-700 border-r border-stone-200 w-64 shadow-2xs">
       
       {/* Header in Sidebar */}
-      <div className="p-4 border-b border-slate-100 bg-slate-50/70">
-        <div className="text-sm font-bold text-slate-900 capitalize truncate">
-          {currentUser ? currentUser.name : `${currentRole} Workspace`}
+      <div className="p-4 border-b border-stone-200 bg-stone-50/80">
+        <div className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">
+          {currentRole === 'farmer' ? 'Farmer Account' : `${currentRole} Workspace`}
         </div>
-        <p className="text-xs text-slate-500 truncate mt-0.5">
-          {currentUser?.organization || 'Authorized Participant'}
+        <div className="text-sm font-bold text-stone-900 capitalize truncate mt-0.5">
+          {currentUser ? currentUser.name : `${currentRole} Account`}
+        </div>
+        <p className="text-xs text-stone-500 truncate mt-0.5">
+          {currentUser?.organization || (currentRole === 'farmer' ? 'Farmer Member' : 'Verified Partner')}
         </p>
       </div>
 
@@ -141,10 +143,10 @@ export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
               <button
                 key="logout-item"
                 onClick={handleLogout}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition cursor-pointer"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium text-rose-700 hover:bg-rose-50 transition cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="text-rose-500">{item.icon}</span>
+                  <span className="text-rose-600">{item.icon}</span>
                   <span>{item.label}</span>
                 </div>
               </button>
@@ -160,21 +162,21 @@ export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
                 navigate(item.path);
                 onCloseMobile();
               }}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition cursor-pointer ${
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition cursor-pointer ${
                 isActive
-                  ? 'bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200/80 shadow-2xs'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'bg-stone-100 text-[#1b4332] font-bold border-l-2 border-[#1b4332]'
+                  : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <span className={isActive ? 'text-emerald-700' : 'text-slate-400'}>{item.icon}</span>
+                <span className={isActive ? 'text-[#1b4332]' : 'text-stone-400'}>{item.icon}</span>
                 <span>{item.label}</span>
               </div>
               {item.badge !== undefined && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-bold ${
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
                   isActive 
-                    ? 'bg-emerald-200/80 text-emerald-900' 
-                    : 'bg-slate-100 text-slate-600'
+                    ? 'bg-stone-200 text-[#1b4332]' 
+                    : 'bg-stone-100 text-stone-600'
                 }`}>
                   {item.badge}
                 </span>

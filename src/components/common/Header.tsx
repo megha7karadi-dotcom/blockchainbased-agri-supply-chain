@@ -29,6 +29,7 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
   const { 
     isAuthenticated,
     currentRole, 
+    setRole,
     currentUser, 
     unreadNotificationCount, 
     notifications,
@@ -86,7 +87,7 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200 shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-3">
           
@@ -95,7 +96,7 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
             {isAuthenticated && (
               <button
                 onClick={onOpenMobileSidebar}
-                className="lg:hidden p-2 text-slate-600 hover:text-emerald-700 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                className="lg:hidden p-2 text-stone-600 hover:text-emerald-900 hover:bg-stone-100 rounded-md transition cursor-pointer"
                 aria-label="Toggle workspace sidebar"
               >
                 <Menu className="w-5 h-5" />
@@ -112,38 +113,33 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
               }}
               className="flex items-center gap-2.5 text-left group cursor-pointer"
             >
-              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition">
-                <Leaf className="w-5 h-5" />
-                <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-slate-900 flex items-center justify-center text-[9px] border border-white">
-                  ⛓️
-                </span>
+              <div className="w-7 h-7 rounded-md bg-[#1b4332] flex items-center justify-center text-white shadow-xs">
+                <Leaf className="w-4 h-4 text-emerald-300" />
               </div>
-              <div>
-                <div className="flex items-center gap-1.5 leading-none">
-                  <span className="font-black text-lg tracking-tight text-slate-900">
-                    Agri<span className="text-emerald-700">Trace</span>
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-500 font-medium tracking-tight mt-0.5">
-                  Transparent. Traceable. Trusted.
-                </p>
+              <div className="flex flex-col">
+                <span className="font-bold text-base tracking-tight text-stone-900 leading-none">
+                  AgriTrace
+                </span>
+                <span className="text-[10px] text-stone-500 font-medium tracking-normal mt-0.5">
+                  Farm to Market Tracking
+                </span>
               </div>
             </button>
           </div>
 
           {/* STATE 1: Public Desktop Navigation (Only when unauthenticated) */}
           {!isAuthenticated ? (
-            <nav className="hidden xl:flex items-center gap-1">
+            <nav className="hidden xl:flex items-center gap-6">
               {publicNavLinks.map(link => {
                 const isActive = currentPath === link.path;
                 return (
                   <button
                     key={link.path}
                     onClick={() => navigate(link.path)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                    className={`text-sm font-medium transition cursor-pointer ${
                       isActive 
-                        ? 'bg-slate-100 text-emerald-800' 
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                        ? 'text-emerald-900 font-bold border-b-2 border-emerald-900 py-1' 
+                        : 'text-stone-600 hover:text-stone-900 py-1'
                     }`}
                   >
                     {link.label}
@@ -152,19 +148,30 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
               })}
             </nav>
           ) : (
-            /* Authenticated Workspace Indicator */
-            <div className="hidden md:flex items-center gap-2">
-              <span className="text-xs text-slate-500 font-medium">Workspace:</span>
-              <span className="text-xs font-bold text-slate-800 capitalize bg-slate-100 px-2.5 py-1 rounded-lg">
-                {currentUser?.organization || `${currentRole} Node`}
-              </span>
+            /* Authenticated Workspace Indicator & Role Switcher */
+            <div className="hidden lg:flex items-center gap-1.5 bg-stone-100 p-1 rounded-md border border-stone-200">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 px-1.5">Role:</span>
+              {(['farmer', 'distributor', 'retailer', 'consumer', 'admin'] as const).map(r => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRole(r)}
+                  className={`px-2 py-0.5 rounded text-xs capitalize font-medium transition cursor-pointer ${
+                    currentRole === r 
+                      ? 'bg-[#1b4332] text-white font-bold shadow-2xs' 
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
             </div>
           )}
 
           {/* Quick Batch Search Bar */}
           <form onSubmit={handleSearchSubmit} className="hidden md:flex flex-1 max-w-xs relative">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-2.5 w-4 h-4 text-stone-400" />
               <input
                 type="text"
                 value={searchBatchQuery}
@@ -172,12 +179,12 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
                 placeholder="Search batch ID or crop..."
-                className="w-full pl-9 pr-3.5 py-1.5 text-xs bg-slate-100 border border-transparent hover:border-slate-300 focus:border-emerald-600 focus:bg-white rounded-xl outline-none transition"
+                className="w-full pl-9 pr-3.5 py-1.5 text-xs bg-stone-100 border border-stone-200 hover:border-stone-300 focus:border-emerald-800 focus:bg-white rounded-md outline-none transition font-mono"
               />
             </div>
             {searchFocused && (
-              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 z-50 text-xs animate-in fade-in">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1">
+              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-stone-200 rounded-md shadow-lg p-2 z-50 text-xs animate-in fade-in">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400 px-2 py-1">
                   Active Verified Batches
                 </div>
                 {batches.slice(0, 3).map(b => (
@@ -188,13 +195,13 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                       navigateToVerification(b.id);
                       setSearchBatchQuery(b.batchId);
                     }}
-                    className="w-full text-left px-2 py-1.5 hover:bg-emerald-50 rounded-xl flex items-center justify-between transition cursor-pointer"
+                    className="w-full text-left px-2 py-1.5 hover:bg-emerald-50 rounded flex items-center justify-between transition cursor-pointer"
                   >
                     <div>
-                      <div className="font-semibold text-slate-800">{b.name}</div>
-                      <div className="font-mono text-[10px] text-emerald-700">{b.batchId}</div>
+                      <div className="font-semibold text-stone-800">{b.name}</div>
+                      <div className="font-mono text-[10px] text-emerald-800">{b.batchId}</div>
                     </div>
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-stone-500">
                       {b.status}
                     </span>
                   </button>
@@ -209,11 +216,11 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
             {/* Quick Scan QR Button */}
             <button
               onClick={onOpenQRScanner}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold border border-stone-200 transition cursor-pointer"
               title="Open QR Scanner"
             >
-              <QrCode className="w-3.5 h-3.5 text-emerald-700" />
-              <span className="hidden sm:inline">Scan QR</span>
+              <QrCode className="w-3.5 h-3.5 text-emerald-800" />
+              <span className="hidden sm:inline">Scan Packaging QR</span>
             </button>
 
             {/* Authenticated Notifications */}
@@ -277,13 +284,13 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
                   onClick={() => navigate('/login')}
-                  className="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-semibold text-stone-700 hover:text-stone-900 hover:bg-stone-100 rounded-md transition cursor-pointer"
                 >
-                  Log In
+                  Sign In
                 </button>
                 <button
                   onClick={() => navigate('/signup')}
-                  className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
+                  className="px-3.5 py-1.5 bg-[#1b4332] hover:bg-[#2d5a3f] text-white font-semibold text-xs rounded-md shadow-xs transition cursor-pointer"
                 >
                   Get Started
                 </button>
@@ -293,7 +300,7 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                 {/* Direct Dashboard Shortcut */}
                 <button
                   onClick={() => navigate(`/${currentRole}/dashboard`)}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-[#1b4332] hover:bg-[#2d5a3f] text-white text-xs font-semibold rounded-md shadow-xs transition cursor-pointer"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />
                   <span>Dashboard</span>
@@ -303,9 +310,9 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                 <div className="relative">
                   <button
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex items-center gap-2 p-1.5 sm:px-2 sm:py-1 rounded-xl hover:bg-slate-100 border border-transparent hover:border-slate-200 transition cursor-pointer"
+                    className="flex items-center gap-2 p-1.5 sm:px-2 sm:py-1 rounded-md hover:bg-stone-100 border border-transparent hover:border-stone-200 transition cursor-pointer"
                   >
-                    <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-800 font-bold flex items-center justify-center overflow-hidden text-xs">
+                    <div className="w-8 h-8 rounded-md bg-stone-100 text-stone-800 font-bold flex items-center justify-center overflow-hidden text-xs border border-stone-200">
                       {currentUser?.avatar ? (
                         <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover" />
                       ) : (
@@ -313,7 +320,7 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                       )}
                     </div>
                     <div className="hidden lg:block text-left">
-                      <div className="font-bold text-slate-900 text-xs truncate max-w-[110px]">
+                      <div className="font-bold text-stone-900 text-xs truncate max-w-[110px]">
                         {currentUser?.name || 'User'}
                       </div>
                       <div className="flex items-center gap-1">
@@ -322,21 +329,21 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                         </span>
                       </div>
                     </div>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                    <ChevronDown className="w-3.5 h-3.5 text-stone-400" />
                   </button>
 
                   {showProfileMenu && (
-                    <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95">
+                    <div className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg border border-stone-200 p-2 z-50 animate-in fade-in">
                       
                       {/* User Info Header */}
-                      <div className="p-3 border-b border-slate-100">
-                        <div className="font-bold text-slate-900 text-sm">{currentUser?.name}</div>
-                        <div className="text-xs text-slate-500 truncate">{currentUser?.email}</div>
+                      <div className="p-3 border-b border-stone-100">
+                        <div className="font-bold text-stone-900 text-sm">{currentUser?.name}</div>
+                        <div className="text-xs text-stone-500 truncate">{currentUser?.email}</div>
                         <div className="mt-1.5 flex items-center justify-between">
                           <span className={`text-xs font-semibold capitalize ${getRoleBadgeStyle(currentRole)}`}>
-                            {currentRole}
+                            {currentRole} Node
                           </span>
-                          <span className="font-mono text-[10px] text-slate-400">
+                          <span className="font-mono text-[10px] text-stone-400">
                             {currentUser?.walletAddress}
                           </span>
                         </div>
@@ -356,6 +363,33 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                             <span className="text-slate-700 truncate">{currentUser.location}</span>
                           </div>
                         )}
+                      </div>
+
+                      {/* Switch Role / Workspace Section */}
+                      <div className="py-2 border-b border-stone-100">
+                        <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                          Switch Role / View As
+                        </div>
+                        <div className="grid grid-cols-2 gap-1 px-2">
+                          {(['farmer', 'distributor', 'retailer', 'consumer', 'admin'] as const).map(roleOption => (
+                            <button
+                              key={roleOption}
+                              type="button"
+                              onClick={() => {
+                                setRole(roleOption);
+                                setShowProfileMenu(false);
+                              }}
+                              className={`px-2 py-1.5 rounded text-left text-xs capitalize transition cursor-pointer flex items-center justify-between ${
+                                currentRole === roleOption 
+                                  ? 'bg-[#1b4332] text-white font-bold' 
+                                  : 'text-stone-700 hover:bg-stone-100'
+                              }`}
+                            >
+                              <span>{roleOption}</span>
+                              {currentRole === roleOption && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
                       {/* Account Actions */}

@@ -8,8 +8,7 @@ import {
   Scale, 
   Layers, 
   Cpu, 
-  CheckCircle2,
-  Sparkles
+  CheckCircle2
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { AdminOverviewTab } from './AdminOverviewTab';
