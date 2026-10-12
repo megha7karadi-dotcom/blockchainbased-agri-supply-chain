@@ -29,7 +29,7 @@ export const Footer: React.FC = () => {
               onClick={() => handlePublicNavigate('/')}
               className="flex items-center gap-2.5 text-left group cursor-pointer"
             >
-              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white shadow-xs">
+              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white shadow-xs">
                 <Leaf className="w-5 h-5" />
               </div>
               <div>
@@ -61,7 +61,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/for-farmers')}
-                  className="hover:text-emerald-700 transition flex items-center gap-1.5 text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition flex items-center gap-1.5 text-left cursor-pointer"
                 >
                   <Sprout className="w-3.5 h-3.5 text-emerald-600" />
                   <span>For Farmers & Growers</span>
@@ -70,7 +70,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/for-businesses')}
-                  className="hover:text-emerald-700 transition flex items-center gap-1.5 text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition flex items-center gap-1.5 text-left cursor-pointer"
                 >
                   <Truck className="w-3.5 h-3.5 text-blue-600" />
                   <span>For Logistics & Distributors</span>
@@ -79,7 +79,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/for-businesses')}
-                  className="hover:text-emerald-700 transition flex items-center gap-1.5 text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition flex items-center gap-1.5 text-left cursor-pointer"
                 >
                   <Store className="w-3.5 h-3.5 text-purple-600" />
                   <span>For Retailers & Supermarkets</span>
@@ -88,7 +88,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/trace-products')}
-                  className="hover:text-emerald-700 transition flex items-center gap-1.5 text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition flex items-center gap-1.5 text-left cursor-pointer"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
                   <span>Consumer Produce Verification</span>
@@ -97,7 +97,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/login')}
-                  className="hover:text-emerald-700 transition flex items-center gap-1.5 text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition flex items-center gap-1.5 text-left cursor-pointer"
                 >
                   <Lock className="w-3.5 h-3.5 text-amber-600" />
                   <span>Participant Sign In</span>
@@ -113,7 +113,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/how-it-works')}
-                  className="hover:text-emerald-700 transition text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition text-left cursor-pointer"
                 >
                   How Traceability Works
                 </button>
@@ -121,7 +121,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/trace-products')}
-                  className="hover:text-emerald-700 transition text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition text-left cursor-pointer"
                 >
                   Produce Registry
                 </button>
@@ -129,7 +129,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/resources')}
-                  className="hover:text-emerald-700 transition text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition text-left cursor-pointer"
                 >
                   Price Transparency Models
                 </button>
@@ -137,7 +137,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/resources')}
-                  className="hover:text-emerald-700 transition text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition text-left cursor-pointer"
                 >
                   Cold-Chain Monitoring Guidelines
                 </button>
@@ -145,7 +145,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/resources')}
-                  className="hover:text-emerald-700 transition text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition text-left cursor-pointer"
                 >
                   Frequently Asked Questions
                 </button>
@@ -160,7 +160,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/about')}
-                  className="hover:text-emerald-700 transition text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition text-left cursor-pointer"
                 >
                   About AgriTrace
                 </button>
@@ -168,7 +168,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/for-farmers')}
-                  className="hover:text-emerald-700 transition text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition text-left cursor-pointer"
                 >
                   Fair Price Guarantee
                 </button>
@@ -176,7 +176,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/for-businesses')}
-                  className="hover:text-emerald-700 transition text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition text-left cursor-pointer"
                 >
                   Commercial Integration
                 </button>
@@ -184,7 +184,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/resources')}
-                  className="hover:text-emerald-700 transition text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition text-left cursor-pointer"
                 >
                   Data Transparency Principles
                 </button>
@@ -192,7 +192,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handlePublicNavigate('/signup')}
-                  className="hover:text-emerald-700 transition text-left cursor-pointer"
+                  className="hover:text-emerald-600 transition text-left cursor-pointer"
                 >
                   Join the Network
                 </button>

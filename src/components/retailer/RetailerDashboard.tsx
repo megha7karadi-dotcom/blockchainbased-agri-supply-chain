@@ -67,7 +67,7 @@ export const RetailerDashboard: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={() => navigate('/retailer/inventory')}
-              className="px-4 py-2 bg-[#1b4332] hover:bg-[#2d5a3f] text-white font-semibold text-xs sm:text-sm rounded-md transition shadow-xs flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2 bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold text-xs sm:text-sm rounded-md transition shadow-xs flex items-center gap-2 cursor-pointer"
             >
               <Package className="w-4 h-4" />
               <span>Shelf Inventory ({onShelfBatches.length})</span>
@@ -76,7 +76,7 @@ export const RetailerDashboard: React.FC = () => {
               onClick={() => navigate('/retailer/incoming')}
               className="px-3.5 py-2 bg-white hover:bg-stone-50 border border-stone-300 text-stone-800 font-semibold text-xs sm:text-sm rounded-md transition flex items-center gap-1.5 cursor-pointer"
             >
-              <Store className="w-4 h-4 text-emerald-800" />
+              <Store className="w-4 h-4 text-emerald-700" />
               <span>Incoming Shipments</span>
             </button>
             <button
@@ -213,13 +213,13 @@ export const RetailerDashboard: React.FC = () => {
                         className="px-2.5 py-1 bg-white hover:bg-stone-50 border border-stone-300 text-stone-700 rounded text-[11px] font-medium transition cursor-pointer flex items-center gap-1"
                         title="View shelf QR"
                       >
-                        <QrCode className="w-3 h-3 text-emerald-800" />
+                        <QrCode className="w-3 h-3 text-emerald-700" />
                         <span>QR</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => handleRecordSale(batch.id, batch.name)}
-                        className="px-3 py-1 bg-[#1b4332] hover:bg-[#2d5a3f] text-white rounded text-[11px] font-semibold transition cursor-pointer"
+                        className="px-3 py-1 bg-[#16a34a] hover:bg-[#15803d] text-white rounded text-[11px] font-semibold transition cursor-pointer"
                         title="Record 25kg checkout"
                       >
                         Record Sale
@@ -303,7 +303,7 @@ export const RetailerDashboard: React.FC = () => {
               <div className="flex gap-2 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-[#1b4332] hover:bg-[#2d5a3f] text-white font-semibold rounded transition cursor-pointer shadow-xs"
+                  className="flex-1 py-2.5 bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold rounded transition cursor-pointer shadow-xs"
                 >
                   Publish Price to Shelf QR
                 </button>

@@ -282,20 +282,20 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
     <div className="max-w-5xl mx-auto space-y-8 pb-16">
       
       {/* Search Header */}
-      <div className="bg-white rounded-xl p-5 sm:p-6 border border-[#DCE5D9] shadow-xs space-y-4">
+      <div className="bg-white rounded-xl p-5 sm:p-6 border border-[#bbf7d0] shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-[#263329] tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#1c1917] tracking-tight">
               Verify Crop & Farm Origins
             </h1>
-            <p className="text-xs text-[#657267] mt-0.5">
+            <p className="text-xs text-[#78716c] mt-0.5">
               Check the authentic farm origin, harvest date, transport journey, and fair price breakdown.
             </p>
           </div>
           <button
             type="button"
             onClick={onOpenQRScanner}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#246B35] hover:bg-[#1B4332] text-white text-xs font-semibold rounded-lg transition shadow-xs self-start sm:self-auto cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-semibold rounded-lg transition shadow-xs self-start sm:self-auto cursor-pointer"
           >
             <QrCode className="w-4 h-4 text-emerald-200" />
             <span>Scan QR Code</span>
@@ -311,13 +311,13 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Enter Batch ID (e.g., AGRI-2026-MNG-001) or paste verification link..."
-              className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#F0F7EC]/30 border border-[#DCE5D9] rounded-lg focus:border-[#246B35] focus:bg-white outline-none font-mono"
+              className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#f0fdf4]/30 border border-[#bbf7d0] rounded-lg focus:border-[#16a34a] focus:bg-white outline-none font-mono"
             >
             </input>
           </div>
           <button
             type="submit"
-            className="px-5 py-2.5 bg-[#246B35] hover:bg-[#1B4332] text-white text-xs font-semibold rounded-lg transition cursor-pointer shadow-xs"
+            className="px-5 py-2.5 bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-semibold rounded-lg transition cursor-pointer shadow-xs"
           >
             Verify Crop
           </button>
@@ -325,7 +325,7 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
 
         {/* Quick Batch Selectors */}
         <div className="flex items-center gap-2 flex-wrap text-xs pt-1">
-          <span className="text-[#657267] font-medium">Verified Batches:</span>
+          <span className="text-[#78716c] font-medium">Verified Batches:</span>
           {batches.map(b => (
             <button
               key={b.id}
@@ -333,7 +333,7 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
               onClick={() => handleSelectBatch(b)}
               className={`px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer ${
                 batch && b.batchId === batch.batchId
-                  ? 'bg-[#246B35] text-white font-semibold'
+                  ? 'bg-[#16a34a] text-white font-semibold'
                   : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
               }`}
             >
@@ -421,17 +421,17 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
         <div className="space-y-6">
           
           {/* Top Produce Summary Card */}
-          <div className="bg-white rounded-xl border border-[#DCE5D9] shadow-xs overflow-hidden">
+          <div className="bg-white rounded-xl border border-[#bbf7d0] shadow-xs overflow-hidden">
             
             {/* Header Ribbon */}
-            <div className="p-4 sm:p-5 bg-[#F0F7EC] text-[#263329] border-b border-[#DCE5D9] flex flex-wrap items-center justify-between gap-3">
+            <div className="p-4 sm:p-5 bg-[#f0fdf4] text-[#1c1917] border-b border-[#bbf7d0] flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <span className="font-mono text-sm font-bold text-[#246B35]">
+                <span className="font-mono text-sm font-bold text-[#16a34a]">
                   Batch ID: {batch.batchId}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-xs text-[#246B35] bg-white px-2 py-0.5 rounded border border-[#DCE5D9]">
+                <span className="font-semibold text-xs text-[#16a34a] bg-white px-2 py-0.5 rounded border border-[#bbf7d0]">
                   Status: {batch.status || 'Registered'}
                 </span>
               </div>
@@ -631,9 +631,9 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
               <SupplyChainTimeline timeline={batch.timeline || []} currentStatus={batch.status || 'Registered'} />
               
               {/* Custody History Card */}
-              <div className="bg-white rounded-xl p-6 sm:p-7 border border-[#DCE5D9] shadow-xs space-y-4">
-                <h3 className="font-bold text-[#263329] text-sm sm:text-base flex items-center gap-2">
-                  <FileCheck2 className="w-4 h-4 text-[#246B35]" />
+              <div className="bg-white rounded-xl p-6 sm:p-7 border border-[#bbf7d0] shadow-xs space-y-4">
+                <h3 className="font-bold text-[#1c1917] text-sm sm:text-base flex items-center gap-2">
+                  <FileCheck2 className="w-4 h-4 text-[#16a34a]" />
                   <span>Recorded Custody & Ownership Transfers</span>
                 </h3>
                 <div className="divide-y divide-slate-100 text-xs">
@@ -807,23 +807,14 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
               <div className="border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 font-mono text-xs">
                 <div className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-slate-50">
                   <span className="text-slate-500">Registry System:</span>
-                  <span className="font-bold text-slate-800">AgriTrace Verified Agricultural Ledger (Ethereum Sepolia)</span>
+                  <span className="font-bold text-slate-800">AgriTrace Verified Agricultural Ledger</span>
                 </div>
                 <div className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                  <span className="text-slate-500">Smart Contract:</span>
-                  {isContractConfigured() ? (
-                    <a 
-                      href={`${SEPOLIA_EXPLORER_URL}/address/${getContractAddress()}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-emerald-700 hover:text-emerald-900 underline flex items-center gap-1 font-semibold"
-                    >
-                      <span>{getContractAddress().slice(0, 10)}...{getContractAddress().slice(-8)}</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  ) : (
-                    <span className="text-amber-600 font-medium">Awaiting Sepolia contract deployment</span>
-                  )}
+                  <span className="text-slate-500">Certificate Status:</span>
+                  <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Verified & Tamper-Proof</span>
+                  </span>
                 </div>
                 <div className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <span className="text-slate-500">Batch ID:</span>

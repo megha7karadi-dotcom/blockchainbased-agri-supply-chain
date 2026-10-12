@@ -149,46 +149,45 @@ export const QRScannerModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 repeat: Infinity, 
                 ease: 'easeInOut' 
               }}
-              className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#34d399]"
+              className="absolute left-0 right-0 h-0.5 bg-emerald-500"
             />
 
             {isScanning ? (
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="flex flex-col items-center text-emerald-400 space-y-2 z-10"
+                className="flex flex-col items-center text-emerald-600 space-y-2 z-10"
               >
                 <Loader2 className="w-8 h-8 animate-spin" />
-                <span className="text-xs font-mono font-bold animate-pulse">Reading QR Tag...</span>
+                <span className="text-xs font-semibold">Reading QR Code...</span>
               </motion.div>
             ) : scanResult ? (
               <motion.div 
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="flex flex-col items-center text-emerald-400 space-y-2 z-10"
+                className="flex flex-col items-center text-emerald-600 space-y-2 z-10"
               >
                 <CheckCircle2 className="w-10 h-10" />
-                <span className="text-xs font-bold font-mono">Verified Match!</span>
+                <span className="text-xs font-semibold">Verified Match</span>
               </motion.div>
             ) : (
               <div className="flex flex-col items-center text-slate-400 space-y-2 p-4 z-10">
-                <QrCode className="w-12 h-12 text-slate-500" />
-                <span className="text-[11px] text-slate-400">Align QR code inside viewfinder</span>
+                <QrCode className="w-12 h-12 text-slate-400" />
+                <span className="text-xs text-slate-500">Align QR code inside frame</span>
               </div>
             )}
           </div>
 
-          <div className="mt-3 text-xs text-slate-400 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Laser active • Point camera or select a sample batch</span>
+          <div className="mt-3 text-xs text-slate-500 text-center">
+            <span>Point camera at QR code, or select a batch below</span>
           </div>
         </div>
 
         {/* Quick sample pickers with produce thumbnails */}
         <div className="p-4.5 bg-slate-50 border-t border-slate-200">
-          <div className="text-xs font-bold text-slate-700 mb-2.5 flex items-center justify-between">
-            <span>Simulate Scan on Sample Batches:</span>
-            <span className="text-[10px] text-emerald-700 font-semibold">Click to test</span>
+          <div className="text-xs font-semibold text-slate-700 mb-2.5 flex items-center justify-between">
+            <span>Sample Produce Batches:</span>
+            <span className="text-[11px] text-emerald-700 font-medium">Select to view</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {batches.slice(0, 4).map(b => (

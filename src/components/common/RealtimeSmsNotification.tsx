@@ -86,7 +86,7 @@ export const RealtimeSmsNotification: React.FC<Props> = ({ sms, onClose, onAutoF
           <div className="flex items-center justify-between gap-2 text-xs text-slate-400">
             <span className="font-semibold text-emerald-400 flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{sms.sender || 'AgriTrace SMS Gateway'}</span>
+              <span>{sms.sender || 'AgriTrace Verification'}</span>
             </span>
             <span>Just now</span>
           </div>

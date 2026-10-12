@@ -123,7 +123,7 @@ export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
     <div className="flex flex-col h-full bg-white text-stone-700 border-r border-stone-200 w-64 shadow-2xs">
       
       {/* Header in Sidebar */}
-      <div className="p-4 border-b border-stone-200 bg-stone-50/80">
+      <div className="p-4 border-b border-stone-200 bg-emerald-50/50">
         <div className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">
           {currentRole === 'farmer' ? 'Farmer Account' : `${currentRole} Workspace`}
         </div>
@@ -164,18 +164,18 @@ export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
               }}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition cursor-pointer ${
                 isActive
-                  ? 'bg-stone-100 text-[#1b4332] font-bold border-l-2 border-[#1b4332]'
-                  : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+                  ? 'bg-emerald-50 text-emerald-800 font-bold border-l-2 border-emerald-600'
+                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <span className={isActive ? 'text-[#1b4332]' : 'text-stone-400'}>{item.icon}</span>
+                <span className={isActive ? 'text-emerald-600' : 'text-stone-400'}>{item.icon}</span>
                 <span>{item.label}</span>
               </div>
               {item.badge !== undefined && (
                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
                   isActive 
-                    ? 'bg-stone-200 text-[#1b4332]' 
+                    ? 'bg-emerald-100 text-emerald-800' 
                     : 'bg-stone-100 text-stone-600'
                 }`}>
                   {item.badge}

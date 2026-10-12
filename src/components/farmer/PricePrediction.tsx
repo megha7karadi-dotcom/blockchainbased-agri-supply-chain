@@ -55,24 +55,24 @@ export const PricePrediction: React.FC = () => {
     <div className="max-w-5xl mx-auto space-y-6 pb-16">
       
       {/* Page Header */}
-      <div className="bg-white rounded-xl p-5 sm:p-6 border border-[#DCE5D9] shadow-xs space-y-2">
+      <div className="bg-white rounded-xl p-5 sm:p-6 border border-[#bbf7d0] shadow-xs space-y-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#246B35]"></span>
-              <span className="text-[11px] font-semibold text-[#246B35] uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-[#16a34a]"></span>
+              <span className="text-[11px] font-semibold text-[#16a34a] uppercase tracking-wider">
                 Market Advisory
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-[#263329]">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#1c1917]">
               Check Market Prices & Selling Guide
             </h1>
           </div>
-          <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200 self-start sm:self-auto">
+          <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-emerald-50 text-emerald-900 border border-emerald-200 self-start sm:self-auto">
             Market Estimate
           </span>
         </div>
-        <p className="text-xs sm:text-sm text-[#657267] max-w-2xl leading-relaxed">
+        <p className="text-xs sm:text-sm text-[#78716c] max-w-2xl leading-relaxed">
           Check upcoming market trends and estimated selling prices so you can sell your harvest at the right time.
         </p>
       </div>
@@ -82,13 +82,13 @@ export const PricePrediction: React.FC = () => {
         
         {/* Left Column: Form */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="bg-white p-5 sm:p-6 rounded-xl border border-[#DCE5D9] shadow-xs space-y-4">
+          <div className="bg-white p-5 sm:p-6 rounded-xl border border-[#bbf7d0] shadow-xs space-y-4">
             <div>
-              <h2 className="text-sm font-bold text-[#263329] flex items-center gap-2">
-                <Scale className="w-4 h-4 text-[#246B35]" />
+              <h2 className="text-sm font-bold text-[#1c1917] flex items-center gap-2">
+                <Scale className="w-4 h-4 text-[#16a34a]" />
                 <span>Crop & Harvest Details</span>
               </h2>
-              <p className="text-xs text-[#657267] mt-0.5">
+              <p className="text-xs text-[#78716c] mt-0.5">
                 Input your crop details to see market price forecasts
               </p>
             </div>
@@ -96,13 +96,13 @@ export const PricePrediction: React.FC = () => {
             <form onSubmit={handleAssessment} className="space-y-3.5">
               {/* Crop Selection */}
               <div>
-                <label className="block text-xs font-semibold text-[#263329] mb-1">
+                <label className="block text-xs font-semibold text-[#1c1917] mb-1">
                   Crop Variety *
                 </label>
                 <select
                   value={crop}
                   onChange={(e) => setCrop(e.target.value)}
-                  className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-[#DCE5D9] rounded-lg focus:bg-white focus:border-[#246B35] outline-none transition font-medium text-stone-900"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-[#bbf7d0] rounded-lg focus:bg-white focus:border-[#16a34a] outline-none transition font-medium text-stone-900"
                 >
                   <option value="Alphonso Mango">Ratnagiri Alphonso Mango</option>
                   <option value="Basmati Rice">Traditional Basmati Rice (Pusa 1121)</option>
@@ -116,7 +116,7 @@ export const PricePrediction: React.FC = () => {
               {/* Quantity & Quality */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#263329] mb-1">
+                  <label className="block text-xs font-semibold text-[#1c1917] mb-1">
                     Volume (kg) *
                   </label>
                   <input
@@ -126,18 +126,18 @@ export const PricePrediction: React.FC = () => {
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
                     placeholder="1200"
-                    className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-[#DCE5D9] rounded-lg focus:bg-white focus:border-[#246B35] outline-none transition font-mono text-stone-900"
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-[#bbf7d0] rounded-lg focus:bg-white focus:border-[#16a34a] outline-none transition font-mono text-stone-900"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#263329] mb-1">
+                  <label className="block text-xs font-semibold text-[#1c1917] mb-1">
                     Quality Grade *
                   </label>
                   <select
                     value={qualityGrade}
                     onChange={(e) => setQualityGrade(e.target.value as any)}
-                    className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-[#DCE5D9] rounded-lg focus:bg-white focus:border-[#246B35] outline-none transition text-stone-900"
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-[#bbf7d0] rounded-lg focus:bg-white focus:border-[#16a34a] outline-none transition text-stone-900"
                   >
                     <option value="Grade A (Export Quality)">Grade A (Export Quality)</option>
                     <option value="Grade B (Premium Domestic)">Grade B (Domestic)</option>
@@ -148,7 +148,7 @@ export const PricePrediction: React.FC = () => {
 
               {/* Location */}
               <div>
-                <label className="block text-xs font-semibold text-[#263329] mb-1">
+                <label className="block text-xs font-semibold text-[#1c1917] mb-1">
                   Farm District *
                 </label>
                 <div className="relative">
@@ -159,7 +159,7 @@ export const PricePrediction: React.FC = () => {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="e.g. Ratnagiri, Maharashtra"
-                    className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-stone-50 border border-[#DCE5D9] rounded-lg focus:bg-white focus:border-[#246B35] outline-none transition text-stone-900"
+                    className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-stone-50 border border-[#bbf7d0] rounded-lg focus:bg-white focus:border-[#16a34a] outline-none transition text-stone-900"
                   />
                 </div>
               </div>
@@ -167,7 +167,7 @@ export const PricePrediction: React.FC = () => {
               {/* Harvest Date & Current Mandi Spot */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#263329] mb-1">
+                  <label className="block text-xs font-semibold text-[#1c1917] mb-1">
                     Harvest Date *
                   </label>
                   <input
@@ -175,12 +175,12 @@ export const PricePrediction: React.FC = () => {
                     required
                     value={harvestDate}
                     onChange={(e) => setHarvestDate(e.target.value)}
-                    className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-[#DCE5D9] rounded-lg focus:bg-white focus:border-[#246B35] outline-none transition text-stone-900"
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-[#bbf7d0] rounded-lg focus:bg-white focus:border-[#16a34a] outline-none transition text-stone-900"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#263329] mb-1">
+                  <label className="block text-xs font-semibold text-[#1c1917] mb-1">
                     Current Mandi (₹/kg) *
                   </label>
                   <div className="relative">
@@ -192,7 +192,7 @@ export const PricePrediction: React.FC = () => {
                       value={currentMarketPrice}
                       onChange={(e) => setCurrentMarketPrice(e.target.value)}
                       placeholder="120"
-                      className="w-full pl-7 pr-3 py-2 text-xs sm:text-sm bg-stone-50 border border-[#DCE5D9] rounded-lg focus:bg-white focus:border-[#246B35] outline-none transition font-mono text-stone-900"
+                      className="w-full pl-7 pr-3 py-2 text-xs sm:text-sm bg-stone-50 border border-[#bbf7d0] rounded-lg focus:bg-white focus:border-[#16a34a] outline-none transition font-mono text-stone-900"
                     />
                   </div>
                 </div>
@@ -201,7 +201,7 @@ export const PricePrediction: React.FC = () => {
               <button
                 type="submit"
                 disabled={isAssessing}
-                className="w-full py-2.5 bg-[#246B35] hover:bg-[#1B4332] text-white font-bold text-xs sm:text-sm rounded-lg transition shadow-xs flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-50"
+                className="w-full py-2.5 bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-xs sm:text-sm rounded-lg transition shadow-xs flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-50"
               >
                 {isAssessing ? (
                   <span>Checking Mandi Trends...</span>
@@ -215,9 +215,9 @@ export const PricePrediction: React.FC = () => {
             </form>
           </div>
 
-          <div className="p-3.5 bg-stone-50 rounded-lg border border-stone-200 text-xs text-[#657267] space-y-1">
-            <div className="flex items-center gap-1.5 font-bold text-[#263329]">
-              <Info className="w-3.5 h-3.5 text-[#246B35]" />
+          <div className="p-3.5 bg-stone-50 rounded-lg border border-stone-200 text-xs text-[#78716c] space-y-1">
+            <div className="flex items-center gap-1.5 font-bold text-[#1c1917]">
+              <Info className="w-3.5 h-3.5 text-[#16a34a]" />
               <span>Direct Sale Advantage</span>
             </div>
             <p className="text-[11px] leading-relaxed">
@@ -230,41 +230,41 @@ export const PricePrediction: React.FC = () => {
         <div className="lg:col-span-7 space-y-4">
           
           {/* Main Price Card */}
-          <div className="bg-white rounded-xl p-5 sm:p-6 border border-[#DCE5D9] shadow-xs space-y-4">
+          <div className="bg-white rounded-xl p-5 sm:p-6 border border-[#bbf7d0] shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-stone-100">
-              <h2 className="text-sm font-bold text-[#263329]">
+              <h2 className="text-sm font-bold text-[#1c1917]">
                 Recommended Price & Earnings
               </h2>
-              <span className="text-xs text-[#246B35] font-semibold bg-[#F0F7EC] px-2 py-0.5 rounded border border-[#DCE5D9]">
+              <span className="text-xs text-[#16a34a] font-semibold bg-[#f0fdf4] px-2 py-0.5 rounded border border-[#bbf7d0]">
                 Expected Range
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
               <div>
-                <span className="text-xs text-[#657267] block">
+                <span className="text-xs text-[#78716c] block">
                   Recommended Selling Price
                 </span>
-                <div className="text-3xl font-extrabold text-[#246B35] mt-1 font-mono">
+                <div className="text-3xl font-extrabold text-[#16a34a] mt-1 font-mono">
                   ₹{bestPrediction.predictedPrice}
-                  <span className="text-xs font-normal text-[#657267] ml-1">/ kg</span>
+                  <span className="text-xs font-normal text-[#78716c] ml-1">/ kg</span>
                 </div>
-                <div className="text-xs text-[#246B35] font-semibold mt-1 flex items-center gap-1">
+                <div className="text-xs text-[#16a34a] font-semibold mt-1 flex items-center gap-1">
                   <ArrowUpRight className="w-4 h-4" />
                   <span>+₹{bestPrediction.priceDelta}/kg above current spot</span>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-lg bg-[#F0F7EC]/60 border border-[#DCE5D9] space-y-1.5 text-xs">
+              <div className="p-3.5 rounded-lg bg-[#f0fdf4]/60 border border-[#bbf7d0] space-y-1.5 text-xs">
                 <div className="flex justify-between items-center">
-                  <span className="text-[#657267]">Price Band:</span>
-                  <span className="font-bold text-[#263329] font-mono">
+                  <span className="text-[#78716c]">Price Band:</span>
+                  <span className="font-bold text-[#1c1917] font-mono">
                     ₹{bestPrediction.lowRange} – ₹{bestPrediction.highRange} / kg
                   </span>
                 </div>
-                <div className="flex justify-between items-center pt-1 border-t border-[#DCE5D9]">
-                  <span className="text-[#657267]">Total Estimated Value:</span>
-                  <span className="font-bold text-[#246B35] text-sm font-mono">
+                <div className="flex justify-between items-center pt-1 border-t border-[#bbf7d0]">
+                  <span className="text-[#78716c]">Total Estimated Value:</span>
+                  <span className="font-bold text-[#16a34a] text-sm font-mono">
                     ₹{totalLotRevenue.toLocaleString('en-IN')}
                   </span>
                 </div>
@@ -277,8 +277,8 @@ export const PricePrediction: React.FC = () => {
             {/* 30-Day Trend */}
             <div className="pt-3 border-t border-stone-100 space-y-2.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-[#263329] flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-[#246B35]" />
+                <span className="font-semibold text-[#1c1917] flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5 text-[#16a34a]" />
                   <span>Next 30 Days Forecast</span>
                 </span>
               </div>
@@ -289,11 +289,11 @@ export const PricePrediction: React.FC = () => {
                     key={pt.period} 
                     className={`p-2 rounded border text-center text-xs space-y-0.5 ${
                       idx === 2 
-                        ? 'bg-[#E3F0DC] border-[#4F9D45] text-[#246B35] font-bold' 
+                        ? 'bg-[#dcfce7] border-[#22c55e] text-[#16a34a] font-bold' 
                         : 'bg-stone-50 border-stone-200 text-stone-700'
                     }`}
                   >
-                    <span className="text-[10px] block text-[#657267]">{pt.period}</span>
+                    <span className="text-[10px] block text-[#78716c]">{pt.period}</span>
                     <span className="text-xs sm:text-sm block font-mono font-bold">₹{pt.price}</span>
                   </div>
                 ))}
@@ -302,14 +302,14 @@ export const PricePrediction: React.FC = () => {
           </div>
 
           {/* Advice */}
-          <div className="bg-white rounded-xl p-5 border border-[#DCE5D9] shadow-xs space-y-3 text-xs">
+          <div className="bg-white rounded-xl p-5 border border-[#bbf7d0] shadow-xs space-y-3 text-xs">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-sm text-[#263329]">Selling Recommendation</span>
-              <span className="px-2.5 py-0.5 rounded font-semibold text-xs bg-[#F0F7EC] text-[#246B35] border border-[#DCE5D9]">
+              <span className="font-bold text-sm text-[#1c1917]">Selling Recommendation</span>
+              <span className="px-2.5 py-0.5 rounded font-semibold text-xs bg-[#f0fdf4] text-[#16a34a] border border-[#bbf7d0]">
                 {bestPrediction.recommendedAction === 'IMMEDIATE DISPATCH' ? 'Good Time to Sell' : 'Consider Waiting'}
               </span>
             </div>
-            <p className="text-xs text-[#657267] leading-relaxed">
+            <p className="text-xs text-[#78716c] leading-relaxed">
               {bestPrediction.recommendationReason}
             </p>
           </div>
@@ -318,17 +318,17 @@ export const PricePrediction: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <button
               onClick={() => navigate('/farmer/register-produce')}
-              className="w-full sm:w-1/2 py-2.5 px-4 bg-[#246B35] hover:bg-[#1B4332] text-white rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+              className="w-full sm:w-1/2 py-2.5 px-4 bg-[#16a34a] hover:bg-[#15803d] text-white rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
             >
               <Package className="w-4 h-4" />
               <span>Add Crop at This Price</span>
             </button>
             <button
               onClick={() => navigate('/farmer/transfers')}
-              className="w-full sm:w-1/2 py-2.5 px-4 bg-white hover:bg-stone-50 border border-stone-300 text-[#263329] rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-1/2 py-2.5 px-4 bg-white hover:bg-stone-50 border border-stone-300 text-[#1c1917] rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Transfer Existing Crop</span>
-              <ArrowRight className="w-4 h-4 text-[#246B35]" />
+              <ArrowRight className="w-4 h-4 text-[#16a34a]" />
             </button>
           </div>
 

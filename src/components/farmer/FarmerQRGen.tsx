@@ -101,12 +101,12 @@ export const FarmerQRGen: React.FC = () => {
 
         if (mode === 'full-tag') {
           // Border
-          ctx.strokeStyle = '#263329';
+          ctx.strokeStyle = '#1c1917';
           ctx.lineWidth = 12;
           ctx.strokeRect(30, 30, width - 60, height - 60);
 
           // Top Header Banner
-          ctx.fillStyle = '#246B35';
+          ctx.fillStyle = '#16a34a';
           ctx.fillRect(40, 40, width - 80, 180);
 
           ctx.fillStyle = '#ffffff';
@@ -115,11 +115,11 @@ export const FarmerQRGen: React.FC = () => {
           ctx.fillText('AGRITRACE VERIFIED PRODUCE', width / 2, 120);
 
           ctx.font = '32px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-          ctx.fillStyle = '#E3F0DC';
+          ctx.fillStyle = '#dcfce7';
           ctx.fillText('Tracked from Farm to Market', width / 2, 175);
 
           // Crop Name
-          ctx.fillStyle = '#263329';
+          ctx.fillStyle = '#1c1917';
           ctx.font = 'bold 64px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
           const cropDisplay = (selectedBatch.cropVariety ? `${selectedBatch.cropVariety} ${selectedBatch.cropName}` : selectedBatch.cropName || selectedBatch.name || 'Produce').toUpperCase();
           ctx.fillText(cropDisplay, width / 2, 290);
@@ -131,7 +131,7 @@ export const FarmerQRGen: React.FC = () => {
           ctx.drawImage(img, qrX, qrY, qrCanvasSize, qrCanvasSize);
 
           // Divider
-          ctx.strokeStyle = '#DCE5D9';
+          ctx.strokeStyle = '#bbf7d0';
           ctx.lineWidth = 4;
           ctx.beginPath();
           ctx.moveTo(80, 1160);
@@ -139,12 +139,12 @@ export const FarmerQRGen: React.FC = () => {
           ctx.stroke();
 
           // Batch details
-          ctx.fillStyle = '#263329';
+          ctx.fillStyle = '#1c1917';
           ctx.font = 'bold 36px monospace';
           ctx.textAlign = 'center';
           ctx.fillText(`BATCH: ${selectedBatch.batchId}`, width / 2, 1230);
 
-          ctx.fillStyle = '#657267';
+          ctx.fillStyle = '#78716c';
           ctx.font = '32px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
           ctx.fillText(`Origin: ${selectedBatch.farmerLocation || selectedBatch.farmLocation || 'Farm Origin'}`, width / 2, 1290);
 
@@ -155,11 +155,11 @@ export const FarmerQRGen: React.FC = () => {
           );
 
           // Footer
-          ctx.fillStyle = '#246B35';
+          ctx.fillStyle = '#16a34a';
           ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
           ctx.fillText('SCAN WITH PHONE CAMERA TO VERIFY AUTHENTICITY', width / 2, 1430);
 
-          ctx.fillStyle = '#657267';
+          ctx.fillStyle = '#78716c';
           ctx.font = '22px monospace';
           ctx.fillText(verificationUrl, width / 2, 1490);
 
@@ -169,12 +169,12 @@ export const FarmerQRGen: React.FC = () => {
           const qrCanvasSize = width - padding * 2;
           ctx.drawImage(img, padding, padding, qrCanvasSize, qrCanvasSize);
 
-          ctx.fillStyle = '#246B35';
+          ctx.fillStyle = '#16a34a';
           ctx.font = 'bold 32px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
           ctx.textAlign = 'center';
           ctx.fillText('AGRITRACE CROP QR CODE', width / 2, 75);
 
-          ctx.fillStyle = '#263329';
+          ctx.fillStyle = '#1c1917';
           ctx.font = 'bold 36px monospace';
           ctx.fillText(selectedBatch.batchId, width / 2, width - 40);
         }
@@ -208,7 +208,7 @@ export const FarmerQRGen: React.FC = () => {
 
   if (!selectedBatch) {
     return (
-      <div className="max-w-4xl mx-auto py-12 text-center text-[#657267]">
+      <div className="max-w-4xl mx-auto py-12 text-center text-[#78716c]">
         No crops available for QR code generation.
       </div>
     );
@@ -218,18 +218,18 @@ export const FarmerQRGen: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-6 pb-16">
       
       {/* Title & Top Action Bar */}
-      <div className="bg-white border border-[#DCE5D9] rounded-xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white border border-[#bbf7d0] rounded-xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#246B35]"></span>
-            <span className="text-[11px] font-semibold text-[#246B35] uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-[#16a34a]"></span>
+            <span className="text-[11px] font-semibold text-[#16a34a] uppercase tracking-wider">
               Packaging QR Codes
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#263329] flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1c1917] flex items-center gap-2">
             <span>View QR Code & Packaging Stickers</span>
           </h1>
-          <p className="text-xs text-[#657267]">
+          <p className="text-xs text-[#78716c]">
             Print or download QR codes to stick onto crates, sacks, or boxes so buyers can verify your farm origin.
           </p>
         </div>
@@ -238,16 +238,16 @@ export const FarmerQRGen: React.FC = () => {
           <button
             type="button"
             onClick={handlePrint}
-            className="px-3.5 py-2 bg-stone-50 hover:bg-[#F0F7EC] border border-[#DCE5D9] text-[#263329] font-semibold text-xs rounded-lg transition flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 bg-stone-50 hover:bg-[#f0fdf4] border border-[#bbf7d0] text-[#1c1917] font-semibold text-xs rounded-lg transition flex items-center gap-1.5 cursor-pointer"
           >
-            <Printer className="w-4 h-4 text-[#246B35]" />
+            <Printer className="w-4 h-4 text-[#16a34a]" />
             <span>Print</span>
           </button>
 
           <button
             type="button"
             onClick={handleOpenVerification}
-            className="px-3.5 py-2 bg-[#246B35] hover:bg-[#1B4332] text-white font-semibold text-xs rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+            className="px-3.5 py-2 bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold text-xs rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             <span>Verify Live</span>
@@ -257,15 +257,15 @@ export const FarmerQRGen: React.FC = () => {
 
       {/* Export Success Notification */}
       {exportSuccess && (
-        <div className="p-3 bg-[#F0F7EC] border border-[#4F9D45] rounded-lg text-xs text-[#246B35] flex items-center justify-between gap-3">
+        <div className="p-3 bg-[#f0fdf4] border border-[#22c55e] rounded-lg text-xs text-[#16a34a] flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[#246B35] shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-[#16a34a] shrink-0" />
             <span className="font-bold">{exportSuccess}</span>
           </div>
           <button 
             type="button"
             onClick={() => setExportSuccess(null)}
-            className="text-[#246B35] hover:text-[#1B4332] font-bold text-xs cursor-pointer"
+            className="text-[#16a34a] hover:text-[#15803d] font-bold text-xs cursor-pointer"
           >
             ✕
           </button>
@@ -275,13 +275,13 @@ export const FarmerQRGen: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* Left: Configuration Panel */}
-        <div className="bg-white p-5 sm:p-6 rounded-xl border border-[#DCE5D9] shadow-xs space-y-4">
+        <div className="bg-white p-5 sm:p-6 rounded-xl border border-[#bbf7d0] shadow-xs space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-[#263329] mb-1.5">Select Crop Batch</label>
+            <label className="block text-xs font-semibold text-[#1c1917] mb-1.5">Select Crop Batch</label>
             <select
               value={selectedBatch.id}
               onChange={(e) => setSelectedBatchId(e.target.value)}
-              className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-[#DCE5D9] rounded-lg focus:border-[#246B35] focus:bg-white outline-none font-medium text-stone-900 cursor-pointer"
+              className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-[#bbf7d0] rounded-lg focus:border-[#16a34a] focus:bg-white outline-none font-medium text-stone-900 cursor-pointer"
             >
               {selectableBatches.map(b => (
                 <option key={b.id} value={b.id}>
@@ -292,7 +292,7 @@ export const FarmerQRGen: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#263329] mb-1.5">Sticker Format</label>
+            <label className="block text-xs font-semibold text-[#1c1917] mb-1.5">Sticker Format</label>
             <div className="space-y-1.5">
               {[
                 { id: 'crate' as const, label: 'Crate Sticker (4" x 6")', desc: 'For plastic crates or boxes' },
@@ -305,12 +305,12 @@ export const FarmerQRGen: React.FC = () => {
                   onClick={() => setLabelSize(sz.id)}
                   className={`w-full p-2.5 rounded-lg border text-left transition text-xs cursor-pointer ${
                     labelSize === sz.id
-                      ? 'bg-[#E3F0DC] border-[#4F9D45] text-[#246B35] font-semibold'
-                      : 'bg-stone-50 border-stone-200 text-[#657267] hover:border-stone-300'
+                      ? 'bg-[#dcfce7] border-[#22c55e] text-[#16a34a] font-semibold'
+                      : 'bg-stone-50 border-stone-200 text-[#78716c] hover:border-stone-300'
                   }`}
                 >
-                  <div className="font-bold text-[#263329]">{sz.label}</div>
-                  <div className="text-[10px] text-[#657267]">{sz.desc}</div>
+                  <div className="font-bold text-[#1c1917]">{sz.label}</div>
+                  <div className="text-[10px] text-[#78716c]">{sz.desc}</div>
                 </button>
               ))}
             </div>
@@ -318,12 +318,12 @@ export const FarmerQRGen: React.FC = () => {
 
           {/* Download Buttons */}
           <div className="pt-2 border-t border-stone-100 space-y-2">
-            <label className="block text-xs font-semibold text-[#263329]">Download Image</label>
+            <label className="block text-xs font-semibold text-[#1c1917]">Download Image</label>
             <button
               type="button"
               onClick={() => handleExportQRPNG('qr-only')}
               disabled={isExporting}
-              className="w-full py-2 px-3 bg-[#246B35] hover:bg-[#1B4332] text-white text-xs font-semibold rounded-lg transition flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+              className="w-full py-2 px-3 bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-semibold rounded-lg transition flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Download QR Code (PNG)</span>
@@ -332,17 +332,17 @@ export const FarmerQRGen: React.FC = () => {
               type="button"
               onClick={() => handleExportQRPNG('full-tag')}
               disabled={isExporting}
-              className="w-full py-2 px-3 bg-stone-50 hover:bg-[#F0F7EC] border border-[#DCE5D9] text-[#263329] text-xs font-semibold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full py-2 px-3 bg-stone-50 hover:bg-[#f0fdf4] border border-[#bbf7d0] text-[#1c1917] text-xs font-semibold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
-              <ImageIcon className="w-3.5 h-3.5 text-[#246B35]" />
+              <ImageIcon className="w-3.5 h-3.5 text-[#16a34a]" />
               <span>Download Full Sticker (PNG)</span>
             </button>
           </div>
 
           {/* Link Copy */}
           <div className="pt-2 border-t border-stone-100 space-y-2">
-            <label className="block text-xs font-semibold text-[#263329]">Direct Verification Link</label>
-            <div className="p-2 bg-stone-50 border border-stone-200 rounded font-mono text-[11px] text-[#657267] break-all select-all">
+            <label className="block text-xs font-semibold text-[#1c1917]">Direct Verification Link</label>
+            <div className="p-2 bg-stone-50 border border-stone-200 rounded font-mono text-[11px] text-[#78716c] break-all select-all">
               {verificationUrl}
             </div>
 
@@ -351,30 +351,30 @@ export const FarmerQRGen: React.FC = () => {
               onClick={handleCopyLink}
               className={`w-full py-2 px-3 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
                 copied 
-                  ? 'bg-[#E3F0DC] border-[#4F9D45] text-[#246B35]' 
-                  : 'border-[#DCE5D9] hover:bg-stone-50 text-[#263329]'
+                  ? 'bg-[#dcfce7] border-[#22c55e] text-[#16a34a]' 
+                  : 'border-[#bbf7d0] hover:bg-stone-50 text-[#1c1917]'
               }`}
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-[#246B35]" /> : <Copy className="w-3.5 h-3.5 text-stone-500" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-[#16a34a]" /> : <Copy className="w-3.5 h-3.5 text-stone-500" />}
               <span>{copied ? 'Link Copied!' : 'Copy Link'}</span>
             </button>
           </div>
         </div>
 
         {/* Right: Sticker Preview */}
-        <div className="md:col-span-2 flex flex-col items-center justify-center p-6 sm:p-8 bg-[#F0F7EC]/40 rounded-xl border border-[#DCE5D9] space-y-4">
+        <div className="md:col-span-2 flex flex-col items-center justify-center p-6 sm:p-8 bg-[#f0fdf4]/40 rounded-xl border border-[#bbf7d0] space-y-4">
           
-          <div className="bg-white border-2 border-stone-800 rounded-lg p-5 shadow-sm max-w-sm w-full space-y-4 text-[#263329]">
+          <div className="bg-white border-2 border-stone-800 rounded-lg p-5 shadow-sm max-w-sm w-full space-y-4 text-[#1c1917]">
             
             {/* Header */}
             <div className="flex items-center justify-between border-b-2 border-stone-800 pb-2.5">
               <div className="flex items-center gap-2">
-                <div className="p-1 bg-[#246B35] text-white rounded">
+                <div className="p-1 bg-[#16a34a] text-white rounded">
                   <Leaf className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#263329]">AgriTrace Verified</div>
-                  <div className="text-[9px] text-[#657267]">Farm to Market Tracked</div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#1c1917]">AgriTrace Verified</div>
+                  <div className="text-[9px] text-[#78716c]">Farm to Market Tracked</div>
                 </div>
               </div>
               <span className="text-[10px] font-mono font-bold bg-stone-100 px-1.5 py-0.5 rounded border border-stone-300">
@@ -384,10 +384,10 @@ export const FarmerQRGen: React.FC = () => {
 
             {/* Crop Name */}
             <div className="text-center space-y-0.5">
-              <h2 className="text-lg font-bold text-[#263329]">
+              <h2 className="text-lg font-bold text-[#1c1917]">
                 {selectedBatch.cropVariety ? `${selectedBatch.cropVariety} ${selectedBatch.cropName}` : selectedBatch.cropName || selectedBatch.name}
               </h2>
-              <p className="text-[11px] text-[#657267]">
+              <p className="text-[11px] text-[#78716c]">
                 {selectedBatch.farmLocation || selectedBatch.farmerLocation} • {selectedBatch.qualityGrade || 'Grade A'}
               </p>
             </div>
@@ -407,7 +407,7 @@ export const FarmerQRGen: React.FC = () => {
 
             {/* Footer */}
             <div className="text-center border-t border-stone-200 pt-2 space-y-1">
-              <div className="text-[10px] font-bold text-[#246B35] uppercase tracking-wider">
+              <div className="text-[10px] font-bold text-[#16a34a] uppercase tracking-wider">
                 Scan with smartphone to verify origin
               </div>
               <div className="text-[9px] text-stone-400 font-mono break-all">
@@ -417,7 +417,7 @@ export const FarmerQRGen: React.FC = () => {
 
           </div>
 
-          <p className="text-xs text-[#657267] text-center max-w-md">
+          <p className="text-xs text-[#78716c] text-center max-w-md">
             Place this sticker on every crate or bag. When buyers scan it, they see your farm name, harvest date, and quality proof.
           </p>
 

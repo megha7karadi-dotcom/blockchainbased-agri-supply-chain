@@ -414,7 +414,7 @@ export const RegisterPage: React.FC = () => {
             Create Your AgriTrace Account
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
-            Join the decentralized agricultural supply-chain and transparent pricing network
+            Create an account to track crops and produce from farm to market
           </p>
         </div>
 
@@ -473,17 +473,13 @@ export const RegisterPage: React.FC = () => {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-700 block uppercase tracking-wider">
-              1. Select Your Stakeholder Role
+              1. Select Your Role
             </label>
-            <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Role-Based Access</span>
-            </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {[
-              { role: 'farmer' as const, label: 'Farmer', icon: <Sprout className="w-5 h-5 text-emerald-600" />, desc: 'Grow & Mint Batches' },
+              { role: 'farmer' as const, label: 'Farmer', icon: <Sprout className="w-5 h-5 text-emerald-600" />, desc: 'Grow & Sell Crops' },
               { role: 'distributor' as const, label: 'Distributor', icon: <Truck className="w-5 h-5 text-blue-600" />, desc: 'Cold-Chain Logistics' },
               { role: 'retailer' as const, label: 'Retailer', icon: <Store className="w-5 h-5 text-purple-600" />, desc: 'Store & Inventory' },
               { role: 'consumer' as const, label: 'Consumer', icon: <User className="w-5 h-5 text-teal-600" />, desc: 'Verify Produce' },
@@ -494,7 +490,7 @@ export const RegisterPage: React.FC = () => {
                 onClick={() => handleRoleChange(item.role)}
                 className={`p-3.5 rounded-2xl border text-left transition flex flex-col items-start gap-1 cursor-pointer ${
                   selectedRole === item.role
-                    ? 'border-emerald-600 bg-emerald-50/60 ring-2 ring-emerald-500/20'
+                    ? 'border-emerald-600 bg-emerald-50/50'
                     : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
                 }`}
               >
@@ -515,10 +511,6 @@ export const RegisterPage: React.FC = () => {
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
                   <span>2. Mobile Verification ({selectedRole.toUpperCase()})</span>
                 </h2>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] text-emerald-800">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span>SMS Gateway: <strong>{smsProviderInfo.name}</strong></span>
-                </div>
               </div>
 
               {/* Full Name & Phone */}
@@ -578,69 +570,27 @@ export const RegisterPage: React.FC = () => {
                   {fieldErrors.phoneNumber && (
                     <p className="text-[11px] text-rose-600 mt-1">{fieldErrors.phoneNumber}</p>
                   )}
-
-                  {!otpSent && (
-                    <div className="mt-2 space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="flex items-center gap-1.5 text-slate-600">
-                          {mobileData.phoneNumber.length === 10 ? (
-                            <span className="text-emerald-700 font-bold flex items-center gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>10 digits complete • {otpLoading ? 'Dispatching OTP in real time...' : 'Real-time auto-send active'}</span>
-                            </span>
-                          ) : (
-                            <span className="text-slate-500 flex items-center gap-1">
-                              <Zap className="w-3 h-3 text-amber-500" />
-                              <span>Real-time input: <strong className="font-mono text-slate-800">{mobileData.phoneNumber.length}</strong>/10 digits</span>
-                            </span>
-                          )}
-                        </span>
-                        {mobileData.phoneNumber.length === 10 && !otpLoading && (
-                          <button
-                            type="button"
-                            onClick={() => handleSendMobileOtp(mobileData.phoneNumber)}
-                            className="text-emerald-700 font-bold hover:underline cursor-pointer flex items-center gap-0.5"
-                          >
-                            <span>Send Now</span>
-                            <ArrowRight className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                      <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all duration-300 ${
-                            mobileData.phoneNumber.length === 10 ? 'bg-emerald-600' : 'bg-emerald-400'
-                          }`}
-                          style={{ width: `${(mobileData.phoneNumber.length / 10) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
               {/* OTP Action Area */}
               {!otpSent ? (
-                <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="text-xs text-emerald-900">
-                    <div className="font-bold">Real-time mobile verification</div>
-                    <div className="text-[11px] text-emerald-700">Enter 10 digits above to automatically dispatch your 6-digit OTP passcode.</div>
-                  </div>
+                <div className="pt-2">
                   <button
                     type="button"
                     onClick={() => handleSendMobileOtp()}
-                    disabled={otpLoading || !mobileData.phoneNumber.trim()}
-                    className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shrink-0 shadow-xs"
+                    disabled={otpLoading || mobileData.phoneNumber.replace(/[^0-9]/g, '').length < 10}
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
                   >
                     {otpLoading ? (
                       <span className="flex items-center gap-1.5">
                         <RotateCcw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Sending OTP in Real-Time...</span>
+                        <span>Sending Code...</span>
                       </span>
                     ) : (
                       <>
                         <KeyRound className="w-4 h-4" />
-                        <span>Send Verification OTP</span>
+                        <span>Send Verification Code</span>
                       </>
                     )}
                   </button>

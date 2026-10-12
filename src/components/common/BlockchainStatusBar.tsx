@@ -127,7 +127,7 @@ export const BlockchainStatusBar: React.FC = () => {
 
                 {/* Account address */}
                 <div className="flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-xl text-slate-200">
-                  <span className={`w-2 h-2 rounded-full ${isSepolia ? 'bg-green-400' : 'bg-amber-400'}`} />
+                  <span className={`w-2 h-2 rounded-full ${isSepolia ? 'bg-emerald-400' : 'bg-amber-400'}`} />
                   <span className="font-mono text-[11px]">{shortAddress(wallet.address || '')}</span>
                 </div>
 

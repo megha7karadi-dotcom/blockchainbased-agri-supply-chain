@@ -292,7 +292,7 @@ export const LoginPage: React.FC = () => {
             Sign In to AgriTrace
           </h1>
           <p className="text-xs text-slate-500">
-            Real-Time Mobile Verification & Supply Chain Gateway
+            Sign in to access your account
           </p>
         </div>
 
@@ -385,49 +385,9 @@ export const LoginPage: React.FC = () => {
                   </div>
                 </div>
 
-                {!otpSent && (
-                  <div className="mt-2 space-y-1.5">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="flex items-center gap-1.5 text-slate-600">
-                        {phoneNumber.length === 10 ? (
-                          <span className="text-emerald-700 font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>10 digits complete • {otpLoading ? 'Sending OTP in real time...' : 'Real-time auto-send active'}</span>
-                          </span>
-                        ) : (
-                          <span className="text-slate-500 flex items-center gap-1">
-                            <Zap className="w-3 h-3 text-amber-500" />
-                            <span>Real-time input: <strong className="font-mono text-slate-800">{phoneNumber.length}</strong>/10 digits</span>
-                          </span>
-                        )}
-                      </span>
-                      {phoneNumber.length === 10 && !otpLoading && (
-                        <button
-                          type="button"
-                          onClick={() => handleSendOtp(phoneNumber)}
-                          className="text-emerald-700 font-bold hover:underline cursor-pointer flex items-center gap-0.5"
-                        >
-                          <span>Send Now</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                    {/* Visual digit progress bar */}
-                    <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full transition-all duration-300 ${
-                          phoneNumber.length === 10 ? 'bg-emerald-600' : 'bg-emerald-400'
-                        }`}
-                        style={{ width: `${(phoneNumber.length / 10) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
                 {otpSent && (
                   <div className="mt-2 flex items-center justify-between text-[11px] bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
                     <span className="text-slate-600 flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                       Code sent to <span className="font-semibold text-slate-900">{phoneCountryCode} {phoneNumber}</span>
                     </span>
                     <button
@@ -459,12 +419,12 @@ export const LoginPage: React.FC = () => {
                   {otpLoading ? (
                     <span className="flex items-center gap-2">
                       <RotateCcw className="w-4 h-4 animate-spin" />
-                      <span>Taking Mobile Number & Sending OTP...</span>
+                      <span>Sending Code...</span>
                     </span>
                   ) : (
                     <>
                       <KeyRound className="w-4 h-4" />
-                      <span>Send Verification Code (OTP)</span>
+                      <span>Send Verification Code</span>
                     </>
                   )}
                 </button>
@@ -550,14 +510,14 @@ export const LoginPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setOtpCode(smsNotification.code)}
-                        className="mt-2 w-full py-1.5 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
+                        className="mt-2 w-full py-1.5 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
                       >
-                        <Zap className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Autofill Received OTP: <strong className="font-mono tracking-wider">{smsNotification.code}</strong></span>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Autofill code: <strong className="font-mono tracking-wider">{smsNotification.code}</strong></span>
                       </button>
                     )}
                     <div className="flex items-center justify-between mt-1 text-[11px] text-slate-500">
-                      <span>Check incoming SMS alert banner</span>
+                      <span></span>
                       {resendCountdown > 0 ? (
                         <span>Resend in {resendCountdown}s</span>
                       ) : (
@@ -671,67 +631,13 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
-        {/* BACKUP OPTION: Quick Demo Test Profiles (Collapsible Accordion) */}
-        <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/60">
-          <button
-            type="button"
-            onClick={() => setShowDemoBackup(!showDemoBackup)}
-            className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
-          >
-            <div className="flex items-center gap-2">
-              <UserCheck className="w-3.5 h-3.5 text-slate-500" />
-              <span>Demo Test Accounts (Backup for Testing)</span>
-            </div>
-            {showDemoBackup ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
-
-          {showDemoBackup && (
-            <div className="p-3 border-t border-slate-200 bg-white space-y-2">
-              <p className="text-[11px] text-slate-500 leading-snug">
-                Click any profile to pre-fill credentials for quick automated testing:
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                {backupAccounts.map((acc) => (
-                  <button
-                    key={acc.label}
-                    type="button"
-                    onClick={() => {
-                      if (authMethod === 'otp') {
-                        setPhoneNumber(acc.phone);
-                        setOtpSent(false);
-                        setOtpCode('');
-                        setErrorMessage('');
-                        handleSendOtp(acc.phone);
-                      } else {
-                        setEmail(acc.email);
-                        setPassword('password123');
-                        setErrorMessage('');
-                        setInfoMessage(`Filled ${acc.label} credentials (${acc.email})`);
-                      }
-                    }}
-                    className="p-2 text-left rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 transition cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-slate-800">{acc.label}</span>
-                      <span className="text-[10px] text-emerald-700 font-semibold">{acc.name}</span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                      {authMethod === 'otp' ? acc.display : acc.email}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Consumer Verification Link */}
-        <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl text-[11px] text-emerald-900 flex items-center justify-between gap-2">
-          <span>Are you a consumer verifying produce?</span>
+        <div className="text-center text-xs text-slate-500 pt-1">
+          <span>Are you a consumer verifying produce? </span>
           <button
             type="button"
             onClick={() => navigate('/trace-products')}
-            className="font-bold text-emerald-800 hover:underline shrink-0 cursor-pointer"
+            className="font-semibold text-emerald-700 hover:text-emerald-800 hover:underline cursor-pointer"
           >
             Trace Produce →
           </button>

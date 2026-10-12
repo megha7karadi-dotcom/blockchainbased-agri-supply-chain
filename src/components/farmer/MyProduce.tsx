@@ -58,18 +58,18 @@ export const MyProduce: React.FC = () => {
     <div className="space-y-6 pb-16 max-w-6xl mx-auto">
       
       {/* Header */}
-      <div className="bg-white border border-[#DCE5D9] rounded-xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white border border-[#bbf7d0] rounded-xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#246B35]"></span>
-            <span className="text-[11px] font-semibold text-[#246B35] uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-[#16a34a]"></span>
+            <span className="text-[11px] font-semibold text-[#16a34a] uppercase tracking-wider">
               Crop Directory
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#263329]">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1c1917]">
             My Crops
           </h1>
-          <p className="text-xs text-[#657267]">
+          <p className="text-xs text-[#78716c]">
             All crops logged by your farm. View packaging QR codes, check status, or transfer to buyers.
           </p>
         </div>
@@ -77,7 +77,7 @@ export const MyProduce: React.FC = () => {
         <button
           id="btn-register-new-batch"
           onClick={() => navigate('/farmer/register-produce')}
-          className="px-4 py-2.5 bg-[#246B35] hover:bg-[#1B4332] text-white font-semibold text-xs sm:text-sm rounded-lg transition shadow-xs flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+          className="px-4 py-2.5 bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold text-xs sm:text-sm rounded-lg transition shadow-xs flex items-center gap-2 self-start sm:self-auto cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Add New Crop</span>
@@ -85,7 +85,7 @@ export const MyProduce: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-[#DCE5D9] shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
+      <div className="bg-white p-4 rounded-xl border border-[#bbf7d0] shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-stone-400" />
           <input
@@ -93,14 +93,14 @@ export const MyProduce: React.FC = () => {
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
             placeholder="Search crop, batch ID, town..."
-            className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-[#F0F7EC]/30 border border-[#DCE5D9] rounded-lg focus:border-[#246B35] focus:bg-white outline-none transition"
+            className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-[#f0fdf4]/30 border border-[#bbf7d0] rounded-lg focus:border-[#16a34a] focus:bg-white outline-none transition"
           />
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end overflow-x-auto">
           {/* Status Filter Chips */}
           <div className="flex items-center gap-1.5 text-xs overflow-x-auto">
-            <span className="text-[#657267] font-medium mr-1 flex items-center gap-1">
+            <span className="text-[#78716c] font-medium mr-1 flex items-center gap-1">
               <Filter className="w-3.5 h-3.5" />
               <span>Status:</span>
             </span>
@@ -110,7 +110,7 @@ export const MyProduce: React.FC = () => {
                 onClick={() => setFilterStatus(st)}
                 className={`px-3 py-1 rounded-md whitespace-nowrap transition cursor-pointer text-xs font-semibold ${
                   filterStatus.toLowerCase() === st.toLowerCase()
-                    ? 'bg-[#246B35] text-white'
+                    ? 'bg-[#16a34a] text-white'
                     : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                 }`}
               >
@@ -124,7 +124,7 @@ export const MyProduce: React.FC = () => {
             <button
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded transition cursor-pointer ${
-                viewMode === 'table' ? 'bg-white text-[#246B35] shadow-xs' : 'text-stone-500 hover:text-stone-800'
+                viewMode === 'table' ? 'bg-white text-[#16a34a] shadow-xs' : 'text-stone-500 hover:text-stone-800'
               }`}
               title="Table View"
             >
@@ -133,7 +133,7 @@ export const MyProduce: React.FC = () => {
             <button
               onClick={() => setViewMode('cards')}
               className={`p-1.5 rounded transition cursor-pointer ${
-                viewMode === 'cards' ? 'bg-white text-[#246B35] shadow-xs' : 'text-stone-500 hover:text-stone-800'
+                viewMode === 'cards' ? 'bg-white text-[#16a34a] shadow-xs' : 'text-stone-500 hover:text-stone-800'
               }`}
               title="Card View"
             >
@@ -145,30 +145,30 @@ export const MyProduce: React.FC = () => {
 
       {/* Batches Display */}
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-xl p-10 text-center border border-[#DCE5D9] space-y-4">
+        <div className="bg-white rounded-xl p-10 text-center border border-[#bbf7d0] space-y-4">
           <div className="w-12 h-12 rounded-full bg-stone-100 text-stone-400 flex items-center justify-center mx-auto">
             <Package className="w-6 h-6" />
           </div>
           <div className="space-y-1">
-            <h3 className="font-bold text-[#263329] text-base">No crops found</h3>
-            <p className="text-xs text-[#657267] max-w-sm mx-auto">
+            <h3 className="font-bold text-[#1c1917] text-base">No crops found</h3>
+            <p className="text-xs text-[#78716c] max-w-sm mx-auto">
               No crops match your current search or filter.
             </p>
           </div>
           <button
             onClick={() => navigate('/farmer/register-produce')}
-            className="px-4 py-2 bg-[#246B35] hover:bg-[#1B4332] text-white font-semibold text-xs rounded-lg transition inline-flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2 bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold text-xs rounded-lg transition inline-flex items-center gap-1.5 cursor-pointer"
           >
-            <PlusCircle className="w-3.5 h-3.5" />
+            <PlusCircle className="w-4 h-4" />
             <span>Add Your First Crop</span>
           </button>
         </div>
       ) : viewMode === 'table' ? (
         /* TABLE VIEW */
-        <div className="bg-white border border-[#DCE5D9] rounded-xl shadow-xs overflow-hidden">
+        <div className="bg-white border border-[#bbf7d0] rounded-xl shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#F0F7EC]/60 border-b border-[#DCE5D9] text-[#263329] font-semibold uppercase tracking-wider text-[11px]">
+              <thead className="bg-[#f0fdf4]/60 border-b border-[#bbf7d0] text-[#1c1917] font-semibold uppercase tracking-wider text-[11px]">
                 <tr>
                   <th className="py-3 px-4 font-bold">Batch ID</th>
                   <th className="py-3 px-4 font-bold">Crop & Variety</th>
@@ -193,13 +193,13 @@ export const MyProduce: React.FC = () => {
 
                   return (
                     <tr key={batch.id} className="hover:bg-stone-50/80 transition">
-                      <td className="py-3 px-4 whitespace-nowrap font-mono font-bold text-[#246B35]">
+                      <td className="py-3 px-4 whitespace-nowrap font-mono font-bold text-[#16a34a]">
                         {batch.batchId}
                       </td>
 
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="font-bold text-[#263329]">{cropTitle}</div>
-                        {variety && <div className="text-[11px] text-[#657267] font-normal">{variety}</div>}
+                        <div className="font-bold text-[#1c1917]">{cropTitle}</div>
+                        {variety && <div className="text-[11px] text-[#78716c] font-normal">{variety}</div>}
                       </td>
 
                       <td className="py-3 px-4 whitespace-nowrap font-semibold text-stone-900 font-mono">
@@ -220,7 +220,7 @@ export const MyProduce: React.FC = () => {
                         {location}
                       </td>
 
-                      <td className="py-3 px-4 whitespace-nowrap font-bold text-[#246B35] font-mono">
+                      <td className="py-3 px-4 whitespace-nowrap font-bold text-[#16a34a] font-mono">
                         ₹{price} / {unit}
                       </td>
 
@@ -233,7 +233,7 @@ export const MyProduce: React.FC = () => {
                       <td className="py-3 px-4 whitespace-nowrap text-right space-x-1.5">
                         <button
                           onClick={() => handleViewDetails(batch)}
-                          className="px-2.5 py-1 rounded bg-[#246B35] hover:bg-[#1B4332] text-white text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1 rounded bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>Details</span>
@@ -244,15 +244,15 @@ export const MyProduce: React.FC = () => {
                             navigate('/farmer/transfers');
                           }}
                           title="Transfer to Buyer or Transporter"
-                          className="px-2.5 py-1 rounded bg-stone-100 hover:bg-stone-200 text-[#263329] text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer border border-stone-200"
+                          className="px-2.5 py-1 rounded bg-stone-100 hover:bg-stone-200 text-[#1c1917] text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer border border-stone-200"
                         >
-                          <Truck className="w-3.5 h-3.5 text-[#246B35]" />
+                          <Truck className="w-3.5 h-3.5 text-[#16a34a]" />
                           <span>Transfer</span>
                         </button>
                         <button
                           onClick={() => setActiveQRBatch(batch)}
                           title="View QR Code"
-                          className="p-1 rounded border border-stone-300 hover:bg-stone-100 text-[#246B35] transition inline-flex items-center cursor-pointer"
+                          className="p-1 rounded border border-stone-300 hover:bg-stone-100 text-[#16a34a] transition inline-flex items-center cursor-pointer"
                         >
                           <QrCode className="w-3.5 h-3.5" />
                         </button>
@@ -279,11 +279,11 @@ export const MyProduce: React.FC = () => {
             return (
               <div
                 key={batch.id}
-                className="bg-white rounded-xl border border-[#DCE5D9] shadow-xs hover:border-[#4F9D45] transition overflow-hidden flex flex-col justify-between"
+                className="bg-white rounded-xl border border-[#bbf7d0] shadow-xs hover:border-[#22c55e] transition overflow-hidden flex flex-col justify-between"
               >
                 <div className="p-5 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-[#246B35]">
+                    <span className="font-mono text-xs font-bold text-[#16a34a]">
                       {batch.batchId}
                     </span>
                     <span className="text-[11px] px-2 py-0.5 rounded bg-stone-100 text-stone-700 font-medium border border-stone-200">
@@ -292,8 +292,8 @@ export const MyProduce: React.FC = () => {
                   </div>
 
                   <div>
-                    <h3 className="font-bold text-[#263329] text-base">{cropTitle}</h3>
-                    {variety && <p className="text-xs text-[#657267]">{variety}</p>}
+                    <h3 className="font-bold text-[#1c1917] text-base">{cropTitle}</h3>
+                    {variety && <p className="text-xs text-[#78716c]">{variety}</p>}
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-stone-100">
@@ -303,7 +303,7 @@ export const MyProduce: React.FC = () => {
                     </div>
                     <div>
                       <span className="text-stone-400 block text-[10px] uppercase">Price</span>
-                      <strong className="text-[#246B35] font-mono">₹{price}/{unit}</strong>
+                      <strong className="text-[#16a34a] font-mono">₹{price}/{unit}</strong>
                     </div>
                     <div>
                       <span className="text-stone-400 block text-[10px] uppercase">Harvest</span>
@@ -316,10 +316,10 @@ export const MyProduce: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-3 bg-[#F0F7EC]/50 border-t border-[#DCE5D9] flex items-center justify-between gap-2">
+                <div className="p-3 bg-[#f0fdf4]/50 border-t border-[#bbf7d0] flex items-center justify-between gap-2">
                   <button
                     onClick={() => handleViewDetails(batch)}
-                    className="flex-1 py-1.5 px-3 bg-white hover:bg-stone-50 border border-[#DCE5D9] rounded text-xs font-semibold text-[#263329] transition text-center cursor-pointer"
+                    className="flex-1 py-1.5 px-3 bg-white hover:bg-stone-50 border border-[#bbf7d0] rounded text-xs font-semibold text-[#1c1917] transition text-center cursor-pointer"
                   >
                     Details
                   </button>
@@ -328,13 +328,13 @@ export const MyProduce: React.FC = () => {
                       setSelectedBatchId(batch.id);
                       navigate('/farmer/transfers');
                     }}
-                    className="flex-1 py-1.5 px-3 bg-[#246B35] hover:bg-[#1B4332] text-white rounded text-xs font-semibold transition text-center cursor-pointer"
+                    className="flex-1 py-1.5 px-3 bg-[#16a34a] hover:bg-[#15803d] text-white rounded text-xs font-semibold transition text-center cursor-pointer"
                   >
                     Transfer
                   </button>
                   <button
                     onClick={() => setActiveQRBatch(batch)}
-                    className="p-1.5 bg-white hover:bg-stone-50 border border-[#DCE5D9] rounded text-[#246B35] transition cursor-pointer"
+                    className="p-1.5 bg-white hover:bg-stone-50 border border-[#bbf7d0] rounded text-[#16a34a] transition cursor-pointer"
                     title="View QR Code"
                   >
                     <QrCode className="w-4 h-4" />
@@ -349,11 +349,11 @@ export const MyProduce: React.FC = () => {
       {/* Batch Details Inspection Modal */}
       {inspectBatch && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl border border-[#DCE5D9] max-w-xl w-full p-6 shadow-xl space-y-4">
+          <div className="bg-white rounded-xl border border-[#bbf7d0] max-w-xl w-full p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-stone-200">
               <div>
-                <span className="text-[11px] font-mono font-bold text-[#246B35]">{inspectBatch.batchId}</span>
-                <h3 className="text-lg font-bold text-[#263329]">
+                <span className="text-[11px] font-mono font-bold text-[#16a34a]">{inspectBatch.batchId}</span>
+                <h3 className="text-lg font-bold text-[#1c1917]">
                   {inspectBatch.cropName || inspectBatch.name} {inspectBatch.cropVariety && `(${inspectBatch.cropVariety})`}
                 </h3>
               </div>
@@ -374,7 +374,7 @@ export const MyProduce: React.FC = () => {
               </div>
               <div className="p-3 bg-stone-50 rounded border border-stone-200">
                 <span className="text-stone-400 block text-[10px] uppercase">Farmer Price</span>
-                <span className="font-bold text-[#246B35] text-sm font-mono">
+                <span className="font-bold text-[#16a34a] text-sm font-mono">
                   ₹{inspectBatch.farmgatePrice || inspectBatch.pricing?.farmerPrice} / {inspectBatch.unit || 'kg'}
                 </span>
               </div>
@@ -395,9 +395,9 @@ export const MyProduce: React.FC = () => {
                   setInspectBatch(null);
                   setActiveQRBatch(b);
                 }}
-                className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-[#263329] font-semibold text-xs rounded-lg transition flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-[#1c1917] font-semibold text-xs rounded-lg transition flex items-center gap-1.5 cursor-pointer"
               >
-                <QrCode className="w-3.5 h-3.5 text-[#246B35]" />
+                <QrCode className="w-3.5 h-3.5 text-[#16a34a]" />
                 <span>View QR Code</span>
               </button>
 
@@ -408,7 +408,7 @@ export const MyProduce: React.FC = () => {
                   setSelectedBatchId(b.id);
                   navigate('/farmer/transfers');
                 }}
-                className="px-4 py-2 bg-[#246B35] hover:bg-[#1B4332] text-white font-semibold text-xs rounded-lg transition flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold text-xs rounded-lg transition flex items-center gap-1.5 cursor-pointer"
               >
                 <Truck className="w-3.5 h-3.5" />
                 <span>Transfer Produce</span>

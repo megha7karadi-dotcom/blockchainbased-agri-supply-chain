@@ -69,7 +69,7 @@ export const DistributorDashboard: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={() => navigate('/distributor/available-produce')}
-              className="px-4 py-2 bg-[#1b4332] hover:bg-[#2d5a3f] text-white font-semibold text-xs sm:text-sm rounded-md transition shadow-xs flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2 bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold text-xs sm:text-sm rounded-md transition shadow-xs flex items-center gap-2 cursor-pointer"
             >
               <ShoppingCart className="w-4 h-4" />
               <span>Procure Farm Harvests ({availableBatches.length})</span>
@@ -78,7 +78,7 @@ export const DistributorDashboard: React.FC = () => {
               onClick={() => navigate('/distributor/transportation')}
               className="px-3.5 py-2 bg-white hover:bg-stone-50 border border-stone-300 text-stone-800 font-semibold text-xs sm:text-sm rounded-md transition flex items-center gap-1.5 cursor-pointer"
             >
-              <Radio className="w-4 h-4 text-emerald-800" />
+              <Radio className="w-4 h-4 text-emerald-600" />
               <span>IoT Telemetry Feed</span>
             </button>
             <button
@@ -208,7 +208,7 @@ export const DistributorDashboard: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => navigate('/distributor/transfer-to-retailer')}
-                          className="px-2.5 py-1 bg-[#1b4332] hover:bg-[#2d5a3f] text-white rounded text-[11px] font-medium transition cursor-pointer"
+                          className="px-2.5 py-1 bg-[#16a34a] hover:bg-[#15803d] text-white rounded text-[11px] font-medium transition cursor-pointer"
                         >
                           Transfer to Retail
                         </button>
@@ -289,7 +289,7 @@ export const DistributorDashboard: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setProcuringBatch(batch)}
-                          className="px-3 py-1.5 bg-[#1b4332] hover:bg-[#2d5a3f] text-white rounded text-[11px] font-semibold transition flex items-center gap-1 cursor-pointer"
+                          className="px-3 py-1.5 bg-[#16a34a] hover:bg-[#15803d] text-white rounded text-[11px] font-semibold transition flex items-center gap-1 cursor-pointer"
                         >
                           <Truck className="w-3.5 h-3.5" />
                           <span>Accept & Dispatch</span>
@@ -384,7 +384,7 @@ export const DistributorDashboard: React.FC = () => {
               <div className="flex gap-2 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 bg-[#1b4332] hover:bg-[#2d5a3f] text-white font-semibold rounded transition cursor-pointer shadow-xs"
+                  className="flex-1 py-2.5 bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold rounded transition cursor-pointer shadow-xs"
                 >
                   Record Custody & Dispatch Reefer
                 </button>

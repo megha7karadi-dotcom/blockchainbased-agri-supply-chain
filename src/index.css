@@ -5,14 +5,52 @@
   --font-display: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Agricultural Brand Palette Tokens */
-  --color-agri-dark: #1b4332;
-  --color-agri-forest: #2d5a3f;
-  --color-agri-leaf: #406343;
-  --color-agri-sage: #52796f;
-  --color-agri-warm: #fbfbfa;
-  --color-agri-surface: #f5f5f2;
-  --color-agri-charcoal: #1f2421;
+  /* Light Green & White Brand Palette Tokens */
+  --color-agri-dark: #16a34a;
+  --color-agri-forest: #15803d;
+  --color-agri-leaf: #22c55e;
+  --color-agri-sage: #86efac;
+  --color-agri-warm: #ffffff;
+  --color-agri-surface: #f0fdf4;
+  --color-agri-charcoal: #14532d;
+
+  /* Light Green & Crisp White Spectrum */
+  --color-emerald-50: #f0fdf4;
+  --color-emerald-100: #dcfce7;
+  --color-emerald-200: #bbf7d0;
+  --color-emerald-300: #86efac;
+  --color-emerald-400: #4ade80;
+  --color-emerald-500: #22c55e;
+  --color-emerald-600: #16a34a;
+  --color-emerald-700: #15803d;
+  --color-emerald-800: #166534;
+  --color-emerald-900: #14532d;
+  --color-emerald-950: #052e16;
+
+  --color-green-50: #f0fdf4;
+  --color-green-100: #dcfce7;
+  --color-green-200: #bbf7d0;
+  --color-green-300: #86efac;
+  --color-green-400: #4ade80;
+  --color-green-500: #22c55e;
+  --color-green-600: #16a34a;
+  --color-green-700: #15803d;
+  --color-green-800: #166534;
+  --color-green-900: #14532d;
+  --color-green-950: #052e16;
+
+  /* Remap orange scale to light green and white */
+  --color-orange-50: #f0fdf4;
+  --color-orange-100: #dcfce7;
+  --color-orange-200: #bbf7d0;
+  --color-orange-300: #86efac;
+  --color-orange-400: #4ade80;
+  --color-orange-500: #22c55e;
+  --color-orange-600: #16a34a;
+  --color-orange-700: #15803d;
+  --color-orange-800: #166534;
+  --color-orange-900: #14532d;
+  --color-orange-950: #052e16;
 }
 
 @layer base {
@@ -26,8 +64,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    background-color: #fbfbfa;
-    color: #1f2421;
+    background-color: #ffffff;
+    color: #1c1917;
     font-size: 15px;
     line-height: 1.6;
   }
@@ -38,8 +76,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    background-color: #fbfbfa;
-    color: #1f2421;
+    background-color: #ffffff;
+    color: #1c1917;
     min-height: 100vh;
     font-weight: 400;
   }
@@ -79,8 +117,8 @@
   }
 
   ::selection {
-    background-color: #d1fae5;
-    color: #065f46;
+    background-color: #dcfce7;
+    color: #14532d;
   }
 }
 

@@ -118,25 +118,25 @@ export const FarmerTransfers: React.FC = () => {
     <div className="max-w-5xl mx-auto space-y-6 pb-16">
       
       {/* Header */}
-      <div className="bg-white border border-[#DCE5D9] rounded-xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white border border-[#bbf7d0] rounded-xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#246B35]"></span>
-            <span className="text-[11px] font-semibold text-[#246B35] uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-[#16a34a]"></span>
+            <span className="text-[11px] font-semibold text-[#16a34a] uppercase tracking-wider">
               Produce Handover
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#263329] flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1c1917] flex items-center gap-2">
             <span>Transfer Produce</span>
           </h1>
-          <p className="text-xs text-[#657267]">
+          <p className="text-xs text-[#78716c]">
             Hand over your harvested crop to transporters or buyers. Record quantity and agreed price.
           </p>
         </div>
 
         <button
           onClick={() => navigate('/farmer/my-produce')}
-          className="px-3.5 py-2 bg-stone-50 hover:bg-[#F0F7EC] text-[#263329] font-semibold text-xs rounded-lg border border-[#DCE5D9] transition cursor-pointer self-start sm:self-auto"
+          className="px-3.5 py-2 bg-stone-50 hover:bg-[#f0fdf4] text-[#1c1917] font-semibold text-xs rounded-lg border border-[#bbf7d0] transition cursor-pointer self-start sm:self-auto"
         >
           My Crops
         </button>
@@ -144,8 +144,8 @@ export const FarmerTransfers: React.FC = () => {
 
       {/* Notifications */}
       {successMessage && (
-        <div className="p-4 bg-[#F0F7EC] border border-[#4F9D45] rounded-lg flex items-start gap-3 text-[#246B35] text-xs">
-          <CheckCircle2 className="w-5 h-5 text-[#246B35] shrink-0 mt-0.5" />
+        <div className="p-4 bg-[#f0fdf4] border border-[#22c55e] rounded-lg flex items-start gap-3 text-[#16a34a] text-xs">
+          <CheckCircle2 className="w-5 h-5 text-[#16a34a] shrink-0 mt-0.5" />
           <div className="flex-1">
             <span className="font-bold block">Transfer Confirmed</span>
             <span>{successMessage}</span>
@@ -166,13 +166,13 @@ export const FarmerTransfers: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* Left: Transfer Form */}
-        <div className="lg:col-span-7 bg-white p-5 sm:p-6 rounded-xl border border-[#DCE5D9] shadow-xs space-y-5">
+        <div className="lg:col-span-7 bg-white p-5 sm:p-6 rounded-xl border border-[#bbf7d0] shadow-xs space-y-5">
           <div className="border-b border-stone-100 pb-3">
-            <h2 className="text-sm font-bold text-[#263329] flex items-center gap-2">
-              <Truck className="w-4 h-4 text-[#246B35]" />
+            <h2 className="text-sm font-bold text-[#1c1917] flex items-center gap-2">
+              <Truck className="w-4 h-4 text-[#16a34a]" />
               <span>Handover to Transporter or Buyer</span>
             </h2>
-            <p className="text-xs text-[#657267] mt-0.5">
+            <p className="text-xs text-[#78716c] mt-0.5">
               Select your crop, choose the receiving partner, and confirm the handover amount.
             </p>
           </div>
@@ -181,7 +181,7 @@ export const FarmerTransfers: React.FC = () => {
             
             {/* 1. Select Crop Batch */}
             <div>
-              <label className="block text-xs font-semibold text-[#263329] mb-1.5">
+              <label className="block text-xs font-semibold text-[#1c1917] mb-1.5">
                 Select Crop Batch <span className="text-rose-500">*</span>
               </label>
               {farmerBatches.length === 0 ? (
@@ -190,7 +190,7 @@ export const FarmerTransfers: React.FC = () => {
                   <button 
                     type="button" 
                     onClick={() => navigate('/farmer/register-produce')} 
-                    className="text-[#246B35] font-bold underline"
+                    className="text-[#16a34a] font-bold underline"
                   >
                     Add a crop now
                   </button>
@@ -199,7 +199,7 @@ export const FarmerTransfers: React.FC = () => {
                 <select
                   value={selectedBatch?.id || ''}
                   onChange={(e) => setSelectedBatchId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-[#F0F7EC]/30 border border-[#DCE5D9] rounded-lg focus:bg-white focus:border-[#246B35] outline-none transition font-medium text-stone-900"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-[#f0fdf4]/30 border border-[#bbf7d0] rounded-lg focus:bg-white focus:border-[#16a34a] outline-none transition font-medium text-stone-900"
                 >
                   {farmerBatches.map(b => (
                     <option key={b.id} value={b.id}>
@@ -215,7 +215,7 @@ export const FarmerTransfers: React.FC = () => {
               <div className="p-3.5 bg-stone-50 rounded-lg border border-stone-200 text-xs space-y-1.5">
                 <div className="flex justify-between items-center text-stone-600">
                   <span>Current Status:</span>
-                  <span className="font-semibold text-[#246B35] bg-white px-2 py-0.5 rounded border border-stone-200">{selectedBatch.status}</span>
+                  <span className="font-semibold text-[#16a34a] bg-white px-2 py-0.5 rounded border border-stone-200">{selectedBatch.status}</span>
                 </div>
                 <div className="flex justify-between items-center text-stone-600">
                   <span>Farm Origin:</span>
@@ -223,20 +223,20 @@ export const FarmerTransfers: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center text-stone-600">
                   <span>Recorded Farm Price:</span>
-                  <span className="font-bold text-[#246B35]">₹{selectedBatch.farmgatePrice || selectedBatch.pricing?.farmerPrice} / {selectedBatch.unit || 'kg'}</span>
+                  <span className="font-bold text-[#16a34a]">₹{selectedBatch.farmgatePrice || selectedBatch.pricing?.farmerPrice} / {selectedBatch.unit || 'kg'}</span>
                 </div>
               </div>
             )}
 
             {/* 2. Choose Transporter / Buyer */}
             <div>
-              <label className="block text-xs font-semibold text-[#263329] mb-1.5">
+              <label className="block text-xs font-semibold text-[#1c1917] mb-1.5">
                 Transporter / Buyer Partner <span className="text-rose-500">*</span>
               </label>
               <select
                 value={selectedDistributorId}
                 onChange={(e) => setSelectedDistributorId(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-[#DCE5D9] rounded-lg focus:bg-white focus:border-[#246B35] outline-none transition font-medium text-stone-900"
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-[#bbf7d0] rounded-lg focus:bg-white focus:border-[#16a34a] outline-none transition font-medium text-stone-900"
               >
                 {DISTRIBUTOR_PARTNERS.map(d => (
                   <option key={d.id} value={d.id}>
@@ -249,7 +249,7 @@ export const FarmerTransfers: React.FC = () => {
 
             {selectedDistributorId === 'custom' && (
               <div>
-                <label className="block text-xs font-semibold text-[#263329] mb-1.5">
+                <label className="block text-xs font-semibold text-[#1c1917] mb-1.5">
                   Partner Name & Vehicle Number
                 </label>
                 <input
@@ -257,7 +257,7 @@ export const FarmerTransfers: React.FC = () => {
                   value={customDistributorName}
                   onChange={(e) => setCustomDistributorName(e.target.value)}
                   placeholder="e.g. Patil Logistics, MH-09-AB-1234"
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-[#DCE5D9] rounded-lg focus:bg-white focus:border-[#246B35] outline-none transition"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-[#bbf7d0] rounded-lg focus:bg-white focus:border-[#16a34a] outline-none transition"
                 />
               </div>
             )}
@@ -265,7 +265,7 @@ export const FarmerTransfers: React.FC = () => {
             {/* 3. Quantity & Agreed Price */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-[#263329] mb-1.5">
+                <label className="block text-xs font-semibold text-[#1c1917] mb-1.5">
                   Quantity Handed Over <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
@@ -276,7 +276,7 @@ export const FarmerTransfers: React.FC = () => {
                     value={transferQuantity}
                     onChange={(e) => setTransferQuantity(e.target.value)}
                     placeholder="e.g. 500"
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-[#DCE5D9] rounded-lg focus:bg-white focus:border-[#246B35] outline-none transition font-semibold"
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-[#bbf7d0] rounded-lg focus:bg-white focus:border-[#16a34a] outline-none transition font-semibold"
                   />
                   <span className="absolute right-3.5 top-2.5 text-xs font-medium text-stone-400">
                     {selectedBatch?.unit || 'kg'}
@@ -285,7 +285,7 @@ export const FarmerTransfers: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#263329] mb-1.5">
+                <label className="block text-xs font-semibold text-[#1c1917] mb-1.5">
                   Agreed Handover Price (₹) <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
@@ -297,7 +297,7 @@ export const FarmerTransfers: React.FC = () => {
                     value={agreedPrice}
                     onChange={(e) => setAgreedPrice(e.target.value)}
                     placeholder="e.g. 85"
-                    className="w-full pl-7 pr-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-[#DCE5D9] rounded-lg focus:bg-white focus:border-[#246B35] outline-none transition font-semibold"
+                    className="w-full pl-7 pr-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-[#bbf7d0] rounded-lg focus:bg-white focus:border-[#16a34a] outline-none transition font-semibold"
                   />
                   <span className="absolute right-3.5 top-2.5 text-xs font-medium text-stone-400">
                     /{selectedBatch?.unit || 'kg'}
@@ -308,9 +308,9 @@ export const FarmerTransfers: React.FC = () => {
 
             {/* Total Payout Calculation */}
             {transferQuantity && agreedPrice && (
-              <div className="p-3.5 bg-[#F0F7EC] border border-[#DCE5D9] rounded-lg flex items-center justify-between text-xs">
-                <span className="text-[#657267] font-medium">Estimated Handover Value:</span>
-                <span className="font-mono font-bold text-[#246B35] text-sm">
+              <div className="p-3.5 bg-[#f0fdf4] border border-[#bbf7d0] rounded-lg flex items-center justify-between text-xs">
+                <span className="text-[#78716c] font-medium">Estimated Handover Value:</span>
+                <span className="font-mono font-bold text-[#16a34a] text-sm">
                   ₹{(parseFloat(transferQuantity) * parseFloat(agreedPrice)).toLocaleString('en-IN')}
                 </span>
               </div>
@@ -319,7 +319,7 @@ export const FarmerTransfers: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting || !selectedBatch}
-              className="w-full py-3 bg-[#246B35] hover:bg-[#1B4332] disabled:bg-stone-300 text-white font-bold text-xs sm:text-sm rounded-lg transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3 bg-[#16a34a] hover:bg-[#15803d] disabled:bg-stone-300 text-white font-bold text-xs sm:text-sm rounded-lg transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
@@ -337,10 +337,10 @@ export const FarmerTransfers: React.FC = () => {
         </div>
 
         {/* Right: Transfer History */}
-        <div className="lg:col-span-5 bg-white p-5 sm:p-6 rounded-xl border border-[#DCE5D9] shadow-xs space-y-4">
+        <div className="lg:col-span-5 bg-white p-5 sm:p-6 rounded-xl border border-[#bbf7d0] shadow-xs space-y-4">
           <div className="border-b border-stone-100 pb-3">
-            <h3 className="font-bold text-sm text-[#263329]">Recent Transfers</h3>
-            <p className="text-xs text-[#657267]">Your produce currently in transit or delivered to distributors</p>
+            <h3 className="font-bold text-sm text-[#1c1917]">Recent Transfers</h3>
+            <p className="text-xs text-[#78716c]">Your produce currently in transit or delivered to distributors</p>
           </div>
 
           {transferredBatches.length === 0 ? (
@@ -353,15 +353,15 @@ export const FarmerTransfers: React.FC = () => {
               {transferredBatches.map(b => (
                 <div key={b.id} className="p-3.5 bg-stone-50 rounded-lg border border-stone-200 text-xs space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-[#246B35]">{b.batchId}</span>
+                    <span className="font-mono font-bold text-[#16a34a]">{b.batchId}</span>
                     <span className="text-[10px] px-2 py-0.5 bg-white text-stone-700 rounded font-medium border border-stone-200">
                       {b.status}
                     </span>
                   </div>
-                  <div className="font-semibold text-[#263329]">
+                  <div className="font-semibold text-[#1c1917]">
                     {b.cropName || b.name} ({b.quantity || b.quantityKg} {b.unit || 'kg'})
                   </div>
-                  <div className="text-[11px] text-[#657267]">
+                  <div className="text-[11px] text-[#78716c]">
                     Handed over at ₹{b.farmgatePrice || b.pricing?.farmerPrice}/kg
                   </div>
                 </div>

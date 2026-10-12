@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Sparkles } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
 import { WalletProvider } from './context/WalletContext';
-import { BlockchainStatusBar } from './components/common/BlockchainStatusBar';
 import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
 import { Footer } from './components/common/Footer';
@@ -92,8 +91,8 @@ const MainLayout: React.FC = () => {
   // While authLoading is active, do not execute redirects
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-xs font-semibold text-slate-500">Loading platform credentials...</div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-xs font-semibold text-emerald-600">Loading platform credentials...</div>
       </div>
     );
   }
@@ -250,15 +249,12 @@ const MainLayout: React.FC = () => {
   const showSidebar = isAuthenticated && isProtectedRoute;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans">
+    <div className="min-h-screen bg-white flex flex-col text-stone-900 font-sans">
       {/* Global Navigation Header */}
       <Header 
         onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)} 
         onOpenQRScanner={() => setIsQRScannerOpen(true)} 
       />
-
-      {/* Live Blockchain Smart Contract & Wallet Connectivity Bar */}
-      <BlockchainStatusBar />
 
       {/* App Body with Sidebar (Only for authenticated workspaces) & Content Region */}
       <div className="flex-1 flex max-w-7xl w-full mx-auto">

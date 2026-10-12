@@ -82,12 +82,12 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
       case 'retailer': return 'text-purple-700';
       case 'consumer': return 'text-teal-700';
       case 'admin': return 'text-amber-700';
-      default: return 'text-slate-600';
+      default: return 'text-stone-600';
     }
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200 shadow-2xs">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-emerald-100 shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-3">
           
@@ -96,7 +96,7 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
             {isAuthenticated && (
               <button
                 onClick={onOpenMobileSidebar}
-                className="lg:hidden p-2 text-stone-600 hover:text-emerald-900 hover:bg-stone-100 rounded-md transition cursor-pointer"
+                className="lg:hidden p-2 text-stone-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-md transition cursor-pointer"
                 aria-label="Toggle workspace sidebar"
               >
                 <Menu className="w-5 h-5" />
@@ -113,12 +113,12 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
               }}
               className="flex items-center gap-2.5 text-left group cursor-pointer"
             >
-              <div className="w-7 h-7 rounded-md bg-[#1b4332] flex items-center justify-center text-white shadow-xs">
-                <Leaf className="w-4 h-4 text-emerald-300" />
+              <div className="w-7 h-7 rounded-md bg-[#16a34a] flex items-center justify-center text-white shadow-xs">
+                <Leaf className="w-4 h-4 text-emerald-100" />
               </div>
               <div className="flex flex-col">
                 <span className="font-bold text-base tracking-tight text-stone-900 leading-none">
-                  AgriTrace
+                  Agri<span className="text-emerald-600">Trace</span>
                 </span>
                 <span className="text-[10px] text-stone-500 font-medium tracking-normal mt-0.5">
                   Farm to Market Tracking
@@ -138,8 +138,8 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                     onClick={() => navigate(link.path)}
                     className={`text-sm font-medium transition cursor-pointer ${
                       isActive 
-                        ? 'text-emerald-900 font-bold border-b-2 border-emerald-900 py-1' 
-                        : 'text-stone-600 hover:text-stone-900 py-1'
+                        ? 'text-emerald-700 font-bold border-b-2 border-emerald-600 py-1' 
+                        : 'text-stone-600 hover:text-emerald-700 py-1'
                     }`}
                   >
                     {link.label}
@@ -158,7 +158,7 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                   onClick={() => setRole(r)}
                   className={`px-2 py-0.5 rounded text-xs capitalize font-medium transition cursor-pointer ${
                     currentRole === r 
-                      ? 'bg-[#1b4332] text-white font-bold shadow-2xs' 
+                      ? 'bg-[#16a34a] text-white font-bold shadow-2xs' 
                       : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
                   }`}
                 >
@@ -179,7 +179,7 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
                 placeholder="Search batch ID or crop..."
-                className="w-full pl-9 pr-3.5 py-1.5 text-xs bg-stone-100 border border-stone-200 hover:border-stone-300 focus:border-emerald-800 focus:bg-white rounded-md outline-none transition font-mono"
+                className="w-full pl-9 pr-3.5 py-1.5 text-xs bg-stone-50 border border-stone-200 hover:border-emerald-300 focus:border-emerald-500 focus:bg-white rounded-md outline-none transition font-mono"
               />
             </div>
             {searchFocused && (
@@ -290,7 +290,7 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                 </button>
                 <button
                   onClick={() => navigate('/signup')}
-                  className="px-3.5 py-1.5 bg-[#1b4332] hover:bg-[#2d5a3f] text-white font-semibold text-xs rounded-md shadow-xs transition cursor-pointer"
+                  className="px-3.5 py-1.5 bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold text-xs rounded-md shadow-xs transition cursor-pointer"
                 >
                   Get Started
                 </button>
@@ -300,7 +300,7 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                 {/* Direct Dashboard Shortcut */}
                 <button
                   onClick={() => navigate(`/${currentRole}/dashboard`)}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-[#1b4332] hover:bg-[#2d5a3f] text-white text-xs font-semibold rounded-md shadow-xs transition cursor-pointer"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-semibold rounded-md shadow-xs transition cursor-pointer"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />
                   <span>Dashboard</span>
@@ -381,12 +381,12 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                               }}
                               className={`px-2 py-1.5 rounded text-left text-xs capitalize transition cursor-pointer flex items-center justify-between ${
                                 currentRole === roleOption 
-                                  ? 'bg-[#1b4332] text-white font-bold' 
+                                  ? 'bg-[#16a34a] text-white font-bold' 
                                   : 'text-stone-700 hover:bg-stone-100'
                               }`}
                             >
                               <span>{roleOption}</span>
-                              {currentRole === roleOption && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
+                              {currentRole === roleOption && <span className="w-1.5 h-1.5 rounded-full bg-emerald-200"></span>}
                             </button>
                           ))}
                         </div>
@@ -489,7 +489,7 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                 navigate('/signup');
                 setMobileNavOpen(false);
               }}
-              className="flex-1 py-2 text-center text-xs font-bold text-white bg-emerald-700 rounded-xl"
+              className="flex-1 py-2 text-center text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl"
             >
               Get Started
             </button>
