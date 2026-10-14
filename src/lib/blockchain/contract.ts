@@ -189,6 +189,35 @@ export function parseContractError(err: any): string {
     return 'Transaction was rejected by the user in MetaMask.';
   }
 
+  // Check insufficient gas funds / test ETH
+  if (
+    err.code === 'INSUFFICIENT_FUNDS' ||
+    err.message?.includes('insufficient funds') ||
+    err.message?.includes('exceeds the balance of the account')
+  ) {
+    return 'Insufficient Sepolia ETH: Your connected wallet does not have enough test ETH to pay gas fees on Ethereum Sepolia. Please obtain free test ETH from a Sepolia faucet (e.g. sepoliafaucet.com or Google Cloud Web3 Faucet) and retry.';
+  }
+
+  // Check pending transaction nonce conflict
+  if (
+    err.code === 'NONCE_EXPIRED' ||
+    err.code === 'REPLACEMENT_UNDERPRICED' ||
+    err.message?.includes('replacement transaction underpriced') ||
+    err.message?.includes('already known')
+  ) {
+    return 'Transaction Pending Conflict: A previous transaction is still pending in the Sepolia mempool. Please wait a few moments for it to confirm or speed it up in MetaMask.';
+  }
+
+  // Check RPC / Network connectivity
+  if (
+    err.code === 'NETWORK_ERROR' ||
+    err.message?.includes('could not detect network') ||
+    err.message?.includes('Failed to fetch') ||
+    err.message?.includes('network error')
+  ) {
+    return 'Sepolia RPC Error: Could not reach the Ethereum Sepolia RPC endpoint. Please verify your internet connection or retry in a few moments.';
+  }
+
   // Check if ethers captured the custom error name directly
   const customErrorName = err.revert?.name || '';
   const errorData = extractHexErrorData(err);

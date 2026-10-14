@@ -337,27 +337,35 @@ class ProductService {
         body: JSON.stringify({
           ...input,
           batchId,
+          txHash: onChainTx.txHash,
+          blockNumber: onChainTx.blockNumber,
           blockchain: localBatch.blockchain,
           timeline: localBatch.timeline
         })
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.product) {
-          const apiProduct = result.product;
-          const mergedBatch: ProduceBatch = {
-            ...localBatch,
-            ...apiProduct,
-            id: apiProduct._id || apiProduct.id || localBatch.id,
-            batchId: apiProduct.batchId || localBatch.batchId,
-          };
-          const updated = [mergedBatch, ...existing.filter(b => b.batchId !== mergedBatch.batchId)];
-          this.saveBatches(updated);
-          return mergedBatch;
-        }
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.error || `Server verification failed with status ${response.status}`);
       }
-    } catch (err) {
+
+      const result = await response.json();
+      if (result.success && result.product) {
+        const apiProduct = result.product;
+        const mergedBatch: ProduceBatch = {
+          ...localBatch,
+          ...apiProduct,
+          id: apiProduct._id || apiProduct.id || localBatch.id,
+          batchId: apiProduct.batchId || localBatch.batchId,
+        };
+        const updated = [mergedBatch, ...existing.filter(b => b.batchId !== mergedBatch.batchId)];
+        this.saveBatches(updated);
+        return mergedBatch;
+      }
+    } catch (err: any) {
+      if (err.message && (err.message.includes('Server verification failed') || err.message.includes('reverted') || err.message.includes('does not match') || err.message.includes('Invalid') || err.message.includes('required'))) {
+        throw err;
+      }
       console.warn('Network call to POST /api/products failed, saved to local cache:', err);
     }
 
@@ -548,15 +556,21 @@ class ProductService {
         })
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.product) {
-          const normalized = this.normalizeBatch(data.product);
-          this.updateLocalBatch(normalized);
-          return normalized;
-        }
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.error || `Server verification failed with status ${response.status}`);
       }
-    } catch (e) {
+
+      const data = await response.json();
+      if (data.success && data.product) {
+        const normalized = this.normalizeBatch(data.product);
+        this.updateLocalBatch(normalized);
+        return normalized;
+      }
+    } catch (e: any) {
+      if (e.message && (e.message.includes('Server verification failed') || e.message.includes('reverted') || e.message.includes('does not match') || e.message.includes('required'))) {
+        throw e;
+      }
       console.warn('Network call for transferToDistributor failed, updating local state:', e);
     }
 
@@ -569,8 +583,12 @@ class ProductService {
       b.currentCustodianRole = 'distributor';
       b.currentCustodianName = distributorName;
       b.pricing.farmerPrice = agreedPrice;
-      b.blockchain.mintTxHash = onChainTx.txHash;
+      const originalMintTx = b.blockchain?.mintTxHash;
+      b.blockchain.txHash = onChainTx.txHash;
       b.blockchain.blockNumber = onChainTx.blockNumber;
+      if (originalMintTx) {
+        b.blockchain.mintTxHash = originalMintTx;
+      }
       b.blockchain.statusNotice = 'On-Chain Validated: With Distributor';
       b.timeline.push({
         id: `tl-${Date.now()}`,

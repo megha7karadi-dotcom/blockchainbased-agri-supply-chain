@@ -15,9 +15,11 @@ import {
   Sprout,
   Truck,
   Store,
-  Shield
+  Shield,
+  Wallet
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useWallet } from '../../context/WalletContext';
 import { UserRole } from '../../types/produce';
 
 interface Props {
@@ -43,6 +45,8 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
     navigateToVerification,
     batches
   } = useApp();
+
+  const { wallet, connect, isSepolia, switchToSepolia } = useWallet();
 
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -277,6 +281,33 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                   </div>
                 )}
               </div>
+            )}
+
+            {/* Blockchain Wallet Indicator */}
+            {wallet.isConnected ? (
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-stone-100 border border-stone-200 text-stone-700 text-xs font-mono">
+                <span className={`w-2 h-2 rounded-full ${isSepolia ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                <span>{wallet.address?.slice(0, 6)}...{wallet.address?.slice(-4)}</span>
+                {!isSepolia && (
+                  <button
+                    onClick={() => switchToSepolia()}
+                    className="ml-1 text-[10px] text-amber-700 font-sans font-bold hover:underline"
+                    title="Switch to Sepolia"
+                  >
+                    (Wrong Net)
+                  </button>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => connect()}
+                disabled={wallet.isConnecting}
+                className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-emerald-300 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold transition cursor-pointer"
+                title="Connect MetaMask to Ethereum Sepolia"
+              >
+                <Wallet className="w-3.5 h-3.5 text-emerald-700" />
+                <span>{wallet.isConnecting ? 'Connecting...' : 'Connect Blockchain'}</span>
+              </button>
             )}
 
             {/* User Authentication State */}
