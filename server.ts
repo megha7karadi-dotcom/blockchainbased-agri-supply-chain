@@ -2,6 +2,19 @@ import dotenv from 'dotenv';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import predictionRoutes from './backend/routes/predictionRoutes';
+
+const getRouter = (route: any) => {
+  const resolved = route?.default ?? route;
+
+  if (typeof resolved !== 'function') {
+    throw new Error(
+      `Invalid Express router import. Expected a router function, got ${typeof resolved}`
+    );
+  }
+
+  return resolved;
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,9 +70,10 @@ async function startServer() {
   const productRouter = (productRoutes as any)?.default || productRoutes;
   const blockchainRouter = (blockchainRoutes as any)?.default || blockchainRoutes;
 
-  app.use('/api/auth', authRouter);
-  app.use('/api/products', productRouter);
-  app.use('/api/blockchain', blockchainRouter);
+  app.use('/api/auth', getRouter(authRoutes));
+  app.use('/api/products', getRouter(productRoutes));
+  app.use('/api/blockchain', getRouter(blockchainRoutes));
+  app.use('/api/predict', getRouter(predictionRoutes));
 
   // Database offline error middleware fallback
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
