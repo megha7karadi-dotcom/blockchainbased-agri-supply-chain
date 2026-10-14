@@ -409,18 +409,38 @@ router.post('/', optionalJWT, async (req: AuthenticatedRequest, res: Response) =
     const numPrice = Number(farmgatePrice);
     const numQty = Number(quantity);
 
+    // Validate client-submitted transaction metadata if on-chain action claimed
+    const submittedTxHash = body.txHash || body.blockchain?.mintTxHash || body.blockchain?.txHash;
+    const submittedBlockNumber = body.blockNumber || body.blockchain?.blockNumber;
+    const hasClaimedTx = Boolean(submittedTxHash && /^0x[0-9a-fA-F]{64}$/.test(submittedTxHash) && submittedTxHash !== '0x' + '0'.repeat(64));
+
+    let txValidation: any = { valid: true };
+    if (hasClaimedTx || submittedBlockNumber) {
+      txValidation = await validateTransactionMetadata(submittedTxHash, submittedBlockNumber, {
+        expectedAction: 'registerProduce',
+        batchId
+      });
+      if (!txValidation.valid) {
+        return res.status(400).json({ success: false, error: txValidation.error, retryable: txValidation.retryable });
+      }
+    }
+
     const initialTimeline = {
       id: `tl-${Date.now()}`,
       stage: 'Farming',
       title: 'Harvest & Produce Batch Registered',
-      description: `Registered at ${farmLocation}, ${state}. Farmgate base rate logged at ₹${numPrice}/${unit}. Stored in MongoDB Atlas.`,
+      description: `Registered at ${farmLocation}, ${state}. Farmgate base rate logged at ₹${numPrice}/${unit}.${txValidation.metadata?.txHash ? ` Validated on-chain in Sepolia block #${txValidation.metadata.blockNumber}.` : ' Stored in MongoDB Atlas.'}`,
       actorName: farmerName,
       actorRole: 'farmer',
       location: `${farmLocation}, ${state}`,
       timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
       temperature: '23.5°C',
       humidity: '65%',
-      verified: true,
+      verified: Boolean(txValidation.metadata?.onChainVerified),
+      ...(txValidation.metadata?.txHash ? {
+        txHash: txValidation.metadata.txHash,
+        blockNumber: txValidation.metadata.blockNumber
+      } : {})
     };
 
     const newProductData = {
@@ -467,16 +487,19 @@ router.post('/', optionalJWT, async (req: AuthenticatedRequest, res: Response) =
         shelfLifeDays: 14,
       },
       blockchain: {
-        contractAddress: body.blockchain?.contractAddress || (await import('../services/blockchainService')).getContractAddress(),
+        contractAddress: getContractAddress(),
         tokenId: `0x${batchId.replace(/[^a-zA-Z0-9]/g, '')}`,
-        blockNumber: Number(body.blockchain?.blockNumber) || 1,
-        mintTxHash: body.blockchain?.mintTxHash || body.blockchain?.txHash || '0x0000000000000000000000000000000000000000000000000000000000000000',
-        currentOwnerWallet: body.blockchain?.currentOwnerWallet || (authUser as any)?.walletAddress || '0x0000000000000000000000000000000000000000',
-        consensusMechanism: body.blockchain?.consensusMechanism || 'Ethereum EVM / AgriTrace Smart Contract',
+        blockNumber: txValidation.metadata?.blockNumber,
+        mintTxHash: txValidation.metadata?.txHash,
+        txHash: txValidation.metadata?.txHash,
+        currentOwnerWallet: txValidation.metadata?.signerAddress || body.blockchain?.currentOwnerWallet || (authUser as any)?.walletAddress || '0x0000000000000000000000000000000000000000',
+        consensusMechanism: 'Ethereum Sepolia Ledger',
         gasUsed: body.blockchain?.gasUsed || '180,000 gas',
-        merkleRootHash: body.blockchain?.merkleRootHash || body.blockchain?.originHash || '0x0000000000000000000000000000000000000000000000000000000000000000',
+        merkleRootHash: body.blockchain?.merkleRootHash || body.blockchain?.originHash,
         isTamperEvident: true,
-        statusNotice: 'Verified Smart Contract State: Registered Produce Batch'
+        statusNotice: txValidation.metadata?.onChainVerified
+          ? 'On-Chain Validated: Registered Produce Batch'
+          : 'Off-Chain Database Record: Registered Produce Batch'
       },
       timeline: [initialTimeline],
       sensorLogs: [
@@ -834,8 +857,17 @@ async function findAndSaveProduct(batchId: string, updateFn: (prod: any) => void
 router.post('/:batchId/transfer-to-distributor', optionalJWT, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { batchId } = req.params;
-    const { distributorName, distributorId, quantity, agreedPrice } = req.body;
+    const { distributorName, distributorId, quantity, agreedPrice, txHash, blockNumber } = req.body;
     const user = req.user;
+
+    // Validate client-submitted transaction metadata
+    const txValidation = await validateTransactionMetadata(txHash, blockNumber, {
+      expectedAction: 'transferToDistributor',
+      batchId
+    });
+    if (!txValidation.valid) {
+      return res.status(400).json({ success: false, error: txValidation.error, retryable: txValidation.retryable });
+    }
 
     const numQty = Number(quantity);
     const numPrice = Number(agreedPrice);
@@ -849,20 +881,46 @@ router.post('/:batchId/transfer-to-distributor', optionalJWT, async (req: Authen
         prod.pricing.farmerPrice = numPrice;
       }
 
+      // Persist blockchain metadata without overwriting mintTxHash
+      if (txValidation.metadata) {
+        prod.blockchain = prod.blockchain || {};
+        prod.blockchain.contractAddress = getContractAddress();
+        prod.blockchain.txHash = txValidation.metadata.txHash;
+        prod.blockchain.blockNumber = txValidation.metadata.blockNumber;
+        prod.blockchain.isTamperEvident = true;
+        prod.blockchain.statusNotice = txValidation.metadata.onChainVerified
+          ? 'On-Chain Validated: Transferred to Distributor'
+          : 'Registered Transaction: Transferred to Distributor';
+      }
+
+      prod.timeline = prod.timeline || [];
+
+      // Check for duplicate timeline entry with the same txHash
+      const existingIdx = txValidation.metadata?.txHash
+        ? prod.timeline.findIndex((e: any) => e.txHash && e.txHash.toLowerCase() === txValidation.metadata!.txHash.toLowerCase())
+        : -1;
+
       const timelineEvent = {
-        id: `tl-${Date.now()}`,
+        id: existingIdx !== -1 ? prod.timeline[existingIdx].id : `tl-${Date.now()}`,
         stage: 'Logistics',
         title: 'Transferred to Distributor',
-        description: `Farmer transferred ${numQty || prod.quantity} ${prod.unit || 'kg'} to ${distributorName || 'Distributor'} at agreed price ₹${numPrice || prod.farmgatePrice}/${prod.unit || 'kg'}.`,
+        description: `Farmer transferred ${numQty || prod.quantity} ${prod.unit || 'kg'} to ${distributorName || 'Distributor'} at agreed price ₹${numPrice || prod.farmgatePrice}/${prod.unit || 'kg'}.${txValidation.metadata?.txHash ? ` Confirmed in Sepolia block #${txValidation.metadata.blockNumber}.` : ''}`,
         actorName: user?.name || prod.farmerName || 'Farmer',
         actorRole: 'farmer',
         location: prod.farmLocation || 'Farm Origin',
-        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
-        verified: true,
+        timestamp: existingIdx !== -1 ? prod.timeline[existingIdx].timestamp : new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        verified: Boolean(txValidation.metadata?.onChainVerified),
+        ...(txValidation.metadata?.txHash ? {
+          txHash: txValidation.metadata.txHash,
+          blockNumber: txValidation.metadata.blockNumber
+        } : {})
       };
 
-      prod.timeline = prod.timeline || [];
-      prod.timeline.push(timelineEvent);
+      if (existingIdx !== -1) {
+        prod.timeline[existingIdx] = { ...prod.timeline[existingIdx], ...timelineEvent };
+      } else {
+        prod.timeline.push(timelineEvent);
+      }
     });
 
     if (!updated) {
@@ -871,7 +929,20 @@ router.post('/:batchId/transfer-to-distributor', optionalJWT, async (req: Authen
 
     return res.json({
       success: true,
-      message: 'Batch successfully transferred to distributor.',
+      message: txValidation.metadata?.onChainVerified
+        ? 'Batch successfully transferred to distributor and verified on Sepolia blockchain.'
+        : (txValidation.metadata?.txHash
+            ? 'Batch successfully transferred to distributor with recorded blockchain transaction.'
+            : 'Batch successfully transferred to distributor (off-chain record only).'),
+      blockchain: txValidation.metadata?.txHash ? {
+        txHash: txValidation.metadata.txHash,
+        blockNumber: txValidation.metadata.blockNumber,
+        onChainVerified: Boolean(txValidation.metadata.onChainVerified),
+        status: txValidation.metadata.onChainVerified ? 'confirmed' : 'unconfirmed'
+      } : {
+        onChainVerified: false,
+        status: 'off-chain-only'
+      },
       product: updated
     });
   } catch (err: any) {
@@ -886,28 +957,63 @@ router.post('/:batchId/transfer-to-distributor', optionalJWT, async (req: Authen
 router.post('/:batchId/distributor-receive', optionalJWT, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { batchId } = req.params;
-    const { notes } = req.body;
+    const { notes, txHash, blockNumber } = req.body;
     const user = req.user;
+
+    // Validate client-submitted transaction metadata if provided
+    const txValidation = await validateTransactionMetadata(txHash, blockNumber, {
+      expectedAction: 'transferToDistributor',
+      batchId
+    });
+    if (!txValidation.valid) {
+      return res.status(400).json({ success: false, error: txValidation.error, retryable: txValidation.retryable });
+    }
 
     const updated = await findAndSaveProduct(batchId, (prod) => {
       prod.status = 'At Distributor';
       prod.currentCustodianRole = 'distributor';
       if (user?.name) prod.currentCustodianName = user.name;
 
+      if (txValidation.metadata) {
+        prod.blockchain = prod.blockchain || {};
+        prod.blockchain.contractAddress = getContractAddress();
+        prod.blockchain.txHash = txValidation.metadata.txHash;
+        prod.blockchain.blockNumber = txValidation.metadata.blockNumber;
+        prod.blockchain.isTamperEvident = true;
+        prod.blockchain.statusNotice = txValidation.metadata.onChainVerified
+          ? 'On-Chain Validated: Received by Distributor'
+          : 'Registered Transaction: Received by Distributor';
+      }
+
+      prod.timeline = prod.timeline || [];
+
+      // Check for duplicate timeline entry with the same txHash
+      const existingIdx = txValidation.metadata?.txHash
+        ? prod.timeline.findIndex((e: any) => e.txHash && e.txHash.toLowerCase() === txValidation.metadata!.txHash.toLowerCase())
+        : -1;
+
       const timelineEvent = {
-        id: `tl-${Date.now()}`,
+        id: existingIdx !== -1 ? prod.timeline[existingIdx].id : `tl-${Date.now()}`,
         stage: 'Logistics',
         title: 'Shipment Received by Distributor',
-        description: notes || 'Produce quality verified, lot accepted into distributor storage hub.',
+        description: (notes || 'Produce quality verified, lot accepted into distributor storage hub.') +
+          (txValidation.metadata?.txHash ? ` Recorded on Sepolia in block #${txValidation.metadata.blockNumber}.` : ''),
         actorName: user?.name || 'Distributor Logistics',
         actorRole: 'distributor',
         location: user?.location || 'Regional Distribution Center',
-        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
-        verified: true,
+        timestamp: existingIdx !== -1 ? prod.timeline[existingIdx].timestamp : new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        verified: Boolean(txValidation.metadata?.onChainVerified),
+        ...(txValidation.metadata?.txHash ? {
+          txHash: txValidation.metadata.txHash,
+          blockNumber: txValidation.metadata.blockNumber
+        } : {})
       };
 
-      prod.timeline = prod.timeline || [];
-      prod.timeline.push(timelineEvent);
+      if (existingIdx !== -1) {
+        prod.timeline[existingIdx] = { ...prod.timeline[existingIdx], ...timelineEvent };
+      } else {
+        prod.timeline.push(timelineEvent);
+      }
     });
 
     if (!updated) {
@@ -916,7 +1022,20 @@ router.post('/:batchId/distributor-receive', optionalJWT, async (req: Authentica
 
     return res.json({
       success: true,
-      message: 'Shipment accepted into distributor inventory.',
+      message: txValidation.metadata?.onChainVerified
+        ? 'Shipment accepted into distributor inventory and verified on Sepolia blockchain.'
+        : (txValidation.metadata?.txHash
+            ? 'Shipment accepted with recorded blockchain transaction.'
+            : 'Shipment accepted into distributor inventory (off-chain record only).'),
+      blockchain: txValidation.metadata?.txHash ? {
+        txHash: txValidation.metadata.txHash,
+        blockNumber: txValidation.metadata.blockNumber,
+        onChainVerified: Boolean(txValidation.metadata.onChainVerified),
+        status: txValidation.metadata.onChainVerified ? 'confirmed' : 'unconfirmed'
+      } : {
+        onChainVerified: false,
+        status: 'off-chain-only'
+      },
       product: updated
     });
   } catch (err: any) {
@@ -941,7 +1060,7 @@ router.post('/:batchId/distributor-price', optionalJWT, async (req: Authenticate
       batchId
     });
     if (!txValidation.valid) {
-      return res.status(400).json({ success: false, error: txValidation.error });
+      return res.status(400).json({ success: false, error: txValidation.error, retryable: txValidation.retryable });
     }
 
     const numPurchase = Number(purchasePrice);
@@ -1042,7 +1161,7 @@ router.post('/:batchId/transfer-to-retailer', optionalJWT, async (req: Authentic
       batchId
     });
     if (!txValidation.valid) {
-      return res.status(400).json({ success: false, error: txValidation.error });
+      return res.status(400).json({ success: false, error: txValidation.error, retryable: txValidation.retryable });
     }
 
     const numQty = Number(quantity);
@@ -1143,7 +1262,7 @@ router.post('/:batchId/retailer-receive', optionalJWT, async (req: Authenticated
       batchId
     });
     if (!txValidation.valid) {
-      return res.status(400).json({ success: false, error: txValidation.error });
+      return res.status(400).json({ success: false, error: txValidation.error, retryable: txValidation.retryable });
     }
 
     const updated = await findAndSaveProduct(batchId, (prod) => {
@@ -1239,7 +1358,7 @@ router.post('/:batchId/retailer-price', optionalJWT, async (req: AuthenticatedRe
       batchId
     });
     if (!txValidation.valid) {
-      return res.status(400).json({ success: false, error: txValidation.error });
+      return res.status(400).json({ success: false, error: txValidation.error, retryable: txValidation.retryable });
     }
 
     const numMargin = Number(retailMargin);
@@ -1335,7 +1454,7 @@ router.post('/:batchId/retailer-sell', optionalJWT, async (req: AuthenticatedReq
       batchId
     });
     if (!txValidation.valid) {
-      return res.status(400).json({ success: false, error: txValidation.error });
+      return res.status(400).json({ success: false, error: txValidation.error, retryable: txValidation.retryable });
     }
 
     const numSold = Number(soldQuantity) || 1;

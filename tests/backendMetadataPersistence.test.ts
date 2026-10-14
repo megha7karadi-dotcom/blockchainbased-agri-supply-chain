@@ -24,6 +24,8 @@ describe('Backend Transaction Metadata & Lifecycle Persistence Engine', () => {
     receiptBlockNumber?: number;
     receiptTo?: string;
     receiptFrom?: string;
+    receiptLogs?: any[];
+    receiptNotFound?: boolean;
     txTo?: string;
     txFrom?: string;
     txData?: string;
@@ -32,12 +34,13 @@ describe('Backend Transaction Metadata & Lifecycle Persistence Engine', () => {
     return {
       getBlockNumber: async () => 18946250,
       getTransactionReceipt: async (hash: string) => {
-        if (options.txNotFound) return null;
+        if (options.txNotFound || options.receiptNotFound) return null;
         return {
           status: options.receiptStatus ?? 1,
           blockNumber: options.receiptBlockNumber ?? 18946210,
           to: options.receiptTo ?? deployedContract,
           from: options.receiptFrom ?? '0x700c6f0a003A81f4F8c1d5C99F065409c15466b6',
+          logs: options.receiptLogs ?? [],
           hash
         };
       },
@@ -169,6 +172,62 @@ describe('Backend Transaction Metadata & Lifecycle Persistence Engine', () => {
       const calldata = iface.encodeFunctionData('updateDistributorPrice', [testBatchB32, 120n]);
       const mockProvider = createMockProvider({ txData: calldata });
       const validHash = '0x' + '3'.repeat(64);
+
+      const res = await validateTransactionMetadata(validHash, 18946210, {
+        provider: mockProvider,
+        deployedAddress: deployedContract,
+        expectedAction: 'updateDistributorPrice',
+        batchId: testBatchId
+      });
+      assert.strictEqual(res.valid, true);
+      assert.strictEqual(res.metadata?.onChainVerified, true);
+      assert.strictEqual(res.metadata?.txHash, validHash);
+      assert.strictEqual(res.metadata?.blockNumber, 18946210);
+    });
+
+    it('handles pending unmined transactions as retryable without marking verified', async () => {
+      const calldata = iface.encodeFunctionData('updateDistributorPrice', [testBatchB32, 120n]);
+      const mockProvider = createMockProvider({ receiptNotFound: true, txData: calldata });
+      const validHash = '0x' + '4'.repeat(64);
+
+      const res = await validateTransactionMetadata(validHash, 18946210, {
+        provider: mockProvider,
+        deployedAddress: deployedContract,
+        expectedAction: 'updateDistributorPrice',
+        batchId: testBatchId
+      });
+      assert.strictEqual(res.valid, false);
+      assert.strictEqual(res.retryable, true);
+      assert.match(res.error || '', /is pending on Ethereum Sepolia/i);
+    });
+
+    it('rejects transaction when calldata is unavailable and no matching logs exist (not falsely verified)', async () => {
+      const mockProvider = createMockProvider({ txData: '0x', receiptLogs: [] });
+      const validHash = '0x' + '5'.repeat(64);
+
+      const res = await validateTransactionMetadata(validHash, 18946210, {
+        provider: mockProvider,
+        deployedAddress: deployedContract,
+        expectedAction: 'updateDistributorPrice',
+        batchId: testBatchId
+      });
+      assert.strictEqual(res.valid, false);
+      assert.strictEqual(res.retryable, true);
+      assert.match(res.error || '', /temporarily unavailable/i);
+    });
+
+    it('accepts and verifies transaction when calldata is pruned but receipt event logs prove action and batch', async () => {
+      const eventFragment = iface.getEvent('PriceUpdated');
+      const logData = iface.encodeEventLog(eventFragment!, [testBatchB32, '0x700c6f0a003A81f4F8c1d5C99F065409c15466b6', 2n, 120n, 1728800000n]);
+      const mockProvider = createMockProvider({
+        txData: '0x',
+        receiptLogs: [{
+          address: deployedContract,
+          topics: logData.topics,
+          data: logData.data
+        }]
+      });
+      const validHash = '0x' + '6'.repeat(64);
 
       const res = await validateTransactionMetadata(validHash, 18946210, {
         provider: mockProvider,
@@ -317,6 +376,140 @@ describe('Backend Transaction Metadata & Lifecycle Persistence Engine', () => {
       assert.strictEqual(json.blockchain.onChainVerified, false);
       assert.strictEqual(json.blockchain.status, 'off-chain-only');
       assert.strictEqual(json.product.quantity, 225);
+    });
+
+    it('POST /api/products registers produce batch off-chain when no on-chain tx is claimed', async () => {
+      const res = await fetch(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cropName: 'Organic Tomato',
+          cropVariety: 'Roma',
+          quantity: 150,
+          farmLocation: 'Nashik Valley',
+          state: 'Maharashtra',
+          harvestDate: '2026-10-12',
+          farmgatePrice: 35
+        })
+      });
+      assert.strictEqual(res.status, 201);
+      const json = await res.json();
+      assert.strictEqual(json.success, true);
+      assert.match(json.product.blockchain.statusNotice, /Off-Chain/i);
+      assert.strictEqual(json.product.timeline[0].verified, false);
+      assert.strictEqual(json.product.blockchain.mintTxHash, undefined);
+    });
+
+    it('POST /api/products rejects claimed on-chain registration if tx is not verified on Sepolia', async () => {
+      const res = await fetch(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cropName: 'Alphonso Mango',
+          quantity: 50,
+          farmLocation: 'Ratnagiri',
+          state: 'Maharashtra',
+          harvestDate: '2026-10-10',
+          farmgatePrice: 120,
+          txHash: '0x' + 'e'.repeat(64),
+          blockNumber: 18946210
+        })
+      });
+      assert.strictEqual(res.status, 400);
+      const json = await res.json();
+      assert.strictEqual(json.success, false);
+      assert.match(json.error, /was not found on Ethereum Sepolia/i);
+    });
+
+    it('POST /api/products/:batchId/transfer-to-distributor without tx persists off-chain with verified=false', async () => {
+      const res = await fetch(`${baseUrl}/${testBatchId}/transfer-to-distributor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          distributorName: 'Central Agro Logistics',
+          distributorId: 'usr-dist-01',
+          quantity: 50,
+          agreedPrice: 55
+        })
+      });
+      assert.strictEqual(res.status, 200);
+      const json = await res.json();
+      assert.strictEqual(json.success, true);
+      assert.strictEqual(json.blockchain.onChainVerified, false);
+      assert.strictEqual(json.blockchain.status, 'off-chain-only');
+      assert.strictEqual(json.product.status, 'Transferred to Distributor');
+    });
+
+    it('POST /api/products/:batchId/transfer-to-distributor rejects fake on-chain tx with 400', async () => {
+      const res = await fetch(`${baseUrl}/${testBatchId}/transfer-to-distributor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          distributorName: 'Central Agro Logistics',
+          distributorId: 'usr-dist-01',
+          quantity: 50,
+          agreedPrice: 55,
+          txHash: '0x' + '7'.repeat(64),
+          blockNumber: 18946210
+        })
+      });
+      assert.strictEqual(res.status, 400);
+      const json = await res.json();
+      assert.strictEqual(json.success, false);
+      assert.match(json.error, /was not found on Ethereum Sepolia/i);
+    });
+
+    it('POST /api/products/:batchId/distributor-receive without tx persists off-chain with verified=false', async () => {
+      const res = await fetch(`${baseUrl}/${testBatchId}/distributor-receive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          notes: 'Inspected and unloaded at cold warehouse.'
+        })
+      });
+      assert.strictEqual(res.status, 200);
+      const json = await res.json();
+      assert.strictEqual(json.success, true);
+      assert.strictEqual(json.blockchain.onChainVerified, false);
+      assert.strictEqual(json.blockchain.status, 'off-chain-only');
+      assert.strictEqual(json.product.status, 'At Distributor');
+    });
+
+    it('POST /api/products/:batchId/distributor-receive rejects fake on-chain tx with 400', async () => {
+      const res = await fetch(`${baseUrl}/${testBatchId}/distributor-receive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          notes: 'Inspected and unloaded at cold warehouse.',
+          txHash: '0x' + 'a'.repeat(64),
+          blockNumber: 18946210
+        })
+      });
+      assert.strictEqual(res.status, 400);
+      const json = await res.json();
+      assert.strictEqual(json.success, false);
+      assert.match(json.error, /was not found on Ethereum Sepolia/i);
+    });
+
+    it('preserves original mintTxHash during subsequent lifecycle updates', async () => {
+      const getRes = await fetch(`${baseUrl}/${testBatchId}`);
+      assert.strictEqual(getRes.status, 200);
+      const getJson = await getRes.json();
+      const originalMintTx = getJson.product.blockchain.mintTxHash;
+
+      // Update off-chain distributor price
+      const priceRes = await fetch(`${baseUrl}/${testBatchId}/distributor-price`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purchasePrice: 62,
+          marginPercentage: 18,
+          sellingPrice: 75
+        })
+      });
+      assert.strictEqual(priceRes.status, 200);
+      const priceJson = await priceRes.json();
+      assert.strictEqual(priceJson.product.blockchain.mintTxHash, originalMintTx);
     });
 
     it('teardown server', async () => {

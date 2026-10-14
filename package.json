@@ -14,6 +14,7 @@
     "deploy:contracts": "node scripts/deploy-contract.js",
     "test:contracts": "node scripts/compile-contract.js && tsx --test --test-concurrency=1 --test-reporter spec tests/AgriTraceSupplyChain.test.ts",
     "test:backend": "tsx --test --test-concurrency=1 --test-reporter spec tests/backendMetadataPersistence.test.ts",
+    "test:validation": "tsx --test --test-concurrency=1 --test-reporter spec tests/backendMetadataPersistence.test.ts",
     "test": "npm run test:contracts && npm run test:backend"
   },
   "dependencies": {

@@ -321,17 +321,26 @@ export interface TxValidationOptions {
   deployedAddress?: string;
 }
 
+export interface TxValidationResult {
+  valid: boolean;
+  error?: string;
+  retryable?: boolean;
+  metadata?: ValidatedTxMetadata;
+}
+
 /**
  * Validates client-submitted transaction hash and block number metadata.
  * Validates cryptographic format, checks for on-chain receipt on Sepolia,
  * verifies execution status (status === 1, not reverted), matches target contract address,
  * and validates that the transaction corresponds to the intended lifecycle action and batch.
+ * If transaction calldata is pruned or unavailable, falls back to receipt event log decoding
+ * or returns a clear retryable error without falsely certifying unverified transactions.
  */
 export async function validateTransactionMetadata(
   txHashInput?: any,
   blockNumberInput?: any,
   optionsOrSigner?: string | TxValidationOptions
-): Promise<{ valid: boolean; error?: string; metadata?: ValidatedTxMetadata }> {
+): Promise<TxValidationResult> {
   const options: TxValidationOptions = typeof optionsOrSigner === 'string'
     ? { expectedSigner: optionsOrSigner }
     : (optionsOrSigner || {});
@@ -375,7 +384,6 @@ export async function validateTransactionMetadata(
   }
 
   // 3. Cryptographic on-chain verification against Sepolia testnet
-  let onChainVerified = false;
   let resolvedSigner = options.expectedSigner;
   const deployedAddress = options.deployedAddress || getContractAddress();
 
@@ -399,44 +407,16 @@ export async function validateTransactionMetadata(
       // Non-fatal if provider only has receipt
     }
 
-    if (receipt) {
-      // Must not be reverted
-      if (receipt.status === 0) {
+    if (!receipt) {
+      if (tx) {
+        // Transaction exists in mempool/node, but no receipt yet -> Pending!
         return {
           valid: false,
-          error: `Transaction ${txHash} failed or was reverted on Ethereum Sepolia (status = 0). State changes were not applied.`
+          retryable: true,
+          error: `Transaction ${txHash} is pending on Ethereum Sepolia and has not been mined into a block yet. Please wait for on-chain confirmation and retry.`
         };
       }
 
-      // Block number check
-      if (receipt.blockNumber !== blockNum) {
-        return {
-          valid: false,
-          error: `Block number mismatch for ${txHash}: confirmed on Sepolia in block #${receipt.blockNumber}, but client submitted block #${blockNum}.`
-        };
-      }
-
-      // Check target contract matches deployed AgriTrace contract
-      const targetAddress = receipt.to || tx?.to;
-      if (deployedAddress && targetAddress && targetAddress.toLowerCase() !== deployedAddress.toLowerCase()) {
-        return {
-          valid: false,
-          error: `Transaction recipient (${targetAddress}) does not match the deployed AgriTrace contract (${deployedAddress}).`
-        };
-      }
-
-      resolvedSigner = resolvedSigner || tx?.from || receipt.from;
-      onChainVerified = true;
-    } else if (tx) {
-      if (deployedAddress && tx.to && tx.to.toLowerCase() !== deployedAddress.toLowerCase()) {
-        return {
-          valid: false,
-          error: `Transaction recipient (${tx.to}) does not match the deployed AgriTrace contract (${deployedAddress}).`
-        };
-      }
-      resolvedSigner = resolvedSigner || tx.from;
-      onChainVerified = true;
-    } else {
       // Neither receipt nor tx found: check if provider is active
       try {
         const currentBlock = await provider.getBlockNumber();
@@ -449,16 +429,47 @@ export async function validateTransactionMetadata(
       } catch {
         return {
           valid: false,
+          retryable: true,
           error: `Could not reach Ethereum Sepolia provider to verify transaction ${txHash}.`
         };
       }
     }
 
+    // Receipt must not be reverted
+    if (receipt.status === 0) {
+      return {
+        valid: false,
+        error: `Transaction ${txHash} failed or was reverted on Ethereum Sepolia (status = 0). State changes were not applied.`
+      };
+    }
+
+    // Block number check: verify client submission matches authoritative on-chain block
+    if (receipt.blockNumber !== blockNum) {
+      return {
+        valid: false,
+        error: `Block number mismatch for ${txHash}: confirmed on Sepolia in block #${receipt.blockNumber}, but client submitted block #${blockNum}.`
+      };
+    }
+
+    // Check target contract matches deployed AgriTrace contract
+    const targetAddress = receipt.to || tx?.to;
+    if (deployedAddress && targetAddress && targetAddress.toLowerCase() !== deployedAddress.toLowerCase()) {
+      return {
+        valid: false,
+        error: `Transaction recipient (${targetAddress}) does not match the deployed AgriTrace contract (${deployedAddress}).`
+      };
+    }
+
+    resolvedSigner = resolvedSigner || tx?.from || receipt.from;
+
     // Validate that the transaction corresponds to the intended lifecycle action and batch
-    if (tx && (options.expectedAction || options.batchId)) {
-      try {
-        const abi = getContractAbi();
-        if (abi && tx.data && tx.data !== '0x') {
+    if (options.expectedAction || options.batchId) {
+      let actionVerified = false;
+      const abi = getContractAbi();
+
+      // Method A: Decode transaction calldata if available
+      if (abi && tx && tx.data && tx.data !== '0x') {
+        try {
           const iface = new ethers.Interface(abi);
           const parsed = iface.parseTransaction({ data: tx.data, value: tx.value });
           if (parsed) {
@@ -478,16 +489,84 @@ export async function validateTransactionMetadata(
                 };
               }
             }
+            actionVerified = true;
           }
+        } catch (parseErr: any) {
+          console.warn('[validateTransactionMetadata] Calldata parsing notice:', parseErr?.message);
         }
-      } catch (parseErr: any) {
-        console.warn('[validateTransactionMetadata] Calldata parsing notice:', parseErr?.message);
+      }
+
+      // Method B: Reliable alternative - verify via receipt event logs if calldata was pruned or unavailable
+      if (!actionVerified && receipt && receipt.logs && receipt.logs.length > 0 && abi) {
+        try {
+          const iface = new ethers.Interface(abi);
+          const expectedBatchB32 = options.batchId ? stringToBytes32(options.batchId).toLowerCase() : null;
+
+          for (const log of receipt.logs) {
+            if (deployedAddress && log.address && log.address.toLowerCase() !== deployedAddress.toLowerCase()) {
+              continue;
+            }
+            try {
+              const parsedLog = iface.parseLog({ topics: log.topics as string[], data: log.data });
+              if (!parsedLog) continue;
+
+              const logBatchB32 = parsedLog.args?.batchId ? String(parsedLog.args.batchId).toLowerCase() : null;
+              const batchMatches = !expectedBatchB32 || (logBatchB32 === expectedBatchB32);
+
+              if (batchMatches) {
+                if (options.expectedAction === 'updateDistributorPrice' && parsedLog.name === 'PriceUpdated') {
+                  actionVerified = true;
+                  break;
+                } else if (options.expectedAction === 'updateRetailerPrice' && parsedLog.name === 'PriceUpdated') {
+                  actionVerified = true;
+                  break;
+                } else if (options.expectedAction === 'registerProduce' && parsedLog.name === 'ProduceRegistered') {
+                  actionVerified = true;
+                  break;
+                } else if (options.expectedAction === 'transferToDistributor' &&
+                           (parsedLog.name === 'OwnershipTransferred' || parsedLog.name === 'StatusChanged')) {
+                  actionVerified = true;
+                  break;
+                } else if (options.expectedAction === 'dispatchToRetailer' &&
+                           (parsedLog.name === 'OwnershipTransferred' || parsedLog.name === 'StatusChanged')) {
+                  actionVerified = true;
+                  break;
+                } else if (options.expectedAction === 'receiveProduceByRetailer' &&
+                           (parsedLog.name === 'OwnershipTransferred' || parsedLog.name === 'StatusChanged')) {
+                  actionVerified = true;
+                  break;
+                } else if (options.expectedAction === 'recordSale' &&
+                           (parsedLog.name === 'OwnershipTransferred' || parsedLog.name === 'StatusChanged')) {
+                  actionVerified = true;
+                  break;
+                } else if (!options.expectedAction) {
+                  actionVerified = true;
+                  break;
+                }
+              }
+            } catch {
+              // Non-matching log entry
+            }
+          }
+        } catch (logErr: any) {
+          console.warn('[validateTransactionMetadata] Receipt log parsing notice:', logErr?.message);
+        }
+      }
+
+      // If neither calldata nor logs established proof of the required lifecycle action:
+      if (!actionVerified) {
+        return {
+          valid: false,
+          retryable: true,
+          error: `Transaction ${txHash} confirmed on-chain, but transaction calldata and execution logs are temporarily unavailable from the RPC provider to verify function "${options.expectedAction || 'lifecycle'}" and batch ID "${options.batchId || ''}". Please retry in a few moments.`
+        };
       }
     }
   } catch (rpcErr: any) {
     console.warn(`[validateTransactionMetadata] Sepolia RPC check note for ${txHash}:`, rpcErr?.message);
     return {
       valid: false,
+      retryable: true,
       error: `Sepolia blockchain verification failed for ${txHash}: ${rpcErr?.message || 'RPC communication error'}`
     };
   }
@@ -498,7 +577,7 @@ export async function validateTransactionMetadata(
       txHash,
       blockNumber: blockNum,
       signerAddress: resolvedSigner,
-      onChainVerified
+      onChainVerified: true
     }
   };
 }
