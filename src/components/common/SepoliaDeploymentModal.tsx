@@ -15,7 +15,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useWallet } from '../../context/WalletContext';
-import { SEPOLIA_CHAIN_ID, SEPOLIA_EXPLORER_URL } from '../../lib/blockchain/config';
+import { SEPOLIA_CHAIN_ID, SEPOLIA_EXPLORER_URL, AUTHORITATIVE_CONTRACT_ADDRESS } from '../../lib/blockchain/config';
 
 interface SepoliaDeploymentModalProps {
   isOpen: boolean;
@@ -204,6 +204,15 @@ export const SepoliaDeploymentModal: React.FC<SepoliaDeploymentModalProps> = ({ 
                   placeholder="0x... (42-character Sepolia contract address)"
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder-slate-500 focus:outline-hidden focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
                 />
+                {inputAddress.toLowerCase() !== AUTHORITATIVE_CONTRACT_ADDRESS.toLowerCase() && (
+                  <button
+                    type="button"
+                    onClick={() => setInputAddress(AUTHORITATIVE_CONTRACT_ADDRESS)}
+                    className="text-[11px] text-emerald-400 hover:text-emerald-300 underline mt-1.5 cursor-pointer block"
+                  >
+                    Reset to Authoritative Contract ({AUTHORITATIVE_CONTRACT_ADDRESS.slice(0, 8)}...{AUTHORITATIVE_CONTRACT_ADDRESS.slice(-6)})
+                  </button>
+                )}
               </div>
 
               {saveError && (

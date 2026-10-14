@@ -17,9 +17,11 @@ export const SUPPORTED_NETWORKS: Record<number, string> = {
   31337: 'Local Dev (Anvil/Hardhat)',
 };
 
-// No fake/placeholder contract address
+// Authoritative AgriTrace Sepolia contract address
+export const AUTHORITATIVE_CONTRACT_ADDRESS = '0x110D36B8FA4FAc2Fc214c1F341261BA6654a57Ef';
+
 export const DEFAULT_CONTRACT_ADDRESS = 
-  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_AGRITRACE_CONTRACT_ADDRESS) || '0x110D36B8FA4FAc2Fc214c1F341261BA6654a57Ef';
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_AGRITRACE_CONTRACT_ADDRESS) || AUTHORITATIVE_CONTRACT_ADDRESS;
 
 export const DEFAULT_RPC_URL =
   (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_BLOCKCHAIN_RPC_URL) ||
@@ -44,10 +46,18 @@ export function isContractConfigured(): boolean {
 }
 
 export function getContractAddress(): string {
+  const authoritative = 
+    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_AGRITRACE_CONTRACT_ADDRESS) || AUTHORITATIVE_CONTRACT_ADDRESS;
+
   if (typeof window !== 'undefined') {
     const custom = localStorage.getItem('agritrace_custom_contract_address');
     if (isValidAddress(custom)) {
-      return custom!.trim();
+      if (custom!.trim().toLowerCase() === authoritative.toLowerCase()) {
+        return custom!.trim();
+      }
+      // Stale or mismatched contract address in localStorage — purge it to maintain consistency with authoritative contract
+      console.warn(`[Blockchain Config] Purging stale contract address from localStorage (${custom}). Resetting to authoritative: ${authoritative}`);
+      localStorage.removeItem('agritrace_custom_contract_address');
     }
   }
   const envAddr = typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_AGRITRACE_CONTRACT_ADDRESS : '';
@@ -94,9 +104,9 @@ export function getStakeholderWallet(role: 'farmer' | 'distributor' | 'retailer'
   
   switch (role) {
     case 'farmer':
-      return '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
+      return '0x346f3d34D0Ec495Ba717e1CB210E74bB66686fbe';
     case 'distributor':
-      return '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC';
+      return '0x700c6f0a003A81f4F8c1d5C99F065409c15466b6';
     case 'retailer':
       return '0x90F79bf6EB2c4f870365E785982E1f101E93b906';
     default:

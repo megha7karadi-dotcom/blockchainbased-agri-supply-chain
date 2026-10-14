@@ -13,9 +13,10 @@ import {
   DEFAULT_RPC_URL, 
   getRpcUrl, 
   isContractConfigured, 
-  SEPOLIA_CHAIN_ID 
+  SEPOLIA_CHAIN_ID,
+  AUTHORITATIVE_CONTRACT_ADDRESS
 } from './config';
-export { getContractAddress, getRpcUrl, isContractConfigured };
+export { getContractAddress, getRpcUrl, isContractConfigured, AUTHORITATIVE_CONTRACT_ADDRESS };
 import { 
   getBrowserProvider, 
   isMetaMaskAvailable, 
@@ -187,35 +188,6 @@ export function parseContractError(err: any): string {
     err.message?.includes('ACTION_REJECTED')
   ) {
     return 'Transaction was rejected by the user in MetaMask.';
-  }
-
-  // Check insufficient gas funds / test ETH
-  if (
-    err.code === 'INSUFFICIENT_FUNDS' ||
-    err.message?.includes('insufficient funds') ||
-    err.message?.includes('exceeds the balance of the account')
-  ) {
-    return 'Insufficient Sepolia ETH: Your connected wallet does not have enough test ETH to pay gas fees on Ethereum Sepolia. Please obtain free test ETH from a Sepolia faucet (e.g. sepoliafaucet.com or Google Cloud Web3 Faucet) and retry.';
-  }
-
-  // Check pending transaction nonce conflict
-  if (
-    err.code === 'NONCE_EXPIRED' ||
-    err.code === 'REPLACEMENT_UNDERPRICED' ||
-    err.message?.includes('replacement transaction underpriced') ||
-    err.message?.includes('already known')
-  ) {
-    return 'Transaction Pending Conflict: A previous transaction is still pending in the Sepolia mempool. Please wait a few moments for it to confirm or speed it up in MetaMask.';
-  }
-
-  // Check RPC / Network connectivity
-  if (
-    err.code === 'NETWORK_ERROR' ||
-    err.message?.includes('could not detect network') ||
-    err.message?.includes('Failed to fetch') ||
-    err.message?.includes('network error')
-  ) {
-    return 'Sepolia RPC Error: Could not reach the Ethereum Sepolia RPC endpoint. Please verify your internet connection or retry in a few moments.';
   }
 
   // Check if ethers captured the custom error name directly
@@ -462,23 +434,51 @@ export async function registerProduceOnChain(params: {
   originHash: string;
   onProgress?: (status: string) => void;
 }): Promise<BlockchainTransactionResult> {
+  // 1. Verify configured address matches the authoritative Sepolia contract address
+  const configuredAddress = getContractAddress();
+  if (!configuredAddress || configuredAddress.toLowerCase() !== AUTHORITATIVE_CONTRACT_ADDRESS.toLowerCase()) {
+    throw new Error(
+      `Contract Address Mismatch: Configured contract (${configuredAddress || 'none'}) does not match the authoritative AgriTrace Sepolia contract (${AUTHORITATIVE_CONTRACT_ADDRESS}). Registration aborted.`
+    );
+  }
+
   params.onProgress?.('Connecting to MetaMask and validating Sepolia network...');
   const { contract, signerAddress } = await getContractWithSigner('farmer');
 
-  // Verify that the connected account has the FARMER_ROLE
+  // 2. Verify network Chain ID is Sepolia (11155111)
+  const browserProvider = getBrowserProvider();
+  if (!browserProvider) {
+    throw new Error('MetaMask provider not available. Please install and unlock MetaMask.');
+  }
+  const network = await browserProvider.getNetwork();
+  if (Number(network.chainId) !== SEPOLIA_CHAIN_ID) {
+    throw new Error(
+      `Network Mismatch: Connected to Chain ID ${network.chainId}. Ethereum Sepolia (Chain ID ${SEPOLIA_CHAIN_ID}) is required for produce registration.`
+    );
+  }
+
+  // 3. Verify authoritative contract actually supports the registration function
+  if (!contract.registerProduce || typeof contract.registerProduce !== 'function') {
+    throw new Error(
+      `Contract Function Error: The authoritative contract at ${configuredAddress} does not support the 'registerProduce' function required for produce registration.`
+    );
+  }
+
+  // 4. Verify connected wallet has FARMER_ROLE on-chain (strict enforcement, never bypassed)
   params.onProgress?.('Verifying farmer authorization on smart contract...');
+  let isFarmer = false;
   try {
-    const isFarmer = await contract.hasRole(ROLES.FARMER_ROLE, signerAddress);
-    if (!isFarmer) {
-      throw new Error(
-        `Access Denied: Connected MetaMask account (${signerAddress}) does not hold the FARMER_ROLE on this smart contract. Please switch to an authorized farmer account in MetaMask.`
-      );
-    }
+    isFarmer = await contract.hasRole(ROLES.FARMER_ROLE, signerAddress);
   } catch (roleErr: any) {
-    if (roleErr.message?.includes('Access Denied')) {
-      throw roleErr;
-    }
-    console.warn('[registerProduceOnChain] Pre-flight role check notice:', roleErr?.message);
+    throw new Error(
+      `Role Verification Failure: Unable to verify FARMER_ROLE on contract ${configuredAddress} for ${signerAddress}: ${roleErr?.message || 'Check failed'}`
+    );
+  }
+
+  if (!isFarmer) {
+    throw new Error(
+      `Access Denied: Connected MetaMask account (${signerAddress}) does not hold the FARMER_ROLE on the authoritative smart contract (${configuredAddress}). Please switch to an authorized farmer account (e.g. 0x346f3d34D0Ec495Ba717e1CB210E74bB66686fbe) in MetaMask.`
+    );
   }
 
   const bytes32BatchId = stringToBatchId(params.batchId);

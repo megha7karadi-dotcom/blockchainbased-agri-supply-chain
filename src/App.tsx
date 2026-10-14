@@ -3,9 +3,9 @@ import { ShieldAlert, Sparkles } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
 import { WalletProvider } from './context/WalletContext';
 import { Header } from './components/common/Header';
-import { BlockchainStatusBar } from './components/common/BlockchainStatusBar';
 import { Sidebar } from './components/common/Sidebar';
 import { Footer } from './components/common/Footer';
+import { BlockchainStatusBar } from './components/common/BlockchainStatusBar';
 import { QRScannerModal } from './components/public/QRScannerModal';
 import { ProfilePage } from './components/common/ProfilePage';
 
@@ -251,7 +251,7 @@ const MainLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white flex flex-col text-stone-900 font-sans">
-      {/* Blockchain Status Bar */}
+      {/* Sepolia Blockchain Status & MetaMask Bar */}
       <BlockchainStatusBar />
 
       {/* Global Navigation Header */}

@@ -54,29 +54,15 @@ async function findUserByEmail(email: string): Promise<any | null> {
  * Helper to find user by ID in MongoDB with persistent database fallback
  */
 async function findUserById(id: string): Promise<any | null> {
-  if (!id) return null;
-  const cleanId = String(id).trim();
-
   if (mongoose.connection.readyState === 1) {
     try {
-      let user: any = null;
-      if (mongoose.Types.ObjectId.isValid(cleanId)) {
-        user = await User.findById(cleanId).select('-password');
-      }
-      if (!user) {
-        user = await User.findOne({
-          $or: [
-            { id: cleanId },
-            { email: cleanId.toLowerCase() }
-          ]
-        }).select('-password');
-      }
+      const user = await User.findById(id).select('-password');
       if (user) return user;
     } catch (dbErr: any) {
       console.warn('MongoDB user lookup by id notice:', dbErr?.message);
     }
   }
-  const user = persistentDb.findUserById(cleanId);
+  const user = persistentDb.findUserById(id);
   if (user) {
     const { password, ...safeUser } = user;
     return safeUser;
@@ -211,13 +197,10 @@ router.post(['/register', '/signup'], async (req: Request, res: Response) => {
     // Save to MongoDB if connected
     if (mongoose.connection.readyState === 1) {
       try {
-        const { _id, ...mongoData } = userPayload;
-        const mongoPayload = mongoose.Types.ObjectId.isValid(_id) ? userPayload : mongoData;
-        const newUser = new User(mongoPayload);
+        const newUser = new User(userPayload);
         const savedDoc = await newUser.save();
-        if (savedDoc?._id) {
-          userPayload._id = savedDoc._id.toString();
-        }
+        userPayload.id = savedDoc._id.toString();
+        userPayload._id = savedDoc._id.toString();
       } catch (dbErr: any) {
         console.warn('MongoDB user save notice:', dbErr?.message);
       }
@@ -438,7 +421,6 @@ router.post('/otp/verify-login', async (req: Request, res: Response) => {
       if (mongoose.connection.readyState === 1) {
         try {
           const mongoUser = new User({
-            id: user.id,
             name: assignedName,
             email: cleanEmail,
             role: assignedRole,
@@ -581,13 +563,10 @@ router.post('/otp/verify-signup', async (req: Request, res: Response) => {
     // Save to MongoDB if connected
     if (mongoose.connection.readyState === 1) {
       try {
-        const { _id, ...mongoData } = userPayload;
-        const mongoPayload = mongoose.Types.ObjectId.isValid(_id) ? userPayload : mongoData;
-        const newUser = new User(mongoPayload);
+        const newUser = new User(userPayload);
         const savedDoc = await newUser.save();
-        if (savedDoc?._id) {
-          userPayload._id = savedDoc._id.toString();
-        }
+        userPayload.id = savedDoc._id.toString();
+        userPayload._id = savedDoc._id.toString();
       } catch (dbErr: any) {
         console.warn('MongoDB user save notice during OTP signup:', dbErr?.message);
       }

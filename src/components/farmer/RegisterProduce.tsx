@@ -14,9 +14,12 @@ import {
   Edit3,
   FileCheck,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Wallet,
+  AlertTriangle
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useWallet } from '../../context/WalletContext';
 import { ProduceBatch, ProduceUnit, QualityGrade } from '../../types/produce';
 
 interface FormState {
@@ -60,6 +63,7 @@ const GRADE_OPTIONS: QualityGrade[] = ['Grade A', 'Grade B', 'Grade C'];
 
 export const RegisterProduce: React.FC = () => {
   const { currentUser, navigate, registerProductBatch } = useApp();
+  const { wallet, connect, isSepolia, switchToSepolia } = useWallet();
   const formRef = useRef<HTMLDivElement>(null);
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -892,6 +896,62 @@ export const RegisterProduce: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Wallet Connection Status Card */}
+          {!wallet.isConnected ? (
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                  <Wallet className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-bold text-white block">MetaMask Not Connected</span>
+                  <span className="text-slate-400 text-[11px]">Connect your authorized farmer wallet to sign this produce batch on Sepolia.</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => connect()}
+                disabled={wallet.isConnecting}
+                className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0 shadow-xs"
+              >
+                <Wallet className="w-3.5 h-3.5" />
+                <span>{wallet.isConnecting ? 'Connecting...' : 'Connect MetaMask'}</span>
+              </button>
+            </div>
+          ) : !isSepolia ? (
+            <div className="p-4 rounded-2xl bg-amber-950/50 border border-amber-800 text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-bold text-amber-100 block">Switch to Ethereum Sepolia</span>
+                  <span className="text-amber-300/80 text-[11px]">Currently on {wallet.networkName || `Chain ${wallet.chainId}`}. Sepolia (Chain ID 11155111) is required.</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => switchToSepolia()}
+                className="w-full sm:w-auto px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+              >
+                <span>Switch to Sepolia</span>
+              </button>
+            </div>
+          ) : (
+            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <div>
+                  <span className="font-bold text-emerald-900 block">MetaMask Connected: <span className="font-mono">{wallet.address?.slice(0, 8)}...{wallet.address?.slice(-6)}</span></span>
+                  <span className="text-emerald-700 text-[11px]">Network: Ethereum Sepolia (11155111) • Contract: 0x110D...57Ef</span>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-300">
+                Ready to Sign
+              </span>
+            </div>
+          )}
 
           {submissionError && (
             <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5">

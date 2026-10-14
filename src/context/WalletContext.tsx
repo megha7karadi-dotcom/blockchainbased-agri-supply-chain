@@ -72,10 +72,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       .then(res => res.json())
       .then(data => {
         if (data && data.success && data.contractAddress && isValidAddress(data.contractAddress)) {
+          const authoritative = data.contractAddress.trim();
           const current = getContractAddress();
-          if (!current || !isValidAddress(current)) {
-            localStorage.setItem('agritrace_custom_contract_address', data.contractAddress);
-            setContractAddr(data.contractAddress);
+          if (!current || !isValidAddress(current) || current.toLowerCase() !== authoritative.toLowerCase()) {
+            localStorage.setItem('agritrace_custom_contract_address', authoritative);
+            setContractAddr(authoritative);
           }
         }
       })
