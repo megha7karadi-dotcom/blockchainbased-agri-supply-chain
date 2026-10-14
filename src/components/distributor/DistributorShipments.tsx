@@ -119,7 +119,7 @@ export const DistributorShipments: React.FC = () => {
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {f === 'Warning' ? '⚠️ Temp Alerts' : f}
+              {f === 'Warning' ? 'Temperature Alerts' : f}
             </button>
           ))}
         </div>

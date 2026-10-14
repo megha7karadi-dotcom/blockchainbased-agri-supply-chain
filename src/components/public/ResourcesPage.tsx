@@ -34,7 +34,7 @@ export const ResourcesPage: React.FC = () => {
     },
     {
       q: 'What role does the Ethereum Sepolia network play in AgriTrace?',
-      a: 'The blockchain layer serves as an immutable public notary. Every critical milestone—batch minting, custody transfers between distributor and retailer, IoT cold-chain excursions, and shelf price updates—is recorded as a verifiable cryptographic transaction with an unalterable timestamp and transaction hash.'
+      a: 'The blockchain layer serves as an immutable public notary. Every critical milestone (batch minting, custody transfers between distributor and retailer, IoT cold-chain excursions, and shelf price updates) is recorded as a verifiable cryptographic transaction with an unalterable timestamp and transaction hash.'
     },
     {
       q: 'How are temperature excursions detected during transit?',

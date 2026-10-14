@@ -26,7 +26,7 @@ export const ColdChainMonitor: React.FC = () => {
     {
       vehicleId: 'MH-04-TR-9182',
       driver: 'Mahesh Jadhav',
-      route: 'Ratnagiri Orchards ➔ Vashi Wholesale Terminal',
+      route: 'Ratnagiri Orchards to Vashi Wholesale Terminal',
       cargo: 'Ratnagiri Alphonso Mangoes (BATCH-2025-0891)',
       temp: spikeTriggered ? '21.4°C' : '12.2°C',
       humidity: '88%',
@@ -45,7 +45,7 @@ export const ColdChainMonitor: React.FC = () => {
     {
       vehicleId: 'UK-07-CD-4109',
       driver: 'Balwinder Singh',
-      route: 'Dehradun Valley ➔ Azadpur Central Terminal',
+      route: 'Dehradun Valley to Azadpur Central Terminal',
       cargo: 'Organic Basmati Rice (BATCH-2025-0612)',
       temp: '18.5°C',
       humidity: '55%',
@@ -64,7 +64,7 @@ export const ColdChainMonitor: React.FC = () => {
     {
       vehicleId: 'MH-12-RF-7801',
       driver: 'Kishore Shinde',
-      route: 'Nashik Greenhouse ➔ FreshRoot Retail Mumbai',
+      route: 'Nashik Greenhouse to FreshRoot Retail Mumbai',
       cargo: 'Vine Tomatoes (BATCH-2025-0455)',
       temp: '9.8°C',
       humidity: '92%',

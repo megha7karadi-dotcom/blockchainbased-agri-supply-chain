@@ -33,7 +33,7 @@ export const CryptoHashDisplay: React.FC<Props> = ({
   };
 
   return (
-    <div className="inline-flex items-center gap-1.5 font-mono text-xs text-slate-600 bg-slate-100 hover:bg-slate-200/80 px-2 py-1 rounded border border-slate-300/80 transition max-w-full">
+    <div className="inline-flex items-center gap-1.5 font-sans text-xs text-slate-600 bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1 rounded-md border border-slate-300/80 transition max-w-full">
       {showBadge && (
         <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
       )}

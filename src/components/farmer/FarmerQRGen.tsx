@@ -285,7 +285,7 @@ export const FarmerQRGen: React.FC = () => {
             >
               {selectableBatches.map(b => (
                 <option key={b.id} value={b.id}>
-                  {b.cropName || b.name} — {b.batchId}
+                  {b.cropName || b.name} - {b.batchId}
                 </option>
               ))}
             </select>

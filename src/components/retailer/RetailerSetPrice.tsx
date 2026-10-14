@@ -164,7 +164,7 @@ export const RetailerSetPrice: React.FC = () => {
                 >
                   {shelfBatches.map(b => (
                     <option key={b.id} value={b.id}>
-                      {b.cropName || b.name} ({b.batchId}) — {b.quantityKg || b.quantity} {b.unit || 'kg'}
+                      {b.cropName || b.name} ({b.batchId}) - {b.quantityKg || b.quantity} {b.unit || 'kg'}
                     </option>
                   ))}
                 </select>
@@ -257,13 +257,13 @@ export const RetailerSetPrice: React.FC = () => {
             </div>
 
             {/* Big Consumer Price Card */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-50 via-slate-50 to-pink-50/50 border border-purple-200 text-center space-y-1">
+            <div className="p-6 rounded-xl bg-[#f0fdf4] border border-[#bbf7d0] text-center space-y-1">
               <span className="text-xs text-slate-500 font-semibold block">Total Consumer Shelf Price</span>
-              <div className="text-4xl font-black text-slate-900 font-mono">
+              <div className="text-4xl font-black text-slate-900 font-sans">
                 ₹{totalConsumerPrice}
                 <span className="text-sm font-semibold text-slate-500 ml-1">/ {unit}</span>
               </div>
-              <span className="text-[11px] text-purple-700 font-bold block">
+              <span className="text-[11px] text-emerald-800 font-bold block">
                 Fair Trade Certified • Zero Undisclosed Markup
               </span>
             </div>

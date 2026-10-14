@@ -401,13 +401,13 @@ export const RegisterProduce: React.FC = () => {
   }
 
   // Calculate review values
-  const displayCrop = formData.cropName.trim() || '—';
-  const displayVariety = formData.cropVariety.trim() || '—';
-  const displayQuantity = formData.quantity.trim() ? `${formData.quantity} ${formData.unit}` : '—';
-  const displayLocation = [formData.farmLocation.trim(), formData.state.trim()].filter(Boolean).join(', ') || '—';
-  const displayHarvestDate = formData.harvestDate ? new Date(formData.harvestDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+  const displayCrop = formData.cropName.trim() || 'N/A';
+  const displayVariety = formData.cropVariety.trim() || 'N/A';
+  const displayQuantity = formData.quantity.trim() ? `${formData.quantity} ${formData.unit}` : 'N/A';
+  const displayLocation = [formData.farmLocation.trim(), formData.state.trim()].filter(Boolean).join(', ') || 'N/A';
+  const displayHarvestDate = formData.harvestDate ? new Date(formData.harvestDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
   const displayQuality = formData.qualityGrade;
-  const displayPrice = formData.farmgatePrice.trim() ? `₹${formData.farmgatePrice}/${formData.unit}` : '—';
+  const displayPrice = formData.farmgatePrice.trim() ? `₹${formData.farmgatePrice}/${formData.unit}` : 'N/A';
 
   return (
     <div ref={formRef} className="max-w-4xl mx-auto space-y-8 pb-16">

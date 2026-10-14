@@ -15,9 +15,12 @@ import {
   Sprout,
   Truck,
   Store,
-  Shield
+  Shield,
+  Camera,
+  Wallet
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useWallet } from '../../context/WalletContext';
 import { UserRole } from '../../types/produce';
 
 interface Props {
@@ -43,6 +46,8 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
     navigateToVerification,
     batches
   } = useApp();
+
+  const { wallet, connect, disconnect } = useWallet();
 
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -179,7 +184,7 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
                 placeholder="Search batch ID or crop..."
-                className="w-full pl-9 pr-3.5 py-1.5 text-xs bg-stone-50 border border-stone-200 hover:border-emerald-300 focus:border-emerald-500 focus:bg-white rounded-md outline-none transition font-mono"
+                className="w-full pl-9 pr-3.5 py-1.5 text-xs bg-stone-50 border border-stone-200 hover:border-emerald-300 focus:border-emerald-500 focus:bg-white rounded-md outline-none transition font-sans"
               />
             </div>
             {searchFocused && (
@@ -199,7 +204,7 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                   >
                     <div>
                       <div className="font-semibold text-stone-800">{b.name}</div>
-                      <div className="font-mono text-[10px] text-emerald-800">{b.batchId}</div>
+                      <div className="text-[11px] font-medium text-emerald-800">{b.batchId}</div>
                     </div>
                     <span className="text-xs text-stone-500">
                       {b.status}
@@ -217,10 +222,37 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
             <button
               onClick={onOpenQRScanner}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold border border-stone-200 transition cursor-pointer"
-              title="Open QR Scanner"
+              title="Open System Camera QR Scanner"
             >
-              <QrCode className="w-3.5 h-3.5 text-emerald-800" />
+              <Camera className="w-3.5 h-3.5 text-emerald-800" />
               <span className="hidden sm:inline">Scan Packaging QR</span>
+            </button>
+
+            {/* Authoritative Blockchain Connection Button */}
+            <button
+              onClick={() => {
+                if (wallet.isConnected) {
+                  disconnect();
+                } else {
+                  connect();
+                }
+              }}
+              disabled={wallet.isConnecting}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer border ${
+                wallet.isConnected
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                  : 'bg-emerald-700 hover:bg-emerald-800 text-white border-emerald-700 shadow-xs'
+              }`}
+              title={wallet.isConnected ? `Connected: ${wallet.address} (Click to disconnect)` : 'Connect to Blockchain / MetaMask'}
+            >
+              <Wallet className="w-3.5 h-3.5" />
+              <span>
+                {wallet.isConnecting 
+                  ? 'Connecting...' 
+                  : wallet.isConnected 
+                    ? `${wallet.address?.slice(0, 6)}...${wallet.address?.slice(-4)}` 
+                    : 'Connect Blockchain'}
+              </span>
             </button>
 
             {/* Authenticated Notifications */}

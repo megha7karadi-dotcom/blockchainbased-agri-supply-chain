@@ -3,7 +3,7 @@
 @theme {
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-display: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-mono: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
   /* Light Green & White Brand Palette Tokens */
   --color-agri-dark: #16a34a;
@@ -113,7 +113,7 @@
   }
 
   code, kbd, samp, pre, .font-mono {
-    font-family: var(--font-mono);
+    font-family: var(--font-sans) !important;
   }
 
   ::selection {
@@ -124,7 +124,7 @@
 
 /* Tabular numbers for clean prices, batches, metrics, and timestamps */
 .tabular-nums, .font-mono {
-  font-feature-settings: "tnum" 1, "cv01" 1;
+  font-feature-settings: normal;
 }
 
 /* Refined Subtle Animations (150ms-350ms) */

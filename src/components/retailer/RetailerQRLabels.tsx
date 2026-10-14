@@ -94,7 +94,7 @@ export const RetailerQRLabels: React.FC = () => {
             >
               {shelfBatches.map(b => (
                 <option key={b.id} value={b.id}>
-                  {b.cropName || b.name} — {b.batchId}
+                  {b.cropName || b.name} - {b.batchId}
                 </option>
               ))}
             </select>

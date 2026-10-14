@@ -691,13 +691,13 @@ export const DistributorTransferToRetailer: React.FC = () => {
                 className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-purple-600 outline-none transition font-medium text-slate-900 mb-2"
               >
                 <option value={AUTHORITATIVE_BATCH_ID}>
-                  {AUTHORITATIVE_BATCH_ID} — Organic Basmati Rice (250 kg) [At Distributor]
+                  {AUTHORITATIVE_BATCH_ID} - Organic Basmati Rice (250 kg) [At Distributor]
                 </option>
                 {eligibleBatches
                   .filter(b => b.batchId !== AUTHORITATIVE_BATCH_ID)
                   .map(b => (
                     <option key={b.batchId} value={b.batchId}>
-                      {b.batchId} — {b.cropName || b.name} ({b.quantityKg || b.quantity} {b.unit || 'kg'}) [{b.status}]
+                      {b.batchId} - {b.cropName || b.name} ({b.quantityKg || b.quantity} {b.unit || 'kg'}) [{b.status}]
                     </option>
                   ))}
               </select>

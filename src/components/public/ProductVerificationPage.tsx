@@ -50,24 +50,14 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
   const [reviewComment, setReviewComment] = useState('');
   const [reviewerName, setReviewerName] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
-  const [reviewsList, setReviewsList] = useState([
-    {
-      id: 'rev-1',
-      name: 'Priya Sharma',
-      rating: 5,
-      freshness: 5,
-      date: 'Yesterday',
-      comment: 'Super crisp and naturally sweet! Glad to see the direct payout to the farmer right here in the price breakdown.'
-    },
-    {
-      id: 'rev-2',
-      name: 'Anand Kumar',
-      rating: 5,
-      freshness: 4,
-      date: '3 days ago',
-      comment: 'Scanned the shelf barcode in-store. Knowing it came straight from Nashik cold storage gives great confidence.'
-    }
-  ]);
+  const [reviewsList, setReviewsList] = useState<Array<{
+    id: string;
+    name: string;
+    rating: number;
+    freshness: number;
+    date: string;
+    comment: string;
+  }>>([]);
 
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -311,7 +301,7 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Enter Batch ID (e.g., AGRI-2026-MNG-001) or paste verification link..."
-              className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#f0fdf4]/30 border border-[#bbf7d0] rounded-lg focus:border-[#16a34a] focus:bg-white outline-none font-mono"
+              className="w-full pl-10 pr-4 py-2.5 text-xs bg-[#f0fdf4]/30 border border-[#bbf7d0] rounded-lg focus:border-[#16a34a] focus:bg-white outline-none font-sans"
             >
             </input>
           </div>
@@ -952,28 +942,34 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
                 <div className="space-y-3 pt-2">
                   <h4 className="font-bold text-slate-900 text-xs">Customer Reviews for this Lot ({reviewsList.length})</h4>
                   <div className="space-y-3">
-                    {reviewsList.map(rev => (
-                      <div key={rev.id} className="p-4 rounded-2xl bg-white border border-slate-200 space-y-2 text-xs">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900">{rev.name}</span>
-                            <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-semibold px-2 py-0.5 rounded-md">
-                              Verified Purchase
-                            </span>
-                          </div>
-                          <span className="text-slate-400 text-[11px]">{rev.date}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-amber-400">
-                          {[1, 2, 3, 4, 5].map(s => (
-                            <Star key={s} className={`w-3.5 h-3.5 ${s <= rev.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
-                          ))}
-                          <span className="text-slate-500 text-[11px] ml-1.5 font-medium">• Freshness {rev.freshness}/5</span>
-                        </div>
-                        <p className="text-slate-600 text-xs leading-relaxed">
-                          "{rev.comment}"
-                        </p>
+                    {reviewsList.length === 0 ? (
+                      <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 text-stone-500 text-xs text-center">
+                        No customer reviews submitted yet for this produce batch. Verified purchasers can submit feedback above.
                       </div>
-                    ))}
+                    ) : (
+                      reviewsList.map(rev => (
+                        <div key={rev.id} className="p-4 rounded-2xl bg-white border border-slate-200 space-y-2 text-xs">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900">{rev.name}</span>
+                              <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-semibold px-2 py-0.5 rounded-md">
+                                Verified Purchase
+                              </span>
+                            </div>
+                            <span className="text-slate-400 text-[11px]">{rev.date}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-amber-400">
+                            {[1, 2, 3, 4, 5].map(s => (
+                              <Star key={s} className={`w-3.5 h-3.5 ${s <= rev.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+                            ))}
+                            <span className="text-slate-500 text-[11px] ml-1.5 font-medium">• Freshness {rev.freshness}/5</span>
+                          </div>
+                          <p className="text-slate-600 text-xs leading-relaxed">
+                            "{rev.comment}"
+                          </p>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 

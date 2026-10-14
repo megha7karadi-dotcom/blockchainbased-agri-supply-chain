@@ -137,9 +137,9 @@ export const HowItWorksPage: React.FC = () => {
       
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto space-y-3">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Interactive Lifecycle Walkthrough</span>
+        <div className="text-xs font-semibold text-emerald-800 uppercase tracking-wider flex items-center justify-center gap-1.5">
+          <ShieldCheck className="w-4 h-4 text-emerald-700" />
+          <span>Lifecycle Walkthrough</span>
         </div>
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
           How the AgriTrace System Works

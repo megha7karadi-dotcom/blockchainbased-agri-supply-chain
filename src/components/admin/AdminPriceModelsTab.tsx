@@ -64,8 +64,8 @@ export const AdminPriceModelsTab: React.FC = () => {
   return (
     <div className="space-y-6">
       
-      {/* Header Info & Engine KPIs - Unified Light Theme */}
-      <div className="bg-gradient-to-br from-purple-50/80 via-slate-50 to-emerald-50/40 text-slate-900 rounded-3xl p-6 sm:p-7 border border-purple-200/80 shadow-xs space-y-5">
+      {/* Header Info & Engine KPIs */}
+      <div className="bg-white text-slate-900 rounded-2xl p-6 sm:p-7 border border-stone-200 shadow-xs space-y-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
