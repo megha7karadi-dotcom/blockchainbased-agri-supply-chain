@@ -13,8 +13,7 @@ import {
   stringToBatchId,
   resolveBatchIdToBytes32,
   getBatchFromChain,
-  getPriceHistoryFromChain,
-  createSimulatedBlockchainTransaction
+  getPriceHistoryFromChain
 } from '../lib/blockchain/contract';
 import { OnChainQualityGrade } from '../lib/blockchain/types';
 import { getStakeholderWallet } from '../lib/blockchain/config';
@@ -204,23 +203,17 @@ class ProductService {
         ? OnChainQualityGrade.GRADE_B 
         : OnChainQualityGrade.GRADE_C;
 
-    let onChainTx: any;
-    try {
-      console.log(`[AgriTrace] Submitting batch ${batchId} to smart contract for on-chain validation...`);
-      onChainTx = await registerProduceOnChain({
-        batchId,
-        cropName: input.cropName.trim(),
-        quantityKg: quantityInKg,
-        qualityGrade: onChainGrade,
-        initialPricePerKg: Number(input.farmgatePrice),
-        originHash,
-        onProgress
-      });
-      console.log(`[AgriTrace] Batch ${batchId} successfully mined on-chain! TxHash: ${onChainTx.txHash}`);
-    } catch (chainErr: any) {
-      console.warn('[AgriTrace] On-chain registration warning, using verified ledger fallback:', chainErr);
-      onChainTx = createSimulatedBlockchainTransaction('registerProduce', batchId, 'farmer');
-    }
+    console.log(`[AgriTrace] Submitting batch ${batchId} to smart contract for on-chain validation...`);
+    const onChainTx = await registerProduceOnChain({
+      batchId,
+      cropName: input.cropName.trim(),
+      quantityKg: quantityInKg,
+      qualityGrade: onChainGrade,
+      initialPricePerKg: Number(input.farmgatePrice),
+      originHash,
+      onProgress
+    });
+    console.log(`[AgriTrace] Batch ${batchId} successfully mined on-chain! TxHash: ${onChainTx.txHash}`);
 
     // Refresh batch data directly from smart contract to ensure authoritative synchronization
     onProgress?.('Transaction confirmed on Sepolia! Refreshing data from smart contract...');
@@ -532,15 +525,10 @@ class ProductService {
   ): Promise<ProduceBatch | null> {
     const distributorWallet = distributorWalletAddress || getStakeholderWallet('distributor');
 
-    let onChainTx: any;
-    try {
-      console.log(`[AgriTrace] Invoking transferToDistributor on-chain for batch ${batchId}...`);
-      onChainTx = await transferToDistributorOnChain(batchId, distributorWallet);
-      console.log(`[AgriTrace] Transfer confirmed on-chain in block #${onChainTx.blockNumber}, txHash: ${onChainTx.txHash}`);
-    } catch (chainErr: any) {
-      console.warn('[AgriTrace] On-chain transfer warning, using verified ledger fallback:', chainErr);
-      onChainTx = createSimulatedBlockchainTransaction('transferToDistributor', batchId, 'farmer');
-    }
+    // 1. Authoritative Smart Contract State Execution & Validation Layer
+    console.log(`[AgriTrace] Invoking transferToDistributor on-chain for batch ${batchId}...`);
+    const onChainTx = await transferToDistributorOnChain(batchId, distributorWallet);
+    console.log(`[AgriTrace] Transfer confirmed on-chain in block #${onChainTx.blockNumber}, txHash: ${onChainTx.txHash}`);
 
     // 2. Synchronize to MongoDB Atlas
     try {
@@ -662,15 +650,10 @@ class ProductService {
     sellingPrice: number,
     onProgress?: (msg: string) => void
   ): Promise<ProduceBatch | null> {
-    let onChainTx: any;
-    try {
-      console.log(`[AgriTrace] Updating distributor price on-chain for batch ${batchId} to ₹${sellingPrice}/kg...`);
-      onChainTx = await updateDistributorPriceOnChain(batchId, sellingPrice, onProgress);
-      console.log(`[AgriTrace] Price updated on-chain in block #${onChainTx.blockNumber}, txHash: ${onChainTx.txHash}`);
-    } catch (chainErr: any) {
-      console.warn('[AgriTrace] On-chain price update warning, using verified ledger fallback:', chainErr);
-      onChainTx = createSimulatedBlockchainTransaction('updateDistributorPrice', batchId, 'distributor');
-    }
+    // 1. Authoritative Smart Contract State Execution & Validation Layer
+    console.log(`[AgriTrace] Updating distributor price on-chain for batch ${batchId} to ₹${sellingPrice}/kg...`);
+    const onChainTx = await updateDistributorPriceOnChain(batchId, sellingPrice, onProgress);
+    console.log(`[AgriTrace] Price updated on-chain in block #${onChainTx.blockNumber}, txHash: ${onChainTx.txHash}`);
 
     onProgress?.('Fetching authoritative price history from Sepolia smart contract...');
     let onChainPriceHistory: any[] = [];

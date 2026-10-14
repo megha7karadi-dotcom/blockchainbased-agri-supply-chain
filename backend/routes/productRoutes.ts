@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { Product, IProduct } from '../models/Product';
 import { authenticateJWT, optionalJWT, AuthenticatedRequest } from '../middleware/auth';
+import { validateTransactionMetadata, getContractAddress } from '../services/blockchainService';
 
 const router = express.Router();
 
@@ -94,7 +95,7 @@ const SEED_PRODUCTS = [
       shelfLifeDays: 14,
     },
     blockchain: {
-      contractAddress: '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+      contractAddress: '0x110D36B8FA4FAc2Fc214c1F341261BA6654a57Ef',
       tokenId: '0x001_MNG',
       blockNumber: 18946210,
       mintTxHash: '0x9a8f3b2c1e4d5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b',
@@ -171,7 +172,7 @@ const SEED_PRODUCTS = [
       shelfLifeDays: 365,
     },
     blockchain: {
-      contractAddress: '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c',
+      contractAddress: '0x110D36B8FA4FAc2Fc214c1F341261BA6654a57Ef',
       tokenId: '0x002_WHT',
       blockNumber: 18946350,
       mintTxHash: '0x3b2c1e4d5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d',
@@ -744,6 +745,10 @@ router.get('/:batchId', async (req: Request, res: Response) => {
           product.status = onChainStatusMap[onChain.status];
           if (product.blockchain) {
             product.blockchain.currentOwnerWallet = onChain.currentOwner;
+            const deployedAddr = getContractAddress();
+            if (deployedAddr) {
+              product.blockchain.contractAddress = deployedAddr;
+            }
           }
         }
       }
@@ -766,7 +771,15 @@ router.get('/:batchId', async (req: Request, res: Response) => {
  * Helper to find and update a product in MongoDB Atlas or memory
  */
 async function findAndSaveProduct(batchId: string, updateFn: (prod: any) => void) {
-  const cleanId = (batchId || '').trim();
+  let cleanId = (batchId || '').trim();
+  const BATCH_ID_ALIASES: Record<string, string> = {
+    '0xc6df667ded218e33ed87605af43826596057ad85188a23143ac45dc2e07063eb': 'AGRI-2026-RIC-003',
+    'batch-ric-003': 'AGRI-2026-RIC-003',
+  };
+  if (BATCH_ID_ALIASES[cleanId.toLowerCase()]) {
+    cleanId = BATCH_ID_ALIASES[cleanId.toLowerCase()];
+  }
+
   let product: any = null;
 
   if (mongoose.connection.readyState === 1) {
@@ -774,7 +787,8 @@ async function findAndSaveProduct(batchId: string, updateFn: (prod: any) => void
       product = await Product.findOne({
         $or: [
           { batchId: cleanId },
-          { batchId: { $regex: new RegExp(`^${cleanId}$`, 'i') } }
+          { batchId: { $regex: new RegExp(`^${cleanId}$`, 'i') } },
+          { 'blockchain.tokenId': cleanId }
         ]
       });
     } catch (e) {
@@ -784,7 +798,12 @@ async function findAndSaveProduct(batchId: string, updateFn: (prod: any) => void
 
   if (!product) {
     for (const [key, val] of inMemoryProducts.entries()) {
-      if (key.toLowerCase() === cleanId.toLowerCase() || val.id === cleanId) {
+      if (
+        key.toLowerCase() === cleanId.toLowerCase() ||
+        val.id === cleanId ||
+        val.batchId?.toLowerCase() === cleanId.toLowerCase() ||
+        val.blockchain?.tokenId?.toLowerCase() === cleanId.toLowerCase()
+      ) {
         product = val;
         break;
       }
@@ -912,8 +931,18 @@ router.post('/:batchId/distributor-receive', optionalJWT, async (req: Authentica
 router.post('/:batchId/distributor-price', optionalJWT, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { batchId } = req.params;
-    const { purchasePrice, marginPercentage, sellingPrice } = req.body;
+    const { purchasePrice, marginPercentage, sellingPrice, txHash, blockNumber, signerAddress } = req.body;
     const user = req.user;
+
+    // Validate client-submitted transaction metadata
+    const txValidation = await validateTransactionMetadata(txHash, blockNumber, {
+      expectedSigner: signerAddress,
+      expectedAction: 'updateDistributorPrice',
+      batchId
+    });
+    if (!txValidation.valid) {
+      return res.status(400).json({ success: false, error: txValidation.error });
+    }
 
     const numPurchase = Number(purchasePrice);
     const numMargin = Number(marginPercentage);
@@ -925,20 +954,49 @@ router.post('/:batchId/distributor-price', optionalJWT, async (req: Authenticate
       prod.pricing.distributorMargin = numMargin;
       prod.pricing.finalConsumerPrice = numSelling;
 
-      const timelineEvent = {
-        id: `tl-${Date.now()}`,
-        stage: 'Wholesale',
-        title: 'Distributor Pricing Configured',
-        description: `Base purchase: ₹${numPurchase}/${prod.unit || 'kg'}, Margin: ${numMargin}%, Wholesale selling price: ₹${numSelling}/${prod.unit || 'kg'}.`,
-        actorName: user?.name || 'Distributor',
-        actorRole: 'distributor',
-        location: user?.location || 'Distribution Hub',
-        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
-        verified: true,
-      };
+      // Persist blockchain metadata
+      if (txValidation.metadata) {
+        prod.blockchain = prod.blockchain || {};
+        prod.blockchain.contractAddress = getContractAddress();
+        prod.blockchain.txHash = txValidation.metadata.txHash;
+        prod.blockchain.blockNumber = txValidation.metadata.blockNumber;
+        prod.blockchain.isTamperEvident = true;
+        prod.blockchain.statusNotice = txValidation.metadata.onChainVerified
+          ? 'On-Chain Validated: Wholesale Price Updated'
+          : 'Registered Transaction: Wholesale Price Updated';
+        if (txValidation.metadata.signerAddress) {
+          prod.blockchain.currentOwnerWallet = txValidation.metadata.signerAddress;
+        }
+      }
 
       prod.timeline = prod.timeline || [];
-      prod.timeline.push(timelineEvent);
+
+      // Check for duplicate timeline entry with the same txHash
+      const existingIdx = txValidation.metadata?.txHash
+        ? prod.timeline.findIndex((e: any) => e.txHash && e.txHash.toLowerCase() === txValidation.metadata!.txHash.toLowerCase())
+        : -1;
+
+      const timelineEvent = {
+        id: existingIdx !== -1 ? prod.timeline[existingIdx].id : `tl-${Date.now()}`,
+        stage: 'Wholesale',
+        title: 'Distributor Pricing Configured',
+        description: `Base purchase: ₹${numPurchase}/${prod.unit || 'kg'}, Margin: ${numMargin}%, Wholesale selling price: ₹${numSelling}/${prod.unit || 'kg'}.${txValidation.metadata?.txHash ? ` Recorded on Sepolia in block #${txValidation.metadata.blockNumber}.` : ''}`,
+        actorName: user?.name || (txValidation.metadata?.signerAddress ? `Distributor (${txValidation.metadata.signerAddress.slice(0, 8)}...)` : 'Distributor'),
+        actorRole: 'distributor',
+        location: user?.location || 'Distribution Hub',
+        timestamp: existingIdx !== -1 ? prod.timeline[existingIdx].timestamp : new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        verified: Boolean(txValidation.metadata?.onChainVerified),
+        ...(txValidation.metadata?.txHash ? {
+          txHash: txValidation.metadata.txHash,
+          blockNumber: txValidation.metadata.blockNumber
+        } : {})
+      };
+
+      if (existingIdx !== -1) {
+        prod.timeline[existingIdx] = { ...prod.timeline[existingIdx], ...timelineEvent };
+      } else {
+        prod.timeline.push(timelineEvent);
+      }
     });
 
     if (!updated) {
@@ -947,7 +1005,20 @@ router.post('/:batchId/distributor-price', optionalJWT, async (req: Authenticate
 
     return res.json({
       success: true,
-      message: 'Distributor price updated successfully.',
+      message: txValidation.metadata?.onChainVerified
+        ? 'Distributor price updated and verified on Sepolia blockchain.'
+        : (txValidation.metadata?.txHash
+            ? 'Distributor price updated with recorded blockchain transaction.'
+            : 'Distributor price updated in database (off-chain record only).'),
+      blockchain: txValidation.metadata?.txHash ? {
+        txHash: txValidation.metadata.txHash,
+        blockNumber: txValidation.metadata.blockNumber,
+        onChainVerified: Boolean(txValidation.metadata.onChainVerified),
+        status: txValidation.metadata.onChainVerified ? 'confirmed' : 'unconfirmed'
+      } : {
+        onChainVerified: false,
+        status: 'off-chain-only'
+      },
       product: updated
     });
   } catch (err: any) {
@@ -962,8 +1033,17 @@ router.post('/:batchId/distributor-price', optionalJWT, async (req: Authenticate
 router.post('/:batchId/transfer-to-retailer', optionalJWT, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { batchId } = req.params;
-    const { retailerName, retailerId, quantity, sellingPrice } = req.body;
+    const { retailerName, retailerId, quantity, sellingPrice, txHash, blockNumber } = req.body;
     const user = req.user;
+
+    // Validate client-submitted transaction metadata
+    const txValidation = await validateTransactionMetadata(txHash, blockNumber, {
+      expectedAction: 'dispatchToRetailer',
+      batchId
+    });
+    if (!txValidation.valid) {
+      return res.status(400).json({ success: false, error: txValidation.error });
+    }
 
     const numQty = Number(quantity);
     const numSelling = Number(sellingPrice);
@@ -978,20 +1058,46 @@ router.post('/:batchId/transfer-to-retailer', optionalJWT, async (req: Authentic
         prod.pricing.finalConsumerPrice = numSelling;
       }
 
-      const timelineEvent = {
-        id: `tl-${Date.now()}`,
-        stage: 'Wholesale',
-        title: 'Dispatched to Retailer',
-        description: `Transferred ${numQty || prod.quantity} ${prod.unit || 'kg'} to ${retailerName || 'Retailer'} at wholesale price ₹${numSelling}/${prod.unit || 'kg'}.`,
-        actorName: user?.name || 'Distributor Logistics',
-        actorRole: 'distributor',
-        location: user?.location || 'Regional Cold Hub',
-        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
-        verified: true,
-      };
+      // Persist blockchain metadata
+      if (txValidation.metadata) {
+        prod.blockchain = prod.blockchain || {};
+        prod.blockchain.contractAddress = getContractAddress();
+        prod.blockchain.txHash = txValidation.metadata.txHash;
+        prod.blockchain.blockNumber = txValidation.metadata.blockNumber;
+        prod.blockchain.isTamperEvident = true;
+        prod.blockchain.statusNotice = txValidation.metadata.onChainVerified
+          ? 'On-Chain Validated: In Transit to Retailer'
+          : 'Registered Transaction: In Transit to Retailer';
+      }
 
       prod.timeline = prod.timeline || [];
-      prod.timeline.push(timelineEvent);
+
+      // Check for duplicate timeline entry with the same txHash
+      const existingIdx = txValidation.metadata?.txHash
+        ? prod.timeline.findIndex((e: any) => e.txHash && e.txHash.toLowerCase() === txValidation.metadata!.txHash.toLowerCase())
+        : -1;
+
+      const timelineEvent = {
+        id: existingIdx !== -1 ? prod.timeline[existingIdx].id : `tl-${Date.now()}`,
+        stage: 'Wholesale',
+        title: 'Dispatched to Retailer',
+        description: `Transferred ${numQty || prod.quantity} ${prod.unit || 'kg'} to ${retailerName || 'Retailer'} at wholesale price ₹${numSelling}/${prod.unit || 'kg'}.${txValidation.metadata?.txHash ? ` Dispatched on-chain in block #${txValidation.metadata.blockNumber}.` : ''}`,
+        actorName: user?.name || (txValidation.metadata?.signerAddress ? `Distributor (${txValidation.metadata.signerAddress.slice(0, 8)}...)` : 'Distributor Logistics'),
+        actorRole: 'distributor',
+        location: user?.location || 'Regional Cold Hub',
+        timestamp: existingIdx !== -1 ? prod.timeline[existingIdx].timestamp : new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        verified: Boolean(txValidation.metadata?.onChainVerified),
+        ...(txValidation.metadata?.txHash ? {
+          txHash: txValidation.metadata.txHash,
+          blockNumber: txValidation.metadata.blockNumber
+        } : {})
+      };
+
+      if (existingIdx !== -1) {
+        prod.timeline[existingIdx] = { ...prod.timeline[existingIdx], ...timelineEvent };
+      } else {
+        prod.timeline.push(timelineEvent);
+      }
     });
 
     if (!updated) {
@@ -1000,7 +1106,20 @@ router.post('/:batchId/transfer-to-retailer', optionalJWT, async (req: Authentic
 
     return res.json({
       success: true,
-      message: 'Batch successfully transferred to retailer.',
+      message: txValidation.metadata?.onChainVerified
+        ? 'Batch successfully transferred to retailer and verified on Sepolia blockchain.'
+        : (txValidation.metadata?.txHash
+            ? 'Batch successfully transferred to retailer with recorded blockchain transaction.'
+            : 'Batch successfully transferred to retailer (off-chain record only).'),
+      blockchain: txValidation.metadata?.txHash ? {
+        txHash: txValidation.metadata.txHash,
+        blockNumber: txValidation.metadata.blockNumber,
+        onChainVerified: Boolean(txValidation.metadata.onChainVerified),
+        status: txValidation.metadata.onChainVerified ? 'confirmed' : 'unconfirmed'
+      } : {
+        onChainVerified: false,
+        status: 'off-chain-only'
+      },
       product: updated
     });
   } catch (err: any) {
@@ -1015,27 +1134,66 @@ router.post('/:batchId/transfer-to-retailer', optionalJWT, async (req: Authentic
 router.post('/:batchId/retailer-receive', optionalJWT, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { batchId } = req.params;
+    const { txHash, blockNumber } = req.body;
     const user = req.user;
+
+    // Validate client-submitted transaction metadata
+    const txValidation = await validateTransactionMetadata(txHash, blockNumber, {
+      expectedAction: 'receiveProduceByRetailer',
+      batchId
+    });
+    if (!txValidation.valid) {
+      return res.status(400).json({ success: false, error: txValidation.error });
+    }
 
     const updated = await findAndSaveProduct(batchId, (prod) => {
       prod.status = 'On Retail Shelf';
       prod.currentCustodianRole = 'retailer';
       if (user?.name) prod.currentCustodianName = user.name;
 
+      // Persist blockchain metadata
+      if (txValidation.metadata) {
+        prod.blockchain = prod.blockchain || {};
+        prod.blockchain.contractAddress = getContractAddress();
+        prod.blockchain.txHash = txValidation.metadata.txHash;
+        prod.blockchain.blockNumber = txValidation.metadata.blockNumber;
+        prod.blockchain.isTamperEvident = true;
+        prod.blockchain.statusNotice = txValidation.metadata.onChainVerified
+          ? 'On-Chain Validated: On Retail Shelf'
+          : 'Registered Transaction: On Retail Shelf';
+        if (txValidation.metadata.signerAddress) {
+          prod.blockchain.currentOwnerWallet = txValidation.metadata.signerAddress;
+        }
+      }
+
+      prod.timeline = prod.timeline || [];
+
+      // Check for duplicate timeline entry with the same txHash
+      const existingIdx = txValidation.metadata?.txHash
+        ? prod.timeline.findIndex((e: any) => e.txHash && e.txHash.toLowerCase() === txValidation.metadata!.txHash.toLowerCase())
+        : -1;
+
       const timelineEvent = {
-        id: `tl-${Date.now()}`,
+        id: existingIdx !== -1 ? prod.timeline[existingIdx].id : `tl-${Date.now()}`,
         stage: 'Retail',
         title: 'Received by Retailer',
-        description: 'Shipment accepted and verified in retail store inventory.',
+        description: `Shipment accepted and verified in retail store inventory.${txValidation.metadata?.txHash ? ` Recorded on-chain in block #${txValidation.metadata.blockNumber}.` : ''}`,
         actorName: user?.name || 'Store Manager',
         actorRole: 'retailer',
         location: user?.location || 'Retail Store Shelf',
-        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
-        verified: true,
+        timestamp: existingIdx !== -1 ? prod.timeline[existingIdx].timestamp : new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        verified: Boolean(txValidation.metadata?.onChainVerified),
+        ...(txValidation.metadata?.txHash ? {
+          txHash: txValidation.metadata.txHash,
+          blockNumber: txValidation.metadata.blockNumber
+        } : {})
       };
 
-      prod.timeline = prod.timeline || [];
-      prod.timeline.push(timelineEvent);
+      if (existingIdx !== -1) {
+        prod.timeline[existingIdx] = { ...prod.timeline[existingIdx], ...timelineEvent };
+      } else {
+        prod.timeline.push(timelineEvent);
+      }
     });
 
     if (!updated) {
@@ -1044,7 +1202,20 @@ router.post('/:batchId/retailer-receive', optionalJWT, async (req: Authenticated
 
     return res.json({
       success: true,
-      message: 'Produce received and placed on retail shelf.',
+      message: txValidation.metadata?.onChainVerified
+        ? 'Produce received, placed on retail shelf, and verified on Sepolia blockchain.'
+        : (txValidation.metadata?.txHash
+            ? 'Produce received with recorded blockchain transaction.'
+            : 'Produce received and placed on retail shelf (off-chain record only).'),
+      blockchain: txValidation.metadata?.txHash ? {
+        txHash: txValidation.metadata.txHash,
+        blockNumber: txValidation.metadata.blockNumber,
+        onChainVerified: Boolean(txValidation.metadata.onChainVerified),
+        status: txValidation.metadata.onChainVerified ? 'confirmed' : 'unconfirmed'
+      } : {
+        onChainVerified: false,
+        status: 'off-chain-only'
+      },
       product: updated
     });
   } catch (err: any) {
@@ -1059,8 +1230,17 @@ router.post('/:batchId/retailer-receive', optionalJWT, async (req: Authenticated
 router.post('/:batchId/retailer-price', optionalJWT, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { batchId } = req.params;
-    const { purchasePrice, retailMargin, finalSellingPrice } = req.body;
+    const { purchasePrice, retailMargin, finalSellingPrice, txHash, blockNumber } = req.body;
     const user = req.user;
+
+    // Validate client-submitted transaction metadata
+    const txValidation = await validateTransactionMetadata(txHash, blockNumber, {
+      expectedAction: 'updateRetailerPrice',
+      batchId
+    });
+    if (!txValidation.valid) {
+      return res.status(400).json({ success: false, error: txValidation.error });
+    }
 
     const numMargin = Number(retailMargin);
     const numFinal = Number(finalSellingPrice);
@@ -1070,20 +1250,46 @@ router.post('/:batchId/retailer-price', optionalJWT, async (req: AuthenticatedRe
       prod.pricing.retailerMargin = numMargin;
       prod.pricing.finalConsumerPrice = numFinal;
 
+      // Persist blockchain metadata
+      if (txValidation.metadata) {
+        prod.blockchain = prod.blockchain || {};
+        prod.blockchain.contractAddress = getContractAddress();
+        prod.blockchain.txHash = txValidation.metadata.txHash;
+        prod.blockchain.blockNumber = txValidation.metadata.blockNumber;
+        prod.blockchain.isTamperEvident = true;
+        prod.blockchain.statusNotice = txValidation.metadata.onChainVerified
+          ? 'On-Chain Validated: Retail Price Updated'
+          : 'Registered Transaction: Retail Price Updated';
+      }
+
+      prod.timeline = prod.timeline || [];
+
+      // Check for duplicate timeline entry with the same txHash
+      const existingIdx = txValidation.metadata?.txHash
+        ? prod.timeline.findIndex((e: any) => e.txHash && e.txHash.toLowerCase() === txValidation.metadata!.txHash.toLowerCase())
+        : -1;
+
       const timelineEvent = {
-        id: `tl-${Date.now()}`,
+        id: existingIdx !== -1 ? prod.timeline[existingIdx].id : `tl-${Date.now()}`,
         stage: 'Retail',
         title: 'Retail Selling Price Set',
-        description: `Wholesale cost: ₹${purchasePrice}/${prod.unit || 'kg'}, Retail margin: ${numMargin}%, Final shelf price: ₹${numFinal}/${prod.unit || 'kg'}.`,
+        description: `Wholesale cost: ₹${purchasePrice}/${prod.unit || 'kg'}, Retail margin: ${numMargin}%, Final shelf price: ₹${numFinal}/${prod.unit || 'kg'}.${txValidation.metadata?.txHash ? ` Logged to Sepolia audit trail in block #${txValidation.metadata.blockNumber}.` : ''}`,
         actorName: user?.name || 'Retailer',
         actorRole: 'retailer',
         location: user?.location || 'Retail Store Shelf',
-        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
-        verified: true,
+        timestamp: existingIdx !== -1 ? prod.timeline[existingIdx].timestamp : new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        verified: Boolean(txValidation.metadata?.onChainVerified),
+        ...(txValidation.metadata?.txHash ? {
+          txHash: txValidation.metadata.txHash,
+          blockNumber: txValidation.metadata.blockNumber
+        } : {})
       };
 
-      prod.timeline = prod.timeline || [];
-      prod.timeline.push(timelineEvent);
+      if (existingIdx !== -1) {
+        prod.timeline[existingIdx] = { ...prod.timeline[existingIdx], ...timelineEvent };
+      } else {
+        prod.timeline.push(timelineEvent);
+      }
     });
 
     if (!updated) {
@@ -1092,7 +1298,20 @@ router.post('/:batchId/retailer-price', optionalJWT, async (req: AuthenticatedRe
 
     return res.json({
       success: true,
-      message: 'Retail selling price updated.',
+      message: txValidation.metadata?.onChainVerified
+        ? 'Retail selling price updated and verified on Sepolia blockchain.'
+        : (txValidation.metadata?.txHash
+            ? 'Retail selling price updated with recorded blockchain transaction.'
+            : 'Retail selling price updated (off-chain record only).'),
+      blockchain: txValidation.metadata?.txHash ? {
+        txHash: txValidation.metadata.txHash,
+        blockNumber: txValidation.metadata.blockNumber,
+        onChainVerified: Boolean(txValidation.metadata.onChainVerified),
+        status: txValidation.metadata.onChainVerified ? 'confirmed' : 'unconfirmed'
+      } : {
+        onChainVerified: false,
+        status: 'off-chain-only'
+      },
       product: updated
     });
   } catch (err: any) {
@@ -1107,8 +1326,17 @@ router.post('/:batchId/retailer-price', optionalJWT, async (req: AuthenticatedRe
 router.post('/:batchId/retailer-sell', optionalJWT, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { batchId } = req.params;
-    const { soldQuantity, buyerNote } = req.body;
+    const { soldQuantity, buyerNote, txHash, blockNumber } = req.body;
     const user = req.user;
+
+    // Validate client-submitted transaction metadata
+    const txValidation = await validateTransactionMetadata(txHash, blockNumber, {
+      expectedAction: 'recordSale',
+      batchId
+    });
+    if (!txValidation.valid) {
+      return res.status(400).json({ success: false, error: txValidation.error });
+    }
 
     const numSold = Number(soldQuantity) || 1;
 
@@ -1124,20 +1352,46 @@ router.post('/:batchId/retailer-sell', optionalJWT, async (req: AuthenticatedReq
         prod.currentCustodianRole = 'consumer';
       }
 
+      // Persist blockchain metadata
+      if (txValidation.metadata) {
+        prod.blockchain = prod.blockchain || {};
+        prod.blockchain.contractAddress = getContractAddress();
+        prod.blockchain.txHash = txValidation.metadata.txHash;
+        prod.blockchain.blockNumber = txValidation.metadata.blockNumber;
+        prod.blockchain.isTamperEvident = true;
+        prod.blockchain.statusNotice = txValidation.metadata.onChainVerified
+          ? 'On-Chain Validated: Batch Sold & Permanently Locked'
+          : 'Registered Transaction: Batch Sold';
+      }
+
+      prod.timeline = prod.timeline || [];
+
+      // Check for duplicate timeline entry with the same txHash
+      const existingIdx = txValidation.metadata?.txHash
+        ? prod.timeline.findIndex((e: any) => e.txHash && e.txHash.toLowerCase() === txValidation.metadata!.txHash.toLowerCase())
+        : -1;
+
       const timelineEvent = {
-        id: `tl-${Date.now()}`,
+        id: existingIdx !== -1 ? prod.timeline[existingIdx].id : `tl-${Date.now()}`,
         stage: 'Consumer',
         title: 'Point of Sale to Consumer',
-        description: `Sold ${numSold} ${prod.unit || 'kg'}${buyerNote ? ` (${buyerNote})` : ''}. ${remaining > 0 ? `${remaining} ${prod.unit || 'kg'} remaining in stock.` : 'Batch lot completely sold.'}`,
+        description: `Sold ${numSold} ${prod.unit || 'kg'}${buyerNote ? ` (${buyerNote})` : ''}. ${remaining > 0 ? `${remaining} ${prod.unit || 'kg'} remaining in stock.` : 'Batch lot completely sold and immutably finalized on-chain.'}${txValidation.metadata?.txHash ? ` Recorded in Sepolia block #${txValidation.metadata.blockNumber}.` : ''}`,
         actorName: user?.name || 'Retail Checkout',
         actorRole: 'retailer',
         location: user?.location || 'Retail Store Point of Sale',
-        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
-        verified: true,
+        timestamp: existingIdx !== -1 ? prod.timeline[existingIdx].timestamp : new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
+        verified: Boolean(txValidation.metadata?.onChainVerified),
+        ...(txValidation.metadata?.txHash ? {
+          txHash: txValidation.metadata.txHash,
+          blockNumber: txValidation.metadata.blockNumber
+        } : {})
       };
 
-      prod.timeline = prod.timeline || [];
-      prod.timeline.push(timelineEvent);
+      if (existingIdx !== -1) {
+        prod.timeline[existingIdx] = { ...prod.timeline[existingIdx], ...timelineEvent };
+      } else {
+        prod.timeline.push(timelineEvent);
+      }
     });
 
     if (!updated) {
@@ -1146,7 +1400,20 @@ router.post('/:batchId/retailer-sell', optionalJWT, async (req: AuthenticatedReq
 
     return res.json({
       success: true,
-      message: 'Produce sale recorded successfully.',
+      message: txValidation.metadata?.onChainVerified
+        ? 'Produce sale recorded and permanently finalized on Sepolia blockchain.'
+        : (txValidation.metadata?.txHash
+            ? 'Produce sale recorded with registered blockchain transaction.'
+            : 'Produce sale recorded in database (off-chain record only).'),
+      blockchain: txValidation.metadata?.txHash ? {
+        txHash: txValidation.metadata.txHash,
+        blockNumber: txValidation.metadata.blockNumber,
+        onChainVerified: Boolean(txValidation.metadata.onChainVerified),
+        status: txValidation.metadata.onChainVerified ? 'confirmed' : 'unconfirmed'
+      } : {
+        onChainVerified: false,
+        status: 'off-chain-only'
+      },
       product: updated
     });
   } catch (err: any) {

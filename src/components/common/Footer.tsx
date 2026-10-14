@@ -191,22 +191,6 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <button 
-                  onClick={() => handlePublicNavigate('/privacy')}
-                  className="hover:text-emerald-600 transition text-left cursor-pointer"
-                >
-                  Privacy Policy
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => handlePublicNavigate('/terms')}
-                  className="hover:text-emerald-600 transition text-left cursor-pointer"
-                >
-                  Terms and Conditions
-                </button>
-              </li>
-              <li>
-                <button 
                   onClick={() => handlePublicNavigate('/signup')}
                   className="hover:text-emerald-600 transition text-left cursor-pointer"
                 >
@@ -220,20 +204,8 @@ export const Footer: React.FC = () => {
 
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
-          <div className="flex items-center gap-4 flex-wrap">
-            <span>© {new Date().getFullYear()} AgriTrace Platform. All rights reserved.</span>
-            <button
-              onClick={() => handlePublicNavigate('/privacy')}
-              className="hover:text-emerald-700 hover:underline transition cursor-pointer"
-            >
-              Privacy Policy
-            </button>
-            <button
-              onClick={() => handlePublicNavigate('/terms')}
-              className="hover:text-emerald-700 hover:underline transition cursor-pointer"
-            >
-              Terms and Conditions
-            </button>
+          <div>
+            © {new Date().getFullYear()} AgriTrace Platform. All rights reserved.
           </div>
 
           <div className="flex items-center gap-6">
@@ -241,7 +213,7 @@ export const Footer: React.FC = () => {
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               <span>Tamper-evident verification protocol</span>
             </span>
-            <span className="text-slate-400">Production</span>
+            <span className="font-mono text-slate-400">v2.4 Production</span>
           </div>
         </div>
 

@@ -13,7 +13,8 @@
     "compile:contracts": "node scripts/compile-contract.js",
     "deploy:contracts": "node scripts/deploy-contract.js",
     "test:contracts": "node scripts/compile-contract.js && tsx --test --test-concurrency=1 --test-reporter spec tests/AgriTraceSupplyChain.test.ts",
-    "test": "npm run test:contracts"
+    "test:backend": "tsx --test --test-concurrency=1 --test-reporter spec tests/backendMetadataPersistence.test.ts",
+    "test": "npm run test:contracts && npm run test:backend"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -26,7 +27,6 @@
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.3",
-    "jsqr": "^1.4.0",
     "lucide-react": "^0.546.0",
     "mongoose": "^9.9.5",
     "motion": "^12.23.24",

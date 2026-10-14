@@ -45,6 +45,7 @@ export interface IProduct extends Document {
     tokenId?: string;
     blockNumber?: number;
     mintTxHash?: string;
+    txHash?: string;
     currentOwnerWallet?: string;
     consensusMechanism?: string;
     gasUsed?: string;
@@ -61,6 +62,8 @@ export interface IProduct extends Document {
     actorRole: string;
     location: string;
     timestamp: string;
+    blockNumber?: number;
+    txHash?: string;
     temperature?: string;
     humidity?: string;
     verified?: boolean;
@@ -118,10 +121,11 @@ const ProductSchema: Schema = new Schema({
     shelfLifeDays: { type: Number, default: 14 }
   },
   blockchain: {
-    contractAddress: { type: String, default: '0x3A5b8214Fa9E18aB9B625697d022bfe5716E5D3c' },
+    contractAddress: { type: String, default: '0x110D36B8FA4FAc2Fc214c1F341261BA6654a57Ef' },
     tokenId: { type: String },
     blockNumber: { type: Number },
     mintTxHash: { type: String },
+    txHash: { type: String },
     currentOwnerWallet: { type: String },
     consensusMechanism: { type: String, default: 'Ethereum Sepolia Ledger' },
     gasUsed: { type: String, default: '74,200 Gwei' },
@@ -138,6 +142,8 @@ const ProductSchema: Schema = new Schema({
     actorRole: { type: String },
     location: { type: String },
     timestamp: { type: String },
+    blockNumber: { type: Number },
+    txHash: { type: String },
     temperature: { type: String },
     humidity: { type: String },
     verified: { type: Boolean, default: true }

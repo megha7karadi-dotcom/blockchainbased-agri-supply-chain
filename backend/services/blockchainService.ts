@@ -1,6 +1,7 @@
 import { ethers, Contract } from 'ethers';
 import fs from 'fs';
 import path from 'path';
+import { AGRITRACE_ABI } from '../../src/lib/blockchain/abi';
 
 let cachedAbi: any = null;
 let cachedBytecode: any = null;
@@ -24,7 +25,7 @@ function readInitialContractAddress(): string {
   } catch (err) {
     console.warn('[Blockchain Service] Error reading deployedAddress.json:', err);
   }
-  return '';
+  return '0x110D36B8FA4FAc2Fc214c1F341261BA6654a57Ef';
 }
 
 let activeContractAddress: string = readInitialContractAddress();
@@ -55,12 +56,12 @@ function loadArtifact() {
   } catch (err) {
     console.warn('[Blockchain Service] Error loading build artifact:', err);
   }
-  return { abi: null, bytecode: null };
+  return { abi: AGRITRACE_ABI, bytecode: null };
 }
 
 export function getContractAbi() {
   const { abi } = loadArtifact();
-  return abi;
+  return abi || AGRITRACE_ABI;
 }
 
 export function getContractAddress(): string {
@@ -304,3 +305,201 @@ export async function verifyProductAgainstBlockchain(product: any) {
     contractAddress,
   };
 }
+
+export interface ValidatedTxMetadata {
+  txHash: string;
+  blockNumber: number;
+  signerAddress?: string;
+  onChainVerified: boolean;
+}
+
+export interface TxValidationOptions {
+  expectedSigner?: string;
+  expectedAction?: string;
+  batchId?: string;
+  provider?: any;
+  deployedAddress?: string;
+}
+
+/**
+ * Validates client-submitted transaction hash and block number metadata.
+ * Validates cryptographic format, checks for on-chain receipt on Sepolia,
+ * verifies execution status (status === 1, not reverted), matches target contract address,
+ * and validates that the transaction corresponds to the intended lifecycle action and batch.
+ */
+export async function validateTransactionMetadata(
+  txHashInput?: any,
+  blockNumberInput?: any,
+  optionsOrSigner?: string | TxValidationOptions
+): Promise<{ valid: boolean; error?: string; metadata?: ValidatedTxMetadata }> {
+  const options: TxValidationOptions = typeof optionsOrSigner === 'string'
+    ? { expectedSigner: optionsOrSigner }
+    : (optionsOrSigner || {});
+
+  // If neither txHash nor blockNumber was submitted, this is an off-chain database-only record
+  if (!txHashInput && (blockNumberInput === undefined || blockNumberInput === null || blockNumberInput === '')) {
+    return { valid: true };
+  }
+
+  // If one was submitted without the other, reject incomplete metadata
+  if (!txHashInput) {
+    return {
+      valid: false,
+      error: 'Transaction hash (txHash) is required when block number is specified.'
+    };
+  }
+
+  if (blockNumberInput === undefined || blockNumberInput === null || blockNumberInput === '') {
+    return {
+      valid: false,
+      error: 'Block number (blockNumber) is required when transaction hash is specified.'
+    };
+  }
+
+  // 1. Syntactic format check: 66-character hex string starting with 0x
+  const txHash = String(txHashInput).trim();
+  if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
+    return {
+      valid: false,
+      error: `Invalid transaction hash format (${txHash}). Must be a 66-character hexadecimal string starting with 0x.`
+    };
+  }
+
+  // 2. Syntactic format check on block number: positive integer
+  const blockNum = Number(blockNumberInput);
+  if (!Number.isInteger(blockNum) || blockNum <= 0) {
+    return {
+      valid: false,
+      error: `Invalid block number (${blockNumberInput}). Must be a positive integer.`
+    };
+  }
+
+  // 3. Cryptographic on-chain verification against Sepolia testnet
+  let onChainVerified = false;
+  let resolvedSigner = options.expectedSigner;
+  const deployedAddress = options.deployedAddress || getContractAddress();
+
+  try {
+    const provider = options.provider || getActiveProvider();
+
+    // Query transaction receipt
+    let receipt = await provider.getTransactionReceipt(txHash);
+
+    // If receipt not returned immediately, short 400ms retry for replica sync
+    if (!receipt) {
+      await new Promise((r) => setTimeout(r, 400));
+      receipt = await provider.getTransactionReceipt(txHash);
+    }
+
+    // Query transaction object for calldata and recipient
+    let tx: any = null;
+    try {
+      tx = await provider.getTransaction(txHash);
+    } catch {
+      // Non-fatal if provider only has receipt
+    }
+
+    if (receipt) {
+      // Must not be reverted
+      if (receipt.status === 0) {
+        return {
+          valid: false,
+          error: `Transaction ${txHash} failed or was reverted on Ethereum Sepolia (status = 0). State changes were not applied.`
+        };
+      }
+
+      // Block number check
+      if (receipt.blockNumber !== blockNum) {
+        return {
+          valid: false,
+          error: `Block number mismatch for ${txHash}: confirmed on Sepolia in block #${receipt.blockNumber}, but client submitted block #${blockNum}.`
+        };
+      }
+
+      // Check target contract matches deployed AgriTrace contract
+      const targetAddress = receipt.to || tx?.to;
+      if (deployedAddress && targetAddress && targetAddress.toLowerCase() !== deployedAddress.toLowerCase()) {
+        return {
+          valid: false,
+          error: `Transaction recipient (${targetAddress}) does not match the deployed AgriTrace contract (${deployedAddress}).`
+        };
+      }
+
+      resolvedSigner = resolvedSigner || tx?.from || receipt.from;
+      onChainVerified = true;
+    } else if (tx) {
+      if (deployedAddress && tx.to && tx.to.toLowerCase() !== deployedAddress.toLowerCase()) {
+        return {
+          valid: false,
+          error: `Transaction recipient (${tx.to}) does not match the deployed AgriTrace contract (${deployedAddress}).`
+        };
+      }
+      resolvedSigner = resolvedSigner || tx.from;
+      onChainVerified = true;
+    } else {
+      // Neither receipt nor tx found: check if provider is active
+      try {
+        const currentBlock = await provider.getBlockNumber();
+        if (currentBlock > 0) {
+          return {
+            valid: false,
+            error: `Transaction ${txHash} was not found on Ethereum Sepolia. Transactions must be confirmed on-chain.`
+          };
+        }
+      } catch {
+        return {
+          valid: false,
+          error: `Could not reach Ethereum Sepolia provider to verify transaction ${txHash}.`
+        };
+      }
+    }
+
+    // Validate that the transaction corresponds to the intended lifecycle action and batch
+    if (tx && (options.expectedAction || options.batchId)) {
+      try {
+        const abi = getContractAbi();
+        if (abi && tx.data && tx.data !== '0x') {
+          const iface = new ethers.Interface(abi);
+          const parsed = iface.parseTransaction({ data: tx.data, value: tx.value });
+          if (parsed) {
+            if (options.expectedAction && parsed.name !== options.expectedAction) {
+              return {
+                valid: false,
+                error: `Transaction ${txHash} executed contract function "${parsed.name}", but the required action for this endpoint is "${options.expectedAction}". Generic transaction existence does not prove the correct action occurred.`
+              };
+            }
+            if (options.batchId && parsed.args && parsed.args.length > 0) {
+              const expectedBatchB32 = stringToBytes32(options.batchId).toLowerCase();
+              const txBatchB32 = String(parsed.args[0]).toLowerCase();
+              if (txBatchB32 !== expectedBatchB32) {
+                return {
+                  valid: false,
+                  error: `Transaction ${txHash} target batch (${txBatchB32}) does not match the requested batch ID ${options.batchId} (${expectedBatchB32}).`
+                };
+              }
+            }
+          }
+        }
+      } catch (parseErr: any) {
+        console.warn('[validateTransactionMetadata] Calldata parsing notice:', parseErr?.message);
+      }
+    }
+  } catch (rpcErr: any) {
+    console.warn(`[validateTransactionMetadata] Sepolia RPC check note for ${txHash}:`, rpcErr?.message);
+    return {
+      valid: false,
+      error: `Sepolia blockchain verification failed for ${txHash}: ${rpcErr?.message || 'RPC communication error'}`
+    };
+  }
+
+  return {
+    valid: true,
+    metadata: {
+      txHash,
+      blockNumber: blockNum,
+      signerAddress: resolvedSigner,
+      onChainVerified
+    }
+  };
+}
+

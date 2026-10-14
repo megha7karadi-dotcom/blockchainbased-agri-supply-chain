@@ -203,7 +203,7 @@ export const FarmerTransfers: React.FC = () => {
                 >
                   {farmerBatches.map(b => (
                     <option key={b.id} value={b.id}>
-                      {b.cropName || b.name} ({b.batchId}) - {b.quantityKg || b.quantity} {b.unit || 'kg'} [{b.status}]
+                      {b.cropName || b.name} ({b.batchId}) — {b.quantityKg || b.quantity} {b.unit || 'kg'} [{b.status}]
                     </option>
                   ))}
                 </select>

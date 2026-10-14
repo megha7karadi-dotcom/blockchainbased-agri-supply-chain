@@ -178,7 +178,7 @@ export const RetailerSell: React.FC = () => {
                 >
                   {sellableBatches.map(b => (
                     <option key={b.id} value={b.id}>
-                      {b.cropName || b.name} ({b.batchId}) - {b.quantityKg || b.quantity} {b.unit || 'kg'} in stock
+                      {b.cropName || b.name} ({b.batchId}) — {b.quantityKg || b.quantity} {b.unit || 'kg'} in stock
                     </option>
                   ))}
                 </select>

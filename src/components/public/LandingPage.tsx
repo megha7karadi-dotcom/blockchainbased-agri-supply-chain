@@ -158,15 +158,15 @@ export const LandingPage: React.FC<{ onOpenQRScanner: () => void }> = ({ onOpenQ
           {/* Trust Indicators */}
           <div className="pt-2 flex flex-wrap items-center gap-6 text-xs text-stone-200">
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               <span>Verified Indian Farms</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               <span>Fair Earnings for Farmers</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               <span>100% Genuine QR Labels</span>
             </div>
           </div>
@@ -445,7 +445,7 @@ export const LandingPage: React.FC<{ onOpenQRScanner: () => void }> = ({ onOpenQ
             <tbody className="divide-y divide-stone-200 text-stone-800">
               {filteredBatches.map(batch => (
                 <tr key={batch.id} className="hover:bg-stone-50/70 transition-colors">
-                  <td className="py-3.5 px-4 font-bold text-stone-900 whitespace-nowrap">
+                  <td className="py-3.5 px-4 font-mono font-bold text-stone-900 whitespace-nowrap">
                     {batch.batchId}
                   </td>
                   <td className="py-3.5 px-4">
@@ -471,10 +471,10 @@ export const LandingPage: React.FC<{ onOpenQRScanner: () => void }> = ({ onOpenQ
                   <td className="py-3.5 px-4 text-stone-600 whitespace-nowrap">
                     {batch.harvestDate}
                   </td>
-                  <td className="py-3.5 px-4 text-right font-semibold text-stone-900 whitespace-nowrap">
+                  <td className="py-3.5 px-4 text-right font-mono font-semibold text-stone-900 whitespace-nowrap">
                     ₹{batch.farmgatePrice || batch.pricing?.farmerPrice}/kg
                   </td>
-                  <td className="py-3.5 px-4 text-right font-bold text-emerald-950 whitespace-nowrap">
+                  <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-950 whitespace-nowrap">
                     ₹{batch.pricing?.finalConsumerPrice}/kg
                   </td>
                   <td className="py-3.5 px-4 text-center whitespace-nowrap">
@@ -537,30 +537,30 @@ export const LandingPage: React.FC<{ onOpenQRScanner: () => void }> = ({ onOpenQ
                 <th className="py-3 px-4 text-right">Extra Farmer Earnings</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-200 text-stone-800">
+            <tbody className="divide-y divide-stone-200 text-stone-800 font-mono">
               <tr className="hover:bg-emerald-50/50">
-                <td className="py-3 px-4 font-semibold text-stone-900">Alphonso Mango (Ratnagiri)</td>
-                <td className="py-3 px-4 text-stone-600">APMC Vashi, Navi Mumbai</td>
-                <td className="py-3 px-4 text-right text-stone-500">N/A</td>
+                <td className="py-3 px-4 font-sans font-semibold text-stone-900">Alphonso Mango (Ratnagiri)</td>
+                <td className="py-3 px-4 font-sans text-stone-600">APMC Vashi, Navi Mumbai</td>
+                <td className="py-3 px-4 text-right text-stone-500">—</td>
                 <td className="py-3 px-4 text-right">₹160 / kg</td>
                 <td className="py-3 px-4 text-right font-bold text-emerald-950">₹220 / kg</td>
-                <td className="py-3 px-4 text-right font-semibold text-emerald-800">+37.5%</td>
+                <td className="py-3 px-4 text-right font-sans font-semibold text-emerald-800">+37.5%</td>
               </tr>
               <tr className="hover:bg-emerald-50/50">
-                <td className="py-3 px-4 font-semibold text-stone-900">Basmati Rice (1121)</td>
-                <td className="py-3 px-4 text-stone-600">Karnal Grain Mandi, Haryana</td>
+                <td className="py-3 px-4 font-sans font-semibold text-stone-900">Basmati Rice (1121)</td>
+                <td className="py-3 px-4 font-sans text-stone-600">Karnal Grain Mandi, Haryana</td>
                 <td className="py-3 px-4 text-right text-stone-500">₹38.50 / kg</td>
                 <td className="py-3 px-4 text-right">₹44.00 / kg</td>
                 <td className="py-3 px-4 text-right font-bold text-emerald-950">₹56.00 / kg</td>
-                <td className="py-3 px-4 text-right font-semibold text-emerald-800">+27.2%</td>
+                <td className="py-3 px-4 text-right font-sans font-semibold text-emerald-800">+27.2%</td>
               </tr>
               <tr className="hover:bg-emerald-50/50">
-                <td className="py-3 px-4 font-semibold text-stone-900">Sharbati Wheat</td>
-                <td className="py-3 px-4 text-stone-600">Sehore Krishi Mandi, MP</td>
+                <td className="py-3 px-4 font-sans font-semibold text-stone-900">Sharbati Wheat</td>
+                <td className="py-3 px-4 font-sans text-stone-600">Sehore Krishi Mandi, MP</td>
                 <td className="py-3 px-4 text-right text-stone-500">₹24.25 / kg</td>
                 <td className="py-3 px-4 text-right">₹31.00 / kg</td>
                 <td className="py-3 px-4 text-right font-bold text-emerald-950">₹38.00 / kg</td>
-                <td className="py-3 px-4 text-right font-semibold text-emerald-800">+22.5%</td>
+                <td className="py-3 px-4 text-right font-sans font-semibold text-emerald-800">+22.5%</td>
               </tr>
             </tbody>
           </table>
@@ -576,7 +576,7 @@ export const LandingPage: React.FC<{ onOpenQRScanner: () => void }> = ({ onOpenQ
             Ready to track your harvest and earn fair prices?
           </h2>
           <p className="text-emerald-100 text-xs sm:text-sm">
-            Connect with verified farmers, distributors, and grocery retailers building honest food transparency.
+            Join thousands of Indian farmers, distributors, and grocery retailers building honest food transparency.
           </p>
         </div>
 

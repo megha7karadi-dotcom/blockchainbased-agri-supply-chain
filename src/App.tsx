@@ -3,7 +3,6 @@ import { ShieldAlert, Sparkles } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
 import { WalletProvider } from './context/WalletContext';
 import { Header } from './components/common/Header';
-import { BlockchainStatusBar } from './components/common/BlockchainStatusBar';
 import { Sidebar } from './components/common/Sidebar';
 import { Footer } from './components/common/Footer';
 import { QRScannerModal } from './components/public/QRScannerModal';
@@ -21,8 +20,6 @@ import { LoginPage } from './components/public/LoginPage';
 import { RegisterPage } from './components/public/RegisterPage';
 import { ProductVerificationPage } from './components/public/ProductVerificationPage';
 import { QRVerificationPage } from './components/public/QRVerificationPage';
-import { PrivacyPolicyPage } from './components/public/PrivacyPolicyPage';
-import { TermsPage } from './components/public/TermsPage';
 
 // Farmer Views
 import { FarmerDashboard } from './components/farmer/FarmerDashboard';
@@ -192,12 +189,6 @@ const MainLayout: React.FC = () => {
     if (normalizedPath === '/for-businesses') {
       return <ForBusinessesPage />;
     }
-    if (normalizedPath === '/privacy' || normalizedPath === '/privacy-policy') {
-      return <PrivacyPolicyPage />;
-    }
-    if (normalizedPath === '/terms' || normalizedPath === '/terms-and-conditions') {
-      return <TermsPage />;
-    }
 
     // 3. FARMER PARTICIPANT ROUTES
     if (normalizedPath === '/farmer/dashboard') return <FarmerDashboard />;
@@ -259,9 +250,6 @@ const MainLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white flex flex-col text-stone-900 font-sans">
-      {/* Real-time Ethereum Sepolia Blockchain Connection & Status Bar */}
-      <BlockchainStatusBar />
-
       {/* Global Navigation Header */}
       <Header 
         onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)} 
