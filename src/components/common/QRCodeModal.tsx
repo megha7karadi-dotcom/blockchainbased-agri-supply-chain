@@ -6,10 +6,12 @@ import { ProduceBatch } from '../../types/produce';
 interface Props {
   batch: ProduceBatch;
   onClose: () => void;
+  isOpen?: boolean;
 }
 
-export const QRCodeModal: React.FC<Props> = ({ batch, onClose }) => {
+export const QRCodeModal: React.FC<Props> = ({ batch, onClose, isOpen = true }) => {
   const [copied, setCopied] = useState(false);
+  if (!isOpen) return null;
   const verificationUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/verify/${batch.batchId}`;
 
   const handlePrint = () => {

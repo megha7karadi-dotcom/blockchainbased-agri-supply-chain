@@ -244,14 +244,58 @@ function extractHexErrorData(err: any): string | null {
 export function parseContractError(err: any): string {
   if (!err) return 'Unknown blockchain error occurred.';
 
-  // Check user rejection
+  // 1. User rejection in MetaMask or wallet
   if (
     err.code === 4001 || 
     err.code === 'ACTION_REJECTED' || 
     err.message?.includes('user rejected') || 
-    err.message?.includes('ACTION_REJECTED')
+    err.message?.includes('ACTION_REJECTED') ||
+    err.message?.includes('User rejected the request')
   ) {
     return 'Transaction was rejected by the user in MetaMask.';
+  }
+
+  // 2. Insufficient test ETH for transaction gas fee
+  if (
+    err.code === 'INSUFFICIENT_FUNDS' ||
+    err.message?.includes('insufficient funds') ||
+    err.message?.includes('gas required exceeds allowance') ||
+    err.message?.includes('insufficient balance') ||
+    err.message?.includes('exceeds balance')
+  ) {
+    return 'Insufficient test ETH: Your connected MetaMask account lacks sufficient Sepolia ETH to cover gas fees. Please acquire testnet ETH from a Sepolia faucet (e.g. https://sepoliafaucet.com or https://cloud.google.com/application/web3/faucet/ethereum/sepolia).';
+  }
+
+  // 3. Pending transactions or nonce conflicts
+  if (
+    err.code === 'NONCE_EXPIRED' ||
+    err.message?.includes('nonce too low') ||
+    err.message?.includes('replacement transaction underpriced') ||
+    err.message?.includes('already known')
+  ) {
+    return 'Pending transaction conflict: A previous transaction from your wallet is still pending or was replaced. Please wait for the previous transaction to confirm in MetaMask or speed it up.';
+  }
+
+  // 4. RPC provider or network connectivity errors
+  if (
+    err.code === 'NETWORK_ERROR' ||
+    err.code === 'TIMEOUT' ||
+    err.code === 'SERVER_ERROR' ||
+    err.message?.includes('could not detect network') ||
+    err.message?.includes('failed to fetch') ||
+    err.message?.includes('rate limit') ||
+    err.message?.includes('429')
+  ) {
+    return 'Ethereum Sepolia RPC failure: Unable to reach the Sepolia node. Please check your internet connection or verify your MetaMask RPC endpoint.';
+  }
+
+  // 5. Wrong network error
+  if (
+    (err.code === 'UNSUPPORTED_OPERATION' && err.message?.includes('chainId')) ||
+    err.message?.includes('Network Mismatch') ||
+    err.message?.includes('Ethereum Sepolia (Chain ID 11155111) is required')
+  ) {
+    return 'Wrong Network: MetaMask must be connected to Ethereum Sepolia (Chain ID 11155111). Please switch networks in MetaMask.';
   }
 
   // Check if ethers captured the custom error name directly

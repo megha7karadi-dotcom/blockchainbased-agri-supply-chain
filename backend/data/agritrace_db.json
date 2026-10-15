@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-10-15T04:12:08.308Z",
+  "lastUpdated": "2026-10-15T10:06:00.396Z",
   "users": [
     {
       "id": "usr-farmer-01",
@@ -140,6 +140,19 @@
       "kycStatus": "verified",
       "trustScore": 92,
       "createdAt": "2026-10-14T19:35:16.382Z"
+    },
+    {
+      "id": "usr-m-1792058760396",
+      "userId": "usr-m-1792058760396",
+      "name": "User 8888",
+      "email": "9999988888@mobile.agritrace.org",
+      "role": "farmer",
+      "phone": "+91 99999 88888",
+      "location": "India",
+      "organization": "AgriTrace Network",
+      "kycStatus": "verified",
+      "trustScore": 92,
+      "createdAt": "2026-10-15T10:06:00.396Z"
     }
   ],
   "products": [],
@@ -192,6 +205,13 @@
       "purpose": "login",
       "expiresAt": 1792037828308,
       "createdAt": 1792037528308
+    },
+    {
+      "phone": "+91 99999 88888",
+      "code": "937852",
+      "purpose": "login",
+      "expiresAt": 1792059057343,
+      "createdAt": 1792058757343
     }
   ],
   "auditLogs": []

@@ -957,7 +957,7 @@ class ProductService {
   /**
    * Retailer receives produce
    */
-  async retailerReceive(batchId: string): Promise<ProduceBatch | null> {
+  async retailerReceive(batchId: string, notes?: string): Promise<ProduceBatch | null> {
     // 1. Authoritative Smart Contract State Execution & Validation Layer
     console.log(`[AgriTrace] Receiving batch ${batchId} on-chain as designated retailer...`);
     const onChainTx = await receiveProduceByRetailerOnChain(batchId);

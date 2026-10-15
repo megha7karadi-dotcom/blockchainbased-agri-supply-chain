@@ -30,11 +30,15 @@ export type BatchStatus =
 
 export interface PriceBreakdown {
   farmerPrice: number; // Base price paid to farmer per kg
+  distributorPrice?: number; // Intermediate price at distributor
   distributorLogisticsCost: number; // Transport, storage, packaging
   distributorMargin: number; // Distributor markup
+  retailerPrice?: number; // Wholesale selling price to retailer
   retailerOverhead: number; // Retail store running cost
+  retailerStoreOverhead?: number; // Compatibility alias
   retailerMargin: number; // Retailer markup
   finalConsumerPrice: number; // Retail shelf price per kg
+  consumerPrice?: number; // Compatibility alias
   currency: string;
   fairPriceCeiling: number; // Government / APMC Fair benchmark ceiling
 }
@@ -131,6 +135,9 @@ export interface ProduceBatch {
   sensorLogs?: IoTSensorLog[];
   imageUrl?: string;
   description?: string;
+  distributorName?: string;
+  retailerName?: string;
+  distributorDetails?: any;
 }
 
 export interface PricePrediction {
@@ -162,13 +169,14 @@ export interface FraudAlert {
 
 export interface NotificationItem {
   id: string;
+  batchId?: string;
   targetRole: UserRole | 'all';
   targetUserId?: string;
   title: string;
   message: string;
   timestamp: string;
   read: boolean;
-  type: 'info' | 'success' | 'warning' | 'alert';
+  type: 'info' | 'success' | 'warning' | 'alert' | 'procurement' | 'cold-chain' | 'fraud' | 'system';
   linkTab?: string;
 }
 

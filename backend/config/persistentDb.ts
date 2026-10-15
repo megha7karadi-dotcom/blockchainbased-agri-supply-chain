@@ -12,6 +12,7 @@ const DB_FILE = path.join(DATA_DIR, 'agritrace_db.json');
 export interface DBUser {
   id: string;
   _id?: string;
+  userId?: string;
   name: string;
   email: string;
   password?: string;
@@ -193,7 +194,7 @@ class PersistentDatabase {
   }
 
   public findUserById(id: string): DBUser | null {
-    return this.data.users.find(u => u.id === id || u._id === id) || null;
+    return this.data.users.find(u => u.id === id || u._id === id || (u as any).userId === id) || null;
   }
 
   public findUserByPhone(phone: string): DBUser | null {

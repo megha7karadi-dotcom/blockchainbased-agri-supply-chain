@@ -55,8 +55,8 @@ interface AppContextType {
   navigate: (path: string, options?: { forceAuth?: boolean }) => void;
   loginUser: (emailOrRole: string, passwordOrEmail?: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   registerUser: (data: RegisterFormData) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string };
-  sendOtp: (phone: string, purpose?: 'login' | 'signup') => Promise<{ success: boolean; error?: string; otp?: string; message?: string; notRegistered?: boolean; alreadyRegistered?: boolean; userName?: string; userRole?: string }>;
-  loginWithOtp: (phone: string, otp: string) => Promise<{ success: boolean; error?: string }>;
+  sendOtp: (phone: string, purpose?: 'login' | 'signup') => Promise<{ success: boolean; error?: string; otp?: string; message?: string; notRegistered?: boolean; alreadyRegistered?: boolean; userName?: string; userRole?: string; cooldownSeconds?: number; provider?: string }>;
+  loginWithOtp: (phone: string, otp: string, options?: { name?: string; role?: UserRole }) => Promise<{ success: boolean; error?: string }>;
   registerWithOtp: (data: RegisterMobileFormData) => Promise<{ success: boolean; error?: string }>;
   logoutUser: () => void;
   authNotice: string | null;
@@ -102,7 +102,7 @@ interface AppContextType {
     retailerWalletAddress?: string,
     onProgress?: (msg: string) => void
   ) => Promise<ProduceBatch | null>;
-  retailerReceiveBatch: (batchId: string) => Promise<ProduceBatch | null>;
+  retailerReceiveBatch: (batchId: string, notes?: string) => Promise<ProduceBatch | null>;
   retailerSetFinalPrice: (batchId: string, purchasePrice: number, retailMargin: number, finalSellingPrice: number) => Promise<ProduceBatch | null>;
   retailerSellProduce: (batchId: string, soldQuantity: number, buyerNote?: string) => Promise<ProduceBatch | null>;
 
@@ -931,12 +931,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Mobile OTP Login Handler
-  const loginWithOtp = async (phone: string, otp: string): Promise<{ success: boolean; error?: string }> => {
+  const loginWithOtp = async (phone: string, otp: string, options?: { name?: string; role?: UserRole }): Promise<{ success: boolean; error?: string }> => {
     try {
       const response = await fetch('/api/auth/otp/verify-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, otp })
+        body: JSON.stringify({ phone, otp, ...options })
       });
       const resData = await response.json();
       if (!response.ok || !resData.token || !resData.user) {
@@ -1617,8 +1617,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return null;
   };
 
-  const retailerReceiveBatch = async (batchId: string): Promise<ProduceBatch | null> => {
-    const updated = await productService.retailerReceive(batchId);
+  const retailerReceiveBatch = async (batchId: string, notes?: string): Promise<ProduceBatch | null> => {
+    const updated = await productService.retailerReceive(batchId, notes);
     if (updated) {
       setBatches(prev => [updated, ...prev.filter(b => b.id !== updated.id && b.batchId !== updated.batchId)]);
       return updated;
