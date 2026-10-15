@@ -29,7 +29,6 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
   const { 
     isAuthenticated,
     currentRole, 
-    setRole,
     currentUser, 
     unreadNotificationCount, 
     notifications,
@@ -148,23 +147,8 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
               })}
             </nav>
           ) : (
-            /* Authenticated Workspace Indicator & Role Switcher */
-            <div className="hidden lg:flex items-center gap-1.5 bg-stone-100 p-1 rounded-md border border-stone-200">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 px-1.5">Role:</span>
-              {(['farmer', 'distributor', 'retailer', 'consumer', 'admin'] as const).map(r => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRole(r)}
-                  className={`px-2 py-0.5 rounded text-xs capitalize font-medium transition cursor-pointer ${
-                    currentRole === r 
-                      ? 'bg-[#16a34a] text-white font-bold shadow-2xs' 
-                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
+            <div className="hidden lg:flex items-center gap-2 text-sm font-medium text-stone-600">
+              <span className="capitalize">{currentRole} Workspace</span>
             </div>
           )}
 
@@ -363,33 +347,6 @@ export const Header: React.FC<Props> = ({ onOpenMobileSidebar, onOpenQRScanner }
                             <span className="text-slate-700 truncate">{currentUser.location}</span>
                           </div>
                         )}
-                      </div>
-
-                      {/* Switch Role / Workspace Section */}
-                      <div className="py-2 border-b border-stone-100">
-                        <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-stone-400">
-                          Switch Role / View As
-                        </div>
-                        <div className="grid grid-cols-2 gap-1 px-2">
-                          {(['farmer', 'distributor', 'retailer', 'consumer', 'admin'] as const).map(roleOption => (
-                            <button
-                              key={roleOption}
-                              type="button"
-                              onClick={() => {
-                                setRole(roleOption);
-                                setShowProfileMenu(false);
-                              }}
-                              className={`px-2 py-1.5 rounded text-left text-xs capitalize transition cursor-pointer flex items-center justify-between ${
-                                currentRole === roleOption 
-                                  ? 'bg-[#16a34a] text-white font-bold' 
-                                  : 'text-stone-700 hover:bg-stone-100'
-                              }`}
-                            >
-                              <span>{roleOption}</span>
-                              {currentRole === roleOption && <span className="w-1.5 h-1.5 rounded-full bg-emerald-200"></span>}
-                            </button>
-                          ))}
-                        </div>
                       </div>
 
                       {/* Account Actions */}
