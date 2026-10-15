@@ -252,7 +252,7 @@ class ProductService {
       certification: input.certification?.trim() || '',
       notes: input.notes?.trim() || '',
       farmgatePrice: Number(input.farmgatePrice),
-      priceUnit: input.priceUnit || `₹ / ${input.unit}`,
+      priceUnit: input.priceUnit || `â‚¹ / ${input.unit}`,
       farmerId: input.farmerId,
       createdAt,
       status: 'Registered',
@@ -263,7 +263,7 @@ class ProductService {
       category,
       farmerName: input.farmerName || 'Verified Producer',
       farmerLocation: `${input.farmLocation}${input.state ? `, ${input.state}` : ''}`,
-      farmCoordinates: '16.9902° N, 73.3120° E',
+      farmCoordinates: '16.9902Â° N, 73.3120Â° E',
       quantityKg: onChainBatch ? Number(onChainBatch.quantityKg) : quantityInKg,
       currentCustodianRole: 'farmer',
       currentCustodianName: input.farmerName || 'Verified Producer',
@@ -274,7 +274,7 @@ class ProductService {
         retailerOverhead: 0,
         retailerMargin: 0,
         finalConsumerPrice: Number(input.farmgatePrice),
-        currency: '₹',
+        currency: 'â‚¹',
         fairPriceCeiling: Math.round(Number(input.farmgatePrice) * 1.5),
       },
       quality: {
@@ -304,14 +304,14 @@ class ProductService {
           id: `tl-${Date.now()}`,
           stage: 'Farming',
           title: 'Harvest & Produce Batch Registered',
-          description: `Registered at ${input.farmLocation}, ${input.state}. Initial farmgate rate logged at ₹${input.farmgatePrice}/${input.unit}. Confirmed on Ethereum Sepolia in block #${onChainTx.blockNumber} (Tx: ${onChainTx.txHash.slice(0, 10)}...).`,
+          description: `Registered at ${input.farmLocation}, ${input.state}. Initial farmgate rate logged at â‚¹${input.farmgatePrice}/${input.unit}. Confirmed on Ethereum Sepolia in block #${onChainTx.blockNumber} (Tx: ${onChainTx.txHash.slice(0, 10)}...).`,
           actorName: input.farmerName || 'Verified Producer',
           actorRole: 'farmer',
           location: `${input.farmLocation}, ${input.state}`,
           timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
           blockNumber: onChainTx.blockNumber,
           txHash: onChainTx.txHash,
-          temperature: '22.0°C',
+          temperature: '22.0Â°C',
           humidity: '65%',
           verified: true,
         },
@@ -329,14 +329,17 @@ class ProductService {
       description: input.notes || `${input.cropName} harvested at ${input.farmLocation}. Batch logged on AgriTrace and persisted in MongoDB Atlas.`,
     };
 
-    // 2. Synchronize verified transaction to MongoDB Atlas
+    // 2. Synchronize the confirmed blockchain transaction to the backend.
     onProgress?.('Persisting confirmed batch record to database...');
-    try {
-      const token = typeof window !== 'undefined' 
-        ? (localStorage.getItem('agritrace_jwt_token') || sessionStorage.getItem('agritrace_jwt_token'))
-        : null;
 
-      const response = await fetch('/api/products', {
+    const token = typeof window !== 'undefined'
+      ? (localStorage.getItem('agritrace_jwt_token') || sessionStorage.getItem('agritrace_jwt_token'))
+      : null;
+
+    let response: Response;
+
+    try {
+      response = await fetch('/api/products', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -349,29 +352,51 @@ class ProductService {
           timeline: localBatch.timeline
         })
       });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.product) {
-          const apiProduct = result.product;
-          const mergedBatch: ProduceBatch = {
-            ...localBatch,
-            ...apiProduct,
-            id: apiProduct._id || apiProduct.id || localBatch.id,
-            batchId: apiProduct.batchId || localBatch.batchId,
-          };
-          const updated = [mergedBatch, ...existing.filter(b => b.batchId !== mergedBatch.batchId)];
-          this.saveBatches(updated);
-          return mergedBatch;
-        }
-      }
     } catch (err) {
-      console.warn('Network call to POST /api/products failed, saved to local cache:', err);
+      const reason = err instanceof Error ? err.message : String(err);
+      throw new Error(
+        `The blockchain transaction was submitted, but the backend could not be reached. ` +
+        `Transaction: ${onChainTx.txHash}; block: ${onChainTx.blockNumber}. ` +
+        `Do not register this batch again. Retry backend persistence for batch ${batchId}. ` +
+        `Details: ${reason}`
+      );
     }
 
-    const updated = [localBatch, ...existing];
+    let result: any;
+
+    try {
+      result = await response.json();
+    } catch {
+      throw new Error(
+        `The backend returned an unreadable response (HTTP ${response.status}). ` +
+        `Transaction: ${onChainTx.txHash}; block: ${onChainTx.blockNumber}; ` +
+        `batch: ${batchId}. The blockchain transaction may already be confirmed.`
+      );
+    }
+
+    if (!response.ok || !result?.success || !result?.product) {
+      throw new Error(
+        `Blockchain transaction ${onChainTx.txHash} was submitted, but backend persistence failed ` +
+        `(HTTP ${response.status}): ${result?.error || 'The backend did not return a saved product.'} ` +
+        `Batch: ${batchId}; block: ${onChainTx.blockNumber}. Do not submit a duplicate registration.`
+      );
+    }
+
+    const apiProduct = result.product;
+    const mergedBatch: ProduceBatch = {
+      ...localBatch,
+      ...apiProduct,
+      id: apiProduct._id || apiProduct.id || localBatch.id,
+      batchId: apiProduct.batchId || localBatch.batchId,
+    };
+
+    const updated = [
+      mergedBatch,
+      ...existing.filter(b => b.batchId !== mergedBatch.batchId)
+    ];
+
     this.saveBatches(updated);
-    return localBatch;
+    return mergedBatch;
   }
 
   /**
@@ -412,7 +437,7 @@ class ProductService {
         retailerOverhead: Number(p.pricing?.retailerOverhead ?? 0),
         retailerMargin: Number(p.pricing?.retailerMargin ?? 0),
         finalConsumerPrice: finalPrice,
-        currency: p.pricing?.currency || '₹',
+        currency: p.pricing?.currency || 'â‚¹',
         fairPriceCeiling: Number(p.pricing?.fairPriceCeiling ?? (farmgatePrice * 1.8)),
       },
       quality: {
@@ -428,14 +453,14 @@ class ProductService {
       blockchain: {
         contractAddress: p.blockchain?.contractAddress || getContractAddress(),
         tokenId: p.blockchain?.tokenId || `0x${p.batchId || 'BATCH'}`,
-        blockNumber: Number(p.blockchain?.blockNumber ?? 18945300),
-        mintTxHash: p.blockchain?.mintTxHash || '0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b',
+        blockNumber: Number(p.blockchain?.blockNumber ?? 0),
+        mintTxHash: p.blockchain?.mintTxHash || '',
         currentOwnerWallet: p.blockchain?.currentOwnerWallet || '0x71C...84B2',
         consensusMechanism: p.blockchain?.consensusMechanism || 'Ethereum Sepolia Ledger',
         gasUsed: p.blockchain?.gasUsed || '74,200 Gwei',
         merkleRootHash: p.blockchain?.merkleRootHash || '0x92865aebc0e3b622e2bbca1d6d455caf',
-        isTamperEvident: p.blockchain?.isTamperEvident ?? true,
-        statusNotice: p.blockchain?.statusNotice || 'Verified Ledger Entry',
+        isTamperEvident: p.blockchain?.isTamperEvident ?? false,
+        statusNotice: p.blockchain?.statusNotice || 'Not verified on-chain',
       },
       timeline: Array.isArray(p.timeline) && p.timeline.length > 0 ? p.timeline : [],
       sensorLogs: Array.isArray(p.sensorLogs) && p.sensorLogs.length > 0 ? p.sensorLogs : [],
@@ -584,7 +609,7 @@ class ProductService {
         id: `tl-${Date.now()}`,
         stage: 'Logistics',
         title: 'Transferred to Distributor',
-        description: `Transferred ${quantity} ${b.unit || 'kg'} to ${distributorName} at agreed price ₹${agreedPrice}/${b.unit || 'kg'}. Confirmed in block #${onChainTx.blockNumber}.`,
+        description: `Transferred ${quantity} ${b.unit || 'kg'} to ${distributorName} at agreed price â‚¹${agreedPrice}/${b.unit || 'kg'}. Confirmed in block #${onChainTx.blockNumber}.`,
         actorName: b.farmerName,
         actorRole: 'farmer',
         location: b.farmLocation,
@@ -659,7 +684,7 @@ class ProductService {
     onProgress?: (msg: string) => void
   ): Promise<ProduceBatch | null> {
     // 1. Authoritative Smart Contract State Execution & Validation Layer
-    console.log(`[AgriTrace] Updating distributor price on-chain for batch ${batchId} to ₹${sellingPrice}/kg...`);
+    console.log(`[AgriTrace] Updating distributor price on-chain for batch ${batchId} to â‚¹${sellingPrice}/kg...`);
     const onChainTx = await updateDistributorPriceOnChain(batchId, sellingPrice, onProgress);
     console.log(`[AgriTrace] Price updated on-chain in block #${onChainTx.blockNumber}, txHash: ${onChainTx.txHash}`);
 
@@ -732,7 +757,7 @@ class ProductService {
         id: `tl-${Date.now()}`,
         stage: 'Wholesale',
         title: 'Wholesale Price Configured on Smart Contract',
-        description: `Base purchase: ₹${purchasePrice}/${b.unit || 'kg'}, Margin: ${marginPercentage}%, Wholesale selling price: ₹${sellingPrice}/${b.unit || 'kg'}. Authoritatively committed on Sepolia in block #${onChainTx.blockNumber} (Tx: ${onChainTx.txHash.slice(0, 10)}...). Total confirmed price updates on-chain: ${onChainPriceHistory.length}.`,
+        description: `Base purchase: â‚¹${purchasePrice}/${b.unit || 'kg'}, Margin: ${marginPercentage}%, Wholesale selling price: â‚¹${sellingPrice}/${b.unit || 'kg'}. Authoritatively committed on Sepolia in block #${onChainTx.blockNumber} (Tx: ${onChainTx.txHash.slice(0, 10)}...). Total confirmed price updates on-chain: ${onChainPriceHistory.length}.`,
         actorName: onChainTx.signerAddress ? `Distributor (${onChainTx.signerAddress.slice(0, 8)}...${onChainTx.signerAddress.slice(-6)})` : (b.currentCustodianName || 'Distributor'),
         actorRole: 'distributor',
         location: 'Distribution Hub',
@@ -766,7 +791,7 @@ class ProductService {
         retailerOverhead: 15,
         retailerMargin: 20,
         finalConsumerPrice: sellingPrice,
-        currency: '₹',
+        currency: 'â‚¹',
         fairPriceCeiling: Math.round(purchasePrice * 2.2),
       },
       quality: {
@@ -794,7 +819,7 @@ class ProductService {
         id: `tl-${Date.now()}`,
         stage: 'Wholesale',
         title: 'Wholesale Price Configured on Smart Contract',
-        description: `Wholesale selling price: ₹${sellingPrice}/kg. Authoritatively committed on Sepolia in block #${onChainTx.blockNumber}.`,
+        description: `Wholesale selling price: â‚¹${sellingPrice}/kg. Authoritatively committed on Sepolia in block #${onChainTx.blockNumber}.`,
         actorName: onChainTx.signerAddress || 'Distributor',
         actorRole: 'distributor',
         location: 'Distribution Hub',
@@ -909,7 +934,7 @@ class ProductService {
         retailerOverhead: 15,
         retailerMargin: 20,
         finalConsumerPrice: sellingPrice,
-        currency: '₹',
+        currency: 'â‚¹',
         fairPriceCeiling: Math.round(sellingPrice * 1.5),
       },
       quality: {
@@ -1025,7 +1050,7 @@ class ProductService {
     finalSellingPrice: number
   ): Promise<ProduceBatch | null> {
     // 1. Authoritative Smart Contract State Execution & Validation Layer
-    console.log(`[AgriTrace] Updating retailer price on-chain for batch ${batchId} to ₹${finalSellingPrice}/kg...`);
+    console.log(`[AgriTrace] Updating retailer price on-chain for batch ${batchId} to â‚¹${finalSellingPrice}/kg...`);
     const onChainTx = await updateRetailerPriceOnChain(batchId, finalSellingPrice);
     console.log(`[AgriTrace] Retailer price updated on-chain in block #${onChainTx.blockNumber}, txHash: ${onChainTx.txHash}`);
 
@@ -1068,7 +1093,7 @@ class ProductService {
         id: `tl-${Date.now()}`,
         stage: 'Retail',
         title: 'Retail Selling Price Set',
-        description: `Wholesale cost: ₹${purchasePrice}/${b.unit || 'kg'}, Retail margin: ${retailMargin}%, Final shelf price: ₹${finalSellingPrice}/${b.unit || 'kg'}. Logged to blockchain audit trail.`,
+        description: `Wholesale cost: â‚¹${purchasePrice}/${b.unit || 'kg'}, Retail margin: ${retailMargin}%, Final shelf price: â‚¹${finalSellingPrice}/${b.unit || 'kg'}. Logged to blockchain audit trail.`,
         actorName: 'Retailer',
         actorRole: 'retailer',
         location: 'Retail Store Shelf',

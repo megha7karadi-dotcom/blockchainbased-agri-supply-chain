@@ -58,7 +58,7 @@ export const RetailerSell: React.FC = () => {
   const unit = selectedBatch?.unit || 'kg';
   const farmerPrice = selectedBatch?.pricing?.farmerPrice || selectedBatch?.farmgatePrice || 40;
   const wholesaleCost = farmerPrice + (selectedBatch?.pricing?.distributorLogisticsCost || 20) + (selectedBatch?.pricing?.distributorMargin || 15);
-  const consumerRate = selectedBatch?.pricing?.consumerPrice || (wholesaleCost + (selectedBatch?.pricing?.retailerStoreOverhead || 15) + (selectedBatch?.pricing?.retailerMargin || 20));
+  const consumerRate = selectedBatch?.pricing?.consumerPrice || (wholesaleCost + (selectedBatch?.pricing?.retailerOverhead || 15) + (selectedBatch?.pricing?.retailerMargin || 20));
 
   const totalBill = (parseFloat(sellQuantity) || 0) * consumerRate;
   const currentStock = selectedBatch?.quantityKg || selectedBatch?.quantity || 0;
@@ -178,7 +178,7 @@ export const RetailerSell: React.FC = () => {
                 >
                   {sellableBatches.map(b => (
                     <option key={b.id} value={b.id}>
-                      {b.cropName || b.name} ({b.batchId}) — {b.quantityKg || b.quantity} {b.unit || 'kg'} in stock
+                      {b.cropName || b.name} ({b.batchId}) â€” {b.quantityKg || b.quantity} {b.unit || 'kg'} in stock
                     </option>
                   ))}
                 </select>
@@ -190,7 +190,7 @@ export const RetailerSell: React.FC = () => {
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-2">
                 <div className="flex justify-between items-center text-slate-600">
                   <span>Farm Origin:</span>
-                  <span className="font-medium text-slate-800">{selectedBatch.farmerName} • {selectedBatch.farmLocation || selectedBatch.farmerLocation}</span>
+                  <span className="font-medium text-slate-800">{selectedBatch.farmerName} â€¢ {selectedBatch.farmLocation || selectedBatch.farmerLocation}</span>
                 </div>
                 <div className="flex justify-between items-center text-slate-600">
                   <span>Available Shelf Stock:</span>
@@ -198,7 +198,7 @@ export const RetailerSell: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center text-slate-600">
                   <span>Consumer Retail Rate:</span>
-                  <span className="font-mono font-bold text-emerald-800 text-sm">₹{consumerRate} / {unit}</span>
+                  <span className="font-mono font-bold text-emerald-800 text-sm">â‚¹{consumerRate} / {unit}</span>
                 </div>
               </div>
             )}
@@ -283,10 +283,10 @@ export const RetailerSell: React.FC = () => {
             <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center justify-between">
               <div>
                 <span className="text-[11px] font-semibold text-emerald-900 block">Total Amount Payable</span>
-                <span className="text-xs text-slate-600">{sellQuantity} {unit} @ ₹{consumerRate}/{unit}</span>
+                <span className="text-xs text-slate-600">{sellQuantity} {unit} @ â‚¹{consumerRate}/{unit}</span>
               </div>
               <div className="text-2xl font-black text-emerald-950 font-mono">
-                ₹{totalBill.toLocaleString()}
+                â‚¹{totalBill.toLocaleString()}
               </div>
             </div>
 
@@ -339,17 +339,17 @@ export const RetailerSell: React.FC = () => {
               <div className="border-t border-b border-dashed border-slate-300 py-3 space-y-2">
                 <div className="flex justify-between font-bold text-slate-900">
                   <span>{latestReceipt.cropName}</span>
-                  <span>₹{latestReceipt.totalAmount.toLocaleString()}</span>
+                  <span>â‚¹{latestReceipt.totalAmount.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-slate-500 text-[10px]">
-                  <span>{latestReceipt.quantity} {latestReceipt.unit} x ₹{latestReceipt.ratePerUnit}/{latestReceipt.unit}</span>
+                  <span>{latestReceipt.quantity} {latestReceipt.unit} x â‚¹{latestReceipt.ratePerUnit}/{latestReceipt.unit}</span>
                   <span>Farm: {latestReceipt.farmerName}</span>
                 </div>
               </div>
 
               <div className="flex justify-between font-extrabold text-sm text-slate-900 pt-1">
                 <span>Total Paid ({latestReceipt.paymentMode}):</span>
-                <span>₹{latestReceipt.totalAmount.toLocaleString()}</span>
+                <span>â‚¹{latestReceipt.totalAmount.toLocaleString()}</span>
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between">

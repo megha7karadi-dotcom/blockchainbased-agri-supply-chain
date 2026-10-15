@@ -362,7 +362,7 @@ export const FarmerDashboard: React.FC = () => {
     return sum + qty * price;
   }, 0);
 
-  const formattedRevenue = `₹${totalRevenue.toLocaleString('en-IN')}`;
+  const formattedRevenue = `â‚¹${totalRevenue.toLocaleString('en-IN')}`;
 
   const handleInspectBatch = (batchId: string) => {
     const existing = batches.find((b) => b.batchId === batchId || b.id === batchId);
@@ -408,7 +408,7 @@ export const FarmerDashboard: React.FC = () => {
             aria-label={t.close}
             title={t.close}
           >
-            ✕
+            âœ•
           </button>
         </div>
       )}
@@ -426,7 +426,7 @@ export const FarmerDashboard: React.FC = () => {
               {farmerName}
             </h1>
             <p className="text-xs sm:text-sm text-stone-600">
-              {farmerOrg} • <span className="text-stone-500">{farmerLocation}</span>
+              {farmerOrg} â€¢ <span className="text-stone-500">{farmerLocation}</span>
             </p>
           </div>
 
@@ -592,6 +592,7 @@ export const FarmerDashboard: React.FC = () => {
                     ? t.kg
                     : batch.unit || t.kg;
 
+
                 return (
                   <tr key={batch.id} className="hover:bg-stone-50/70 transition-colors">
                     <td className="py-3.5 px-4 font-mono font-bold text-stone-900 whitespace-nowrap">
@@ -700,6 +701,7 @@ export const FarmerDashboard: React.FC = () => {
                   </div>
                   <div className="text-[11px] text-stone-500">
                     {t.transporter}: KisanLogix Cold Fleet • {t.vehicle}: MH-04-TR-9182
+
                   </div>
                 </div>
 
@@ -707,12 +709,14 @@ export const FarmerDashboard: React.FC = () => {
                   <span className="font-mono font-bold text-emerald-950 text-xs">
                     ₹{batch.farmgatePrice || batch.pricing?.farmerPrice || '—'}/{t.kg}
                   </span>
+
                   <button
                     type="button"
                     onClick={() => navigate('/farmer/transfers')}
                     className="text-[11px] text-emerald-900 hover:underline font-semibold cursor-pointer"
                   >
                     {t.transfer} →
+
                   </button>
                 </div>
               </div>
@@ -736,6 +740,7 @@ export const FarmerDashboard: React.FC = () => {
                   {t.temperature}
                 </span>
                 <span className="font-bold text-stone-900 font-mono text-sm">31°C</span>
+
               </div>
               <div className="p-2.5 bg-stone-50 rounded-md border border-stone-200">
                 <span className="text-[10px] text-stone-500 block uppercase">
@@ -773,7 +778,6 @@ export const FarmerDashboard: React.FC = () => {
 
       {selectedQRBatch && (
         <QRCodeModal
-          isOpen={!!selectedQRBatch}
           onClose={() => setSelectedQRBatch(null)}
           batch={selectedQRBatch}
         />

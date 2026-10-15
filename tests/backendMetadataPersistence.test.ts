@@ -378,7 +378,7 @@ describe('Backend Transaction Metadata & Lifecycle Persistence Engine', () => {
       assert.strictEqual(json.product.quantity, 225);
     });
 
-    it('POST /api/products registers produce batch off-chain when no on-chain tx is claimed', async () => {
+    it('POST /api/products rejects registration without on-chain transaction metadata', async () => {
       const res = await fetch(baseUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -392,14 +392,11 @@ describe('Backend Transaction Metadata & Lifecycle Persistence Engine', () => {
           farmgatePrice: 35
         })
       });
-      assert.strictEqual(res.status, 201);
+      assert.strictEqual(res.status, 400);
       const json = await res.json();
-      assert.strictEqual(json.success, true);
-      assert.match(json.product.blockchain.statusNotice, /Off-Chain/i);
-      assert.strictEqual(json.product.timeline[0].verified, false);
-      assert.strictEqual(json.product.blockchain.mintTxHash, undefined);
+      assert.strictEqual(json.success, false);
+      assert.match(json.error, /on-chain registration is required/i);
     });
-
     it('POST /api/products rejects claimed on-chain registration if tx is not verified on Sepolia', async () => {
       const res = await fetch(baseUrl, {
         method: 'POST',

@@ -39,7 +39,7 @@ export const RetailerSetPrice: React.FC = () => {
 
   useEffect(() => {
     if (selectedBatch) {
-      setStoreOverhead(selectedBatch.pricing?.retailerStoreOverhead || 15);
+      setStoreOverhead(selectedBatch.pricing?.retailerOverhead || 15);
       setRetailMargin(selectedBatch.pricing?.retailerMargin || 20);
       setSuccessNotice(null);
       setErrorNotice(null);
@@ -76,7 +76,7 @@ export const RetailerSetPrice: React.FC = () => {
         totalConsumerPrice
       );
 
-      setSuccessNotice(`Consumer retail price for ${selectedBatch.cropName || selectedBatch.name} updated to ₹${totalConsumerPrice}/${unit}. Published to shelf barcode.`);
+      setSuccessNotice(`Consumer retail price for ${selectedBatch.cropName || selectedBatch.name} updated to â‚¹${totalConsumerPrice}/${unit}. Published to shelf barcode.`);
     } catch (err: any) {
       setErrorNotice(err?.message || 'Failed to update consumer price.');
     } finally {
@@ -169,7 +169,7 @@ export const RetailerSetPrice: React.FC = () => {
                 >
                   {shelfBatches.map(b => (
                     <option key={b.id} value={b.id}>
-                      {b.cropName || b.name} ({b.batchId}) — {b.quantityKg || b.quantity} {b.unit || 'kg'}
+                      {b.cropName || b.name} ({b.batchId}) â€” {b.quantityKg || b.quantity} {b.unit || 'kg'}
                     </option>
                   ))}
                 </select>
@@ -181,15 +181,15 @@ export const RetailerSetPrice: React.FC = () => {
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-2">
                 <div className="flex justify-between items-center text-slate-600">
                   <span>Farmgate Base (Farmer):</span>
-                  <span className="font-mono text-slate-900 font-semibold">₹{farmerPrice}/{unit}</span>
+                  <span className="font-mono text-slate-900 font-semibold">â‚¹{farmerPrice}/{unit}</span>
                 </div>
                 <div className="flex justify-between items-center text-slate-600">
                   <span>Cold Logistics & Distributor Share:</span>
-                  <span className="font-mono text-slate-900 font-semibold">₹{distributorPrice}/{unit}</span>
+                  <span className="font-mono text-slate-900 font-semibold">â‚¹{distributorPrice}/{unit}</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-slate-200 font-bold text-slate-900">
                   <span>Store Purchase Cost:</span>
-                  <span className="font-mono text-purple-900 text-sm">₹{wholesalePurchasePrice}/{unit}</span>
+                  <span className="font-mono text-purple-900 text-sm">â‚¹{wholesalePurchasePrice}/{unit}</span>
                 </div>
               </div>
             )}
@@ -198,10 +198,10 @@ export const RetailerSetPrice: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Store Overhead & Refrigeration Cost (₹ / {unit})
+                  Store Overhead & Refrigeration Cost (â‚¹ / {unit})
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-xs font-bold text-slate-400">₹</span>
+                  <span className="absolute left-3.5 top-2.5 text-xs font-bold text-slate-400">â‚¹</span>
                   <input
                     type="number"
                     min="0"
@@ -215,10 +215,10 @@ export const RetailerSetPrice: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Retail Store Net Margin (₹ / {unit})
+                  Retail Store Net Margin (â‚¹ / {unit})
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-xs font-bold text-slate-400">₹</span>
+                  <span className="absolute left-3.5 top-2.5 text-xs font-bold text-slate-400">â‚¹</span>
                   <input
                     type="number"
                     min="0"
@@ -241,7 +241,7 @@ export const RetailerSetPrice: React.FC = () => {
               ) : (
                 <>
                   <Tag className="w-4 h-4" />
-                  <span>Update Shelf Price to ₹{totalConsumerPrice}/{unit}</span>
+                  <span>Update Shelf Price to â‚¹{totalConsumerPrice}/{unit}</span>
                 </>
               )}
             </button>
@@ -265,11 +265,11 @@ export const RetailerSetPrice: React.FC = () => {
             <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-50 via-slate-50 to-pink-50/50 border border-purple-200 text-center space-y-1">
               <span className="text-xs text-slate-500 font-semibold block">Total Consumer Shelf Price</span>
               <div className="text-4xl font-black text-slate-900 font-mono">
-                ₹{totalConsumerPrice}
+                â‚¹{totalConsumerPrice}
                 <span className="text-sm font-semibold text-slate-500 ml-1">/ {unit}</span>
               </div>
               <span className="text-[11px] text-purple-700 font-bold block">
-                Fair Trade Certified • Zero Undisclosed Markup
+                Fair Trade Certified â€¢ Zero Undisclosed Markup
               </span>
             </div>
 
@@ -280,28 +280,28 @@ export const RetailerSetPrice: React.FC = () => {
                   <span className="font-bold text-slate-900 block">1. Farmer Price</span>
                   <span className="text-[11px] text-slate-500">Paid directly to {selectedBatch?.farmerName || 'Farmer'}</span>
                 </div>
-                <span className="font-mono font-bold text-emerald-800 text-sm">₹{farmerPrice} / {unit}</span>
+                <span className="font-mono font-bold text-emerald-800 text-sm">â‚¹{farmerPrice} / {unit}</span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                 <div>
                   <span className="font-bold text-slate-900 block">2. Distributor Price</span>
-                  <span className="text-[11px] text-slate-500">Reefer transport (₹{distributorLogistics}) + logistics margin (₹{distributorMargin})</span>
+                  <span className="text-[11px] text-slate-500">Reefer transport (â‚¹{distributorLogistics}) + logistics margin (â‚¹{distributorMargin})</span>
                 </div>
-                <span className="font-mono font-bold text-blue-800 text-sm">₹{distributorPrice} / {unit}</span>
+                <span className="font-mono font-bold text-blue-800 text-sm">â‚¹{distributorPrice} / {unit}</span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                 <div>
                   <span className="font-bold text-slate-900 block">3. Retailer Price</span>
-                  <span className="text-[11px] text-slate-500">Store handling & cooling (₹{storeOverhead}) + retail margin (₹{retailMargin})</span>
+                  <span className="text-[11px] text-slate-500">Store handling & cooling (â‚¹{storeOverhead}) + retail margin (â‚¹{retailMargin})</span>
                 </div>
-                <span className="font-mono font-bold text-purple-800 text-sm">₹{retailerPrice} / {unit}</span>
+                <span className="font-mono font-bold text-purple-800 text-sm">â‚¹{retailerPrice} / {unit}</span>
               </div>
 
               <div className="p-4 rounded-xl bg-purple-50 border border-purple-300 flex items-center justify-between font-bold">
                 <span className="text-slate-900">Total Consumer Price</span>
-                <span className="font-mono text-purple-950 text-base">₹{totalConsumerPrice} / {unit}</span>
+                <span className="font-mono text-purple-950 text-base">â‚¹{totalConsumerPrice} / {unit}</span>
               </div>
             </div>
 

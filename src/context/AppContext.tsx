@@ -58,6 +58,7 @@ interface AppContextType {
   registerUser: (data: RegisterFormData) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string };
   sendOtp: (phone: string, purpose?: 'login' | 'signup') => Promise<{ success: boolean; error?: string; otp?: string; message?: string; notRegistered?: boolean; alreadyRegistered?: boolean; userName?: string; userRole?: string; cooldownSeconds?: number; provider?: string }>;
   loginWithOtp: (phone: string, otp: string, options?: { name?: string; role?: UserRole }) => Promise<{ success: boolean; error?: string }>;
+
   registerWithOtp: (data: RegisterMobileFormData) => Promise<{ success: boolean; error?: string }>;
   logoutUser: () => void;
   authNotice: string | null;
@@ -945,6 +946,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     alreadyRegistered?: boolean;
     userName?: string;
     userRole?: string;
+    cooldownSeconds?: number;
+    provider?: string;
   }> => {
     try {
       const response = await fetch('/api/auth/otp/send', {
@@ -958,7 +961,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           success: false, 
           error: data.error || 'Failed to dispatch verification code.',
           notRegistered: data.notRegistered,
-          alreadyRegistered: data.alreadyRegistered
+          alreadyRegistered: data.alreadyRegistered,
+          cooldownSeconds: data.cooldownSeconds,
+          provider: data.provider
         };
       }
       return { 
@@ -966,7 +971,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         otp: data.otp, 
         message: data.message,
         userName: data.userName,
-        userRole: data.userRole
+        userRole: data.userRole,
+        cooldownSeconds: data.cooldownSeconds,
+        provider: data.provider
       };
     } catch (err: any) {
       console.error('sendOtp network call failed:', err);
@@ -1125,7 +1132,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
       blockNumber: mockBlock,
       txHash: mockHash,
-      temperature: '22.4°C',
+      temperature: '22.4Â°C',
       humidity: '65%',
       verified: true,
     };
@@ -1140,7 +1147,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       farmerName: currentUser.name,
       farmerLocation: currentUser.location,
       farmName: newBatchData.farmName || 'Green Valley Agro Farm',
-      farmCoordinates: newBatchData.farmCoordinates || '19.0760° N, 72.8777° E',
+      farmCoordinates: newBatchData.farmCoordinates || '19.0760Â° N, 72.8777Â° E',
       harvestDate: newBatchData.harvestDate || new Date().toISOString().split('T')[0],
       quantityKg: Number(newBatchData.quantityKg) || 500,
       status: 'Ready for Dispatch',
@@ -1153,7 +1160,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         retailerOverhead: 0,
         retailerMargin: 0,
         finalConsumerPrice: Number(newBatchData.pricing?.farmerPrice) || 40,
-        currency: '₹',
+        currency: 'â‚¹',
         fairPriceCeiling: Math.round((Number(newBatchData.pricing?.farmerPrice) || 40) * 1.8),
       },
       quality: {
@@ -1235,7 +1242,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     logisticsCost: number, 
     margin: number,
     vehicleNumber: string = 'MH-04-TR-9182',
-    targetTemp: string = '12°C'
+    targetTemp: string = '12Â°C'
   ) => {
     setBatches(prev => prev.map(batch => {
       if (batch.id !== batchId && batch.batchId !== batchId) return batch;
@@ -1266,7 +1273,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         retailerOverhead: batch.pricing?.retailerOverhead || 0,
         retailerMargin: batch.pricing?.retailerMargin || 0,
         finalConsumerPrice: (batch.pricing?.farmerPrice || batch.farmgatePrice || 40) + logisticsCost + margin,
-        currency: '₹',
+        currency: 'â‚¹',
         fairPriceCeiling: batch.pricing?.fairPriceCeiling || 120,
       };
 
@@ -1333,7 +1340,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
         blockNumber: mockBlock,
         txHash: mockTx,
-        temperature: '14.1°C',
+        temperature: '14.1Â°C',
         humidity: '79%',
         verified: qualityPassed,
       };
@@ -1377,7 +1384,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             cropName: batch.name || batch.cropName || 'Produce',
             severity: 'medium',
             alertType: 'Excessive Margin',
-            description: `Distributor wholesale quotation ₹${wholesalePrice}/kg exceeds APMC Fair Benchmark ceiling of ₹${fairCeiling}/kg.`,
+            description: `Distributor wholesale quotation â‚¹${wholesalePrice}/kg exceeds APMC Fair Benchmark ceiling of â‚¹${fairCeiling}/kg.`,
             flaggedBy: 'Fair Margin Protocol Auditor',
             timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }),
             status: 'Open',
@@ -1393,7 +1400,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         retailerOverhead: batch.pricing?.retailerOverhead || 0,
         retailerMargin: batch.pricing?.retailerMargin || 0,
         finalConsumerPrice: wholesalePrice + (batch.pricing?.retailerOverhead || 0) + (batch.pricing?.retailerMargin || 0),
-        currency: '₹',
+        currency: 'â‚¹',
         fairPriceCeiling: fairCeiling,
       };
 
@@ -1404,7 +1411,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: `tl-${Date.now()}`,
         stage: 'Wholesale',
         title: 'Wholesale Price & Margin Updated',
-        description: `Distributor revised logistics cost (₹${logisticsCost}/kg) and margin (₹${margin}/kg). Wholesale price locked at ₹${wholesalePrice}/kg.`,
+        description: `Distributor revised logistics cost (â‚¹${logisticsCost}/kg) and margin (â‚¹${margin}/kg). Wholesale price locked at â‚¹${wholesalePrice}/kg.`,
         actorName: 'Vikram Mehra (Distributor)',
         actorRole: 'distributor',
         location: 'Pune Regional Mandi Node',
@@ -1445,7 +1452,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
         blockNumber: mockBlock,
         txHash: mockTx,
-        temperature: '13.0°C',
+        temperature: '13.0Â°C',
         humidity: '82%',
         verified: true,
       };
@@ -1499,7 +1506,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         timestamp: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }),
         blockNumber: mockBlock,
         txHash: mockTx,
-        temperature: '18.0°C',
+        temperature: '18.0Â°C',
         humidity: '70%',
         verified: true,
       };
@@ -1539,7 +1546,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             cropName: batch.name,
             severity: 'medium',
             alertType: 'Excessive Margin',
-            description: `Retail shelf price ₹${finalConsumerPrice}/kg exceeds benchmark fair ceiling of ₹${batch.pricing.fairPriceCeiling}/kg.`,
+            description: `Retail shelf price â‚¹${finalConsumerPrice}/kg exceeds benchmark fair ceiling of â‚¹${batch.pricing.fairPriceCeiling}/kg.`,
             flaggedBy: 'Pricing Transparency Algorithmic Auditor',
             timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }),
             status: 'Open',

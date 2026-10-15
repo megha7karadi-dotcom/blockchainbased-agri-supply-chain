@@ -44,10 +44,7 @@ export const RetailerIncoming: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      await retailerReceiveBatch(
-        inspectingBatch.batchId,
-        shelfAisle.trim() || 'Store Fresh Produce Rack 1'
-      );
+      await retailerReceiveBatch(inspectingBatch.batchId);
 
       setSuccessMessage(`Consignment ${inspectingBatch.batchId} (${inspectingBatch.cropName || inspectingBatch.name}) has been verified and stocked onto store shelves.`);
       setInspectingBatch(null);
@@ -168,13 +165,13 @@ export const RetailerIncoming: React.FC = () => {
                     <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600">
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{farmer} • {location}</span>
+                        <span>{farmer} â€¢ {location}</span>
                       </span>
                       <span className="font-semibold text-slate-800">
                         Consignment: {qty} {unit}
                       </span>
                       <span className="font-mono text-purple-900 font-bold">
-                        Wholesale Cost: ₹{wholesalePrice}/{unit}
+                        Wholesale Cost: â‚¹{wholesalePrice}/{unit}
                       </span>
                     </div>
                   </div>
@@ -221,7 +218,7 @@ export const RetailerIncoming: React.FC = () => {
                 onClick={() => setInspectingBatch(null)}
                 className="text-slate-400 hover:text-slate-700 text-sm font-bold p-1"
               >
-                ✕
+                âœ•
               </button>
             </div>
 

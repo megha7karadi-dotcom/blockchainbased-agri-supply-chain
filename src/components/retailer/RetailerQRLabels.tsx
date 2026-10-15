@@ -37,7 +37,7 @@ export const RetailerQRLabels: React.FC = () => {
   const unit = selectedBatch?.unit || 'kg';
   const farmerPrice = selectedBatch?.pricing?.farmerPrice || selectedBatch?.farmgatePrice || 40;
   const distributorPrice = (selectedBatch?.pricing?.distributorLogisticsCost || 20) + (selectedBatch?.pricing?.distributorMargin || 15);
-  const retailerPrice = (selectedBatch?.pricing?.retailerStoreOverhead || 15) + (selectedBatch?.pricing?.retailerMargin || 20);
+  const retailerPrice = (selectedBatch?.pricing?.retailerOverhead || 15) + (selectedBatch?.pricing?.retailerMargin || 20);
   const consumerPrice = selectedBatch?.pricing?.consumerPrice || (farmerPrice + distributorPrice + retailerPrice);
 
   const handleCopy = async () => {
@@ -94,7 +94,7 @@ export const RetailerQRLabels: React.FC = () => {
             >
               {shelfBatches.map(b => (
                 <option key={b.id} value={b.id}>
-                  {b.cropName || b.name} — {b.batchId}
+                  {b.cropName || b.name} â€” {b.batchId}
                 </option>
               ))}
             </select>
@@ -140,7 +140,7 @@ export const RetailerQRLabels: React.FC = () => {
                   {selectedBatch.cropName || selectedBatch.name}
                 </h2>
                 {selectedBatch.cropVariety && (
-                  <span className="text-xs text-slate-500 font-medium">{selectedBatch.cropVariety} • {selectedBatch.qualityGrade || 'Grade A'}</span>
+                  <span className="text-xs text-slate-500 font-medium">{selectedBatch.cropVariety} â€¢ {selectedBatch.qualityGrade || 'Grade A'}</span>
                 )}
                 <div className="text-xs text-slate-600 mt-1">
                   Farm: <strong>{selectedBatch.farmerName}</strong> ({selectedBatch.farmLocation || selectedBatch.farmerLocation})
@@ -152,11 +152,11 @@ export const RetailerQRLabels: React.FC = () => {
                 <div>
                   <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Retail Price</span>
                   <div className="text-3xl font-black text-slate-900 font-mono">
-                    ₹{consumerPrice}
+                    â‚¹{consumerPrice}
                     <span className="text-xs font-semibold text-slate-500 ml-0.5">/{unit}</span>
                   </div>
                   <div className="text-[10px] text-emerald-800 font-bold mt-1">
-                    Farmer receives ₹{farmerPrice}/{unit} ({(farmerPrice / (consumerPrice || 1) * 100).toFixed(0)}%)
+                    Farmer receives â‚¹{farmerPrice}/{unit} ({(farmerPrice / (consumerPrice || 1) * 100).toFixed(0)}%)
                   </div>
                 </div>
 
@@ -177,21 +177,21 @@ export const RetailerQRLabels: React.FC = () => {
                 <div className="grid grid-cols-3 gap-1.5 text-center font-mono">
                   <div className="bg-emerald-50 border border-emerald-200 p-1.5 rounded-lg">
                     <span className="text-[9px] text-emerald-800 block font-sans">Farmer</span>
-                    <span className="font-bold text-emerald-900">₹{farmerPrice}</span>
+                    <span className="font-bold text-emerald-900">â‚¹{farmerPrice}</span>
                   </div>
                   <div className="bg-blue-50 border border-blue-200 p-1.5 rounded-lg">
                     <span className="text-[9px] text-blue-800 block font-sans">Cold Logistics</span>
-                    <span className="font-bold text-blue-900">₹{distributorPrice}</span>
+                    <span className="font-bold text-blue-900">â‚¹{distributorPrice}</span>
                   </div>
                   <div className="bg-purple-50 border border-purple-200 p-1.5 rounded-lg">
                     <span className="text-[9px] text-purple-800 block font-sans">Retail Store</span>
-                    <span className="font-bold text-purple-900">₹{retailerPrice}</span>
+                    <span className="font-bold text-purple-900">â‚¹{retailerPrice}</span>
                   </div>
                 </div>
               </div>
 
               <div className="text-[9px] text-slate-400 text-center font-mono">
-                Harvest Date: {selectedBatch.harvestDate} • Direct from Indian Agro Hubs
+                Harvest Date: {selectedBatch.harvestDate} â€¢ Direct from Indian Agro Hubs
               </div>
 
             </div>

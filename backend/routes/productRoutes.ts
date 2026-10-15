@@ -51,160 +51,8 @@ function generateBatchId(cropName: string, count: number = 0): string {
 
 // Initial seed products for immediate display & testing
 const SEED_PRODUCTS = [
-  {
-    batchId: 'AGRI-2026-MNG-001',
-    name: 'Alphonso Mangoes',
-    cropName: 'Alphonso Mangoes',
-    cropVariety: 'Ratnagiri GI Tagged Premium',
-    category: 'Fruits',
-    quantity: 1200,
-    unit: 'kg',
-    farmName: 'Sahyadri Organic Orchard',
-    farmLocation: 'Ratnagiri, Konkan Coastal Zone',
-    farmerLocation: 'Ratnagiri, Konkan Coastal Zone',
-    district: 'Ratnagiri',
-    state: 'Maharashtra',
-    pinCode: '415612',
-    harvestDate: '2026-03-28',
-    qualityGrade: 'Grade A',
-    certification: 'NPOP/NAB/0912/MH',
-    notes: 'Handpicked tree-ripened Alphonso mangoes with zero synthetic ripening agents.',
-    farmgatePrice: 180,
-    priceUnit: '₹ / kg',
-    farmerId: 'usr-farmer-01',
-    farmerName: 'Ramesh Patil',
-    status: 'Registered',
-    pricing: {
-      farmerPrice: 180,
-      distributorLogisticsCost: 35,
-      distributorMargin: 25,
-      retailerOverhead: 20,
-      retailerMargin: 30,
-      finalConsumerPrice: 290,
-      currency: '₹',
-      fairPriceCeiling: 320,
-    },
-    quality: {
-      grade: 'Grade A (Export Quality)',
-      freshnessScore: 98,
-      moistureContent: '82%',
-      pesticideResidueTest: 'Zero Residue (Certified Organic)',
-      organicCertificationNumber: 'NPOP/NAB/0912/MH',
-      certifyingBody: 'APEDA India / Aditi Organic Certifications',
-      harvestDate: '2026-03-28',
-      shelfLifeDays: 14,
-    },
-    blockchain: {
-      contractAddress: '0x110D36B8FA4FAc2Fc214c1F341261BA6654a57Ef',
-      tokenId: '0x001_MNG',
-      blockNumber: 18946210,
-      mintTxHash: '0x9a8f3b2c1e4d5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b',
-      currentOwnerWallet: '0x71C...84B2',
-      consensusMechanism: 'Ethereum Sepolia Ledger',
-      gasUsed: '74,200 Gwei',
-      merkleRootHash: '0x4f8a9b1c2d3e4f5a6b7c8d9e0f1a2b3c',
-      isTamperEvident: true,
-      statusNotice: 'Registered Producer Ledger Entry'
-    },
-    timeline: [
-      {
-        id: 'tl-1',
-        stage: 'Farming',
-        title: 'Harvest & Produce Batch Registered',
-        description: 'Harvested in Ratnagiri orchards. Quality verified Grade A organic and minted to decentralized registry.',
-        actorName: 'Ramesh Patil (Producer)',
-        actorRole: 'farmer',
-        location: 'Ratnagiri, Maharashtra',
-        timestamp: 'Mar 28, 2026, 07:30 AM',
-        temperature: '24.2°C',
-        humidity: '68%',
-        verified: true,
-      }
-    ],
-    sensorLogs: [
-      { timestamp: '08:00 AM', temperature: 24.2, humidity: 68, location: 'Ratnagiri Packhouse', status: 'optimal' }
-    ],
-    imageUrl: 'https://images.unsplash.com/photo-1553279768-865429fa0078?w=600&auto=format&fit=crop&q=80',
-    description: 'Authentic GI-tagged Ratnagiri Alphonso mangoes with farmgate pricing traceability and zero pesticide residues.',
-    createdAt: new Date('2026-03-28T07:30:00Z')
-  },
-  {
-    batchId: 'AGRI-2026-WHT-002',
-    name: 'Sharbati Organic Wheat',
-    cropName: 'Sharbati Organic Wheat',
-    cropVariety: 'Sehore Golden Grain',
-    category: 'Grains',
-    quantity: 5000,
-    unit: 'kg',
-    farmName: 'Narmada Valley Agro Trust',
-    farmLocation: 'Sehore, Narmada River Basin',
-    farmerLocation: 'Sehore, Narmada River Basin',
-    district: 'Sehore',
-    state: 'Madhya Pradesh',
-    pinCode: '466001',
-    harvestDate: '2026-04-02',
-    qualityGrade: 'Grade A',
-    certification: 'MP-ORG-2026-881',
-    notes: 'Rainfed Sharbati whole grain wheat naturally sun-dried.',
-    farmgatePrice: 48,
-    priceUnit: '₹ / kg',
-    farmerId: 'usr-farmer-02',
-    farmerName: 'Balwinder Singh',
-    status: 'In Transit',
-    pricing: {
-      farmerPrice: 48,
-      distributorLogisticsCost: 8,
-      distributorMargin: 6,
-      retailerOverhead: 5,
-      retailerMargin: 8,
-      finalConsumerPrice: 75,
-      currency: '₹',
-      fairPriceCeiling: 82,
-    },
-    quality: {
-      grade: 'Grade A (Export Quality)',
-      freshnessScore: 99,
-      moistureContent: '11.5%',
-      pesticideResidueTest: 'Zero Synthetic Chemicals Detected',
-      organicCertificationNumber: 'MP-ORG-2026-881',
-      certifyingBody: 'Madhya Pradesh Organic Certification Agency',
-      harvestDate: '2026-04-02',
-      shelfLifeDays: 365,
-    },
-    blockchain: {
-      contractAddress: '0x110D36B8FA4FAc2Fc214c1F341261BA6654a57Ef',
-      tokenId: '0x002_WHT',
-      blockNumber: 18946350,
-      mintTxHash: '0x3b2c1e4d5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d',
-      currentOwnerWallet: '0x3B2...9A41',
-      consensusMechanism: 'Ethereum Sepolia Ledger',
-      gasUsed: '68,400 Gwei',
-      merkleRootHash: '0x7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f',
-      isTamperEvident: true,
-      statusNotice: 'Registered Producer Ledger Entry'
-    },
-    timeline: [
-      {
-        id: 'tl-2',
-        stage: 'Farming',
-        title: 'Harvest & Grain Quality Tested',
-        description: 'Sun-dried wheat bagged and logged at Sehore co-operative depot.',
-        actorName: 'Balwinder Singh',
-        actorRole: 'farmer',
-        location: 'Sehore, MP',
-        timestamp: 'Apr 02, 2026, 09:15 AM',
-        temperature: '28.0°C',
-        humidity: '42%',
-        verified: true,
-      }
-    ],
-    sensorLogs: [
-      { timestamp: '09:30 AM', temperature: 28.0, humidity: 42, location: 'Sehore Granary Depot', status: 'optimal' }
-    ],
-    imageUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600&auto=format&fit=crop&q=80',
-    description: 'Premium Sehore Sharbati wheat, harvested organically and preserved in dry ambient conditions.',
-    createdAt: new Date('2026-04-02T09:15:00Z')
-  },
+,
+,
   {
     batchId: 'AGRI-2026-RIC-003',
     name: 'Organic Basmati Rice',
@@ -414,15 +262,30 @@ router.post('/', optionalJWT, async (req: AuthenticatedRequest, res: Response) =
     const submittedBlockNumber = body.blockNumber || body.blockchain?.blockNumber;
     const hasClaimedTx = Boolean(submittedTxHash && /^0x[0-9a-fA-F]{64}$/.test(submittedTxHash) && submittedTxHash !== '0x' + '0'.repeat(64));
 
-    let txValidation: any = { valid: true };
-    if (hasClaimedTx || submittedBlockNumber) {
-      txValidation = await validateTransactionMetadata(submittedTxHash, submittedBlockNumber, {
-        expectedAction: 'registerProduce',
-        batchId
+    if (
+      !hasClaimedTx ||
+      submittedBlockNumber === undefined ||
+      submittedBlockNumber === null ||
+      submittedBlockNumber === ''
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'On-chain registration is required. Submit the confirmed Sepolia transaction hash and block number.',
+        retryable: false
       });
-      if (!txValidation.valid) {
-        return res.status(400).json({ success: false, error: txValidation.error, retryable: txValidation.retryable });
-      }
+    }
+
+    const txValidation: any = await validateTransactionMetadata(submittedTxHash, submittedBlockNumber, {
+      expectedAction: 'registerProduce',
+      batchId
+    });
+
+    if (!txValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        error: txValidation.error,
+        retryable: txValidation.retryable
+      });
     }
 
     const initialTimeline = {

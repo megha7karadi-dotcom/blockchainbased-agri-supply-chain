@@ -453,6 +453,7 @@ export const MyProduce: React.FC = () => {
                     </td>
                   </tr>
                 ))}
+
               </tbody>
             </table>
           </div>
@@ -472,6 +473,7 @@ export const MyProduce: React.FC = () => {
                   <span className="text-[11px] px-2 py-0.5 rounded bg-stone-100 text-stone-700 font-medium border border-stone-200">
                     {getStatus(batch.status)}
                   </span>
+
                 </div>
                 <div>
                   <h3 className="font-bold text-[#1c1917] text-base">{getCropName(batch)}</h3>
@@ -565,6 +567,7 @@ export const MyProduce: React.FC = () => {
                 <span className="text-stone-400 block text-[10px] uppercase">{t.farmerPrice}</span>
                 <span className="font-bold text-[#16a34a] text-sm font-mono">
                   ₹{getPrice(inspectBatch)} / {getUnit(inspectBatch)}
+
                 </span>
               </div>
               <div className="p-3 bg-stone-50 rounded border border-stone-200">
@@ -612,7 +615,6 @@ export const MyProduce: React.FC = () => {
 
       {activeQRBatch && (
         <QRCodeModal
-          isOpen={!!activeQRBatch}
           onClose={() => setActiveQRBatch(null)}
           batch={activeQRBatch}
         />

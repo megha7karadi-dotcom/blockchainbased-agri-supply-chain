@@ -116,7 +116,7 @@ export const RetailerInventory: React.FC = () => {
                   const unit = batch.unit || 'kg';
                   const farmerPrice = batch.pricing?.farmerPrice || batch.farmgatePrice || 40;
                   const wholesaleCost = farmerPrice + (batch.pricing?.distributorLogisticsCost || 20) + (batch.pricing?.distributorMargin || 15);
-                  const consumerPrice = batch.pricing?.consumerPrice || (wholesaleCost + (batch.pricing?.retailerStoreOverhead || 15) + (batch.pricing?.retailerMargin || 20));
+                  const consumerPrice = batch.pricing?.consumerPrice || (wholesaleCost + (batch.pricing?.retailerOverhead || 15) + (batch.pricing?.retailerMargin || 20));
 
                   return (
                     <tr key={batch.id} className="hover:bg-slate-50/70 transition">
@@ -135,10 +135,10 @@ export const RetailerInventory: React.FC = () => {
                         {batch.quantityKg || batch.quantity} {unit}
                       </td>
                       <td className="py-3.5 px-4 font-mono text-slate-700 whitespace-nowrap">
-                        ₹{wholesaleCost}/{unit}
+                        â‚¹{wholesaleCost}/{unit}
                       </td>
                       <td className="py-3.5 px-4 font-mono font-extrabold text-emerald-800 whitespace-nowrap">
-                        ₹{consumerPrice}/{unit}
+                        â‚¹{consumerPrice}/{unit}
                       </td>
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className="font-semibold text-purple-800 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-lg text-[11px]">

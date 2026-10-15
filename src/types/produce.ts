@@ -37,6 +37,8 @@ export interface PriceBreakdown {
   retailerOverhead: number; // Retail store running cost
   retailerStoreOverhead?: number; // Compatibility alias
   retailerMargin: number; // Retailer markup
+
+  retailerPrice?: number;
   finalConsumerPrice: number; // Retail shelf price per kg
   consumerPrice?: number; // Compatibility alias
   currency: string;
@@ -113,7 +115,7 @@ export interface ProduceBatch {
   certification?: string;
   notes?: string;
   farmgatePrice?: number;
-  priceUnit?: string; // e.g. '₹ / kg'
+  priceUnit?: string; // e.g. 'â‚¹ / kg'
   farmerId: string;
   createdAt?: string;
   status: string;
@@ -128,6 +130,11 @@ export interface ProduceBatch {
   quantityKg?: number;
   currentCustodianRole?: UserRole;
   currentCustodianName?: string;
+
+
+  distributorName?: string;
+  retailerName?: string;
+  distributorDetails?: { vehicleNumber?: string; temperature?: string };
   pricing?: PriceBreakdown;
   quality?: QualityMetrics;
   blockchain?: BlockchainProof;
@@ -135,9 +142,6 @@ export interface ProduceBatch {
   sensorLogs?: IoTSensorLog[];
   imageUrl?: string;
   description?: string;
-  distributorName?: string;
-  retailerName?: string;
-  distributorDetails?: any;
 }
 
 export interface PricePrediction {
@@ -199,8 +203,8 @@ export interface PredictionModelDetails {
   perishabilityProfile: 'Perishable' | 'Semi-Perishable' | 'Durable Grain' | 'High-Volatility Cash Crop';
   accuracyRate: number; // e.g. 94.8%
   r2Score: number;      // e.g. 0.932
-  mae: number;          // Mean absolute error (₹/kg)
-  rmse: number;         // Root mean square error (₹/kg)
+  mae: number;          // Mean absolute error (â‚¹/kg)
+  rmse: number;         // Root mean square error (â‚¹/kg)
   description: string;
   selectionRationale: string;
 }

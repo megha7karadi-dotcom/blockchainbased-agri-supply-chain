@@ -1,6 +1,10 @@
 {
   "version": 1,
+<<<<<<< HEAD
   "lastUpdated": "2026-10-15T13:39:21.438Z",
+=======
+  "lastUpdated": "2026-10-15T09:31:18.719Z",
+>>>>>>> 7a3759a (Improve supply chain verification and dispatch)
   "users": [
     {
       "id": "usr-farmer-01",
@@ -142,16 +146,25 @@
       "createdAt": "2026-10-14T19:35:16.382Z"
     },
     {
+<<<<<<< HEAD
       "id": "usr-m-1792058760396",
       "userId": "usr-m-1792058760396",
       "name": "User 8888",
       "email": "9999988888@mobile.agritrace.org",
       "role": "farmer",
       "phone": "+91 99999 88888",
+=======
+      "id": "usr-m-1792056236820",
+      "name": "User 7688",
+      "email": "1243567688@mobile.agritrace.org",
+      "role": "farmer",
+      "phone": "+91 1243567688",
+>>>>>>> 7a3759a (Improve supply chain verification and dispatch)
       "location": "India",
       "organization": "AgriTrace Network",
       "kycStatus": "verified",
       "trustScore": 92,
+<<<<<<< HEAD
       "createdAt": "2026-10-15T10:06:00.396Z"
     },
     {
@@ -161,11 +174,25 @@
       "email": "9999999999@mobile.agritrace.org",
       "role": "farmer",
       "phone": "+91 9999999999",
+=======
+      "createdAt": "2026-10-15T09:23:56.820Z"
+    },
+    {
+      "id": "usr-m-1792056678719",
+      "name": "User 2317",
+      "email": "2154562317@mobile.agritrace.org",
+      "role": "farmer",
+      "phone": "+91 2154562317",
+>>>>>>> 7a3759a (Improve supply chain verification and dispatch)
       "location": "India",
       "organization": "AgriTrace Network",
       "kycStatus": "verified",
       "trustScore": 92,
+<<<<<<< HEAD
       "createdAt": "2026-10-15T13:39:21.438Z"
+=======
+      "createdAt": "2026-10-15T09:31:18.719Z"
+>>>>>>> 7a3759a (Improve supply chain verification and dispatch)
     }
   ],
   "products": [],
@@ -220,11 +247,26 @@
       "createdAt": 1792037528308
     },
     {
+<<<<<<< HEAD
       "phone": "+91 99999 88888",
       "code": "937852",
       "purpose": "login",
       "expiresAt": 1792059057343,
       "createdAt": 1792058757343
+=======
+      "phone": "+91 1243567688",
+      "code": "463552",
+      "purpose": "login",
+      "expiresAt": 1792056523951,
+      "createdAt": 1792056223951
+    },
+    {
+      "phone": "+91 2154562317",
+      "code": "546917",
+      "purpose": "login",
+      "expiresAt": 1792056975477,
+      "createdAt": 1792056675477
+>>>>>>> 7a3759a (Improve supply chain verification and dispatch)
     }
   ],
   "auditLogs": []

@@ -722,6 +722,16 @@ export async function dispatchToRetailerOnChain(
   retailerAddress: string,
   onProgress?: (msg: string) => void
 ): Promise<BlockchainTransactionResult> {
+  const configuredAddress = getContractAddress();
+  if (
+    !configuredAddress ||
+    configuredAddress.toLowerCase() !== AUTHORITATIVE_CONTRACT_ADDRESS.toLowerCase()
+  ) {
+    throw new Error(
+      `Contract Address Mismatch: Dispatch aborted. Configured contract (${configuredAddress || "none"}) does not match authoritative Sepolia contract (${AUTHORITATIVE_CONTRACT_ADDRESS}).`
+    );
+  }
+
   onProgress?.('Connecting to MetaMask and validating Sepolia network...');
   const { contract, signerAddress } = await getContractWithSigner('distributor');
 
