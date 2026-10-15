@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { X, QrCode, Camera, CheckCircle2, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
+
+import React, { useEffect, useRef, useState } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
+import { motion } from 'motion/react';
+import {
+  X, QrCode, Camera, CheckCircle2, AlertTriangle,
+  ArrowRight, Loader2, RefreshCw
+} from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useWallet } from '../../context/WalletContext';
 
@@ -12,228 +17,310 @@ interface Props {
 export const QRScannerModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const { batches, navigateToVerification } = useApp();
   const { addScanRecord, contractAddress } = useWallet();
+
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const handledRef = useRef(false);
   const [manualInput, setManualInput] = useState('');
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanResult, setScanResult] = useState<string | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
+  const [cameraId, setCameraId] = useState('');
+  const [scanMessage, setScanMessage] = useState('');
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen) return;
 
-  const handleScanSample = (batchIdOrCode: string) => {
-    setIsScanning(true);
-    setScanResult(null);
+    let cancelled = false;
+    const scanner = new Html5Qrcode('consumer-qr-reader');
+    scannerRef.current = scanner;
 
-    const match = batches.find(b => 
-      b.id === batchIdOrCode || 
-      b.batchId.toLowerCase() === batchIdOrCode.toLowerCase()
-    );
+    const startCamera = async () => {
+      try {
+        setError('');
+        setScanMessage('');
+        setCameraReady(false);
 
-    if (match) {
-      addScanRecord({
-        batchId: match.batchId,
-        name: match.name,
-        variety: match.variety,
-        imageUrl: match.imageUrl,
-        farmLocation: match.farmerLocation || match.farmLocation,
-        farmerName: match.farmerName,
-        finalPrice: match.pricing?.finalConsumerPrice,
-        farmerPrice: match.pricing?.farmerPrice,
-        qualityGrade: match.quality?.grade,
-        freshnessScore: match.quality?.freshnessScore,
-        status: match.status,
-        contractAddress: match.blockchain?.contractAddress || contractAddress,
-        tokenId: match.blockchain?.tokenId,
-        blockNumber: match.blockchain?.blockNumber,
-        networkName: match.blockchain?.consensusMechanism || 'Ethereum Sepolia',
-        isTamperEvident: true
-      });
-    }
+        const available = await Html5Qrcode.getCameras();
+        if (cancelled) return;
 
-    setTimeout(() => {
-      setIsScanning(false);
-      setScanResult(batchIdOrCode);
-      setTimeout(() => {
-        navigateToVerification(batchIdOrCode);
-        onClose();
-      }, 500);
-    }, 700);
-  };
+        if (!available.length) {
+          throw new Error('No camera was found on this device.');
+        }
 
-  const handleManualSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+        const mapped = available.map((camera) => ({
+          id: camera.id,
+          label: camera.label || `Camera ${available.indexOf(camera) + 1}`,
+        }));
+
+        setCameras(mapped);
+        const preferred = mapped.find((camera) =>
+          /back|rear|environment|world/i.test(camera.label)
+        ) || mapped[mapped.length - 1];
+
+        const selectedId = cameraId || preferred.id;
+        setCameraId(selectedId);
+
+        await scanner.start(
+          selectedId,
+          { fps: 10, qrbox: { width: 230, height: 230 }, aspectRatio: 1 },
+          (decodedText) => {
+            if (handledRef.current || cancelled) return;
+            handledRef.current = true;
+            setScanMessage(decodedText);
+            void scanner.stop().catch(() => undefined);
+            void processCode(decodedText);
+          },
+          () => undefined
+        );
+
+        if (!cancelled) setCameraReady(true);
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? `${err.message} Allow camera access and try again.`
+              : 'Unable to start the camera. Check camera permissions.'
+          );
+        }
+      }
+    };
+
+    const processCode = async (raw: string) => {
+      setBusy(true);
+      setError('');
+
+      try {
+        let cleanId = raw.trim();
+
+        try {
+          const url = new URL(cleanId);
+          const pathMatch = url.pathname.match(/\/verify\/([^/]+)/i);
+          if (pathMatch) cleanId = decodeURIComponent(pathMatch[1]);
+          else {
+            cleanId = url.searchParams.get('batchId')
+              || url.searchParams.get('id')
+              || cleanId;
+          }
+        } catch {
+          // The QR content may simply be a batch ID.
+        }
+
+        cleanId = cleanId.replace(/^\/?verify\/?/i, '').split('?')[0].split('#')[0].trim();
+
+        const match = batches.find((batch) =>
+          batch.id.toLowerCase() === cleanId.toLowerCase()
+          || batch.batchId.toLowerCase() === cleanId.toLowerCase()
+        );
+
+        if (!match) {
+          setError(`No matching produce batch was found for: ${cleanId}`);
+          setScanMessage('');
+          handledRef.current = false;
+          setBusy(false);
+          return;
+        }
+
+        addScanRecord({
+          batchId: match.batchId,
+          name: match.name,
+          variety: match.variety,
+          imageUrl: match.imageUrl,
+          farmLocation: match.farmerLocation || match.farmLocation,
+          farmerName: match.farmerName,
+          finalPrice: match.pricing?.finalConsumerPrice,
+          farmerPrice: match.pricing?.farmerPrice,
+          qualityGrade: match.quality?.grade,
+          freshnessScore: match.quality?.freshnessScore,
+          status: match.status,
+          contractAddress: match.blockchain?.contractAddress || contractAddress,
+          tokenId: match.blockchain?.tokenId,
+          blockNumber: match.blockchain?.blockNumber,
+          networkName: match.blockchain?.consensusMechanism || 'Ethereum Sepolia',
+          isTamperEvident: true,
+        });
+
+        setScanMessage(`Verified: ${match.batchId}`);
+        setTimeout(() => {
+          navigateToVerification(match.id);
+          onClose();
+        }, 500);
+      } catch {
+        setError('Could not process this QR code. Please try again.');
+        handledRef.current = false;
+        setBusy(false);
+      }
+    };
+
+    void startCamera();
+
+    return () => {
+      cancelled = true;
+      if (scannerRef.current?.isScanning) {
+        void scannerRef.current.stop()
+          .catch(() => undefined)
+          .finally(() => scannerRef.current?.clear());
+      } else {
+        void scannerRef.current?.clear();
+      }
+      scannerRef.current = null;
+    };
+    // Scanner lifecycle is controlled by opening/closing the modal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const submitManual = (event: React.FormEvent) => {
+    event.preventDefault();
     const raw = manualInput.trim();
     if (!raw) return;
-    
-    // Support either Batch ID or full pasted verification URL
-    const cleanId = raw.replace(/^.*\/verify\/?/, '').split('?')[0].split('#')[0].trim();
-    const match = batches.find(b => 
-      b.id === cleanId || 
-      b.batchId.toLowerCase() === cleanId.toLowerCase()
+
+    const cleaned = raw.replace(/^.*\/verify\/?/i, '').split('?')[0].split('#')[0].trim();
+    const match = batches.find((batch) =>
+      batch.id.toLowerCase() === cleaned.toLowerCase()
+      || batch.batchId.toLowerCase() === cleaned.toLowerCase()
     );
 
-    if (match) {
-      addScanRecord({
-        batchId: match.batchId,
-        name: match.name,
-        variety: match.variety,
-        imageUrl: match.imageUrl,
-        farmLocation: match.farmerLocation || match.farmLocation,
-        farmerName: match.farmerName,
-        finalPrice: match.pricing?.finalConsumerPrice,
-        farmerPrice: match.pricing?.farmerPrice,
-        qualityGrade: match.quality?.grade,
-        freshnessScore: match.quality?.freshnessScore,
-        status: match.status,
-        contractAddress: match.blockchain?.contractAddress || contractAddress,
-        tokenId: match.blockchain?.tokenId,
-        blockNumber: match.blockchain?.blockNumber,
-        networkName: match.blockchain?.consensusMechanism || 'Ethereum Sepolia',
-        isTamperEvident: true
-      });
+    if (!match) {
+      setError(`No matching produce batch was found for: ${cleaned}`);
+      return;
     }
 
-    navigateToVerification(cleanId);
+    setBusy(true);
+    addScanRecord({
+      batchId: match.batchId,
+      name: match.name,
+      variety: match.variety,
+      imageUrl: match.imageUrl,
+      farmLocation: match.farmerLocation || match.farmLocation,
+      farmerName: match.farmerName,
+      finalPrice: match.pricing?.finalConsumerPrice,
+      farmerPrice: match.pricing?.farmerPrice,
+      qualityGrade: match.quality?.grade,
+      freshnessScore: match.quality?.freshnessScore,
+      status: match.status,
+      contractAddress: match.blockchain?.contractAddress || contractAddress,
+      tokenId: match.blockchain?.tokenId,
+      blockNumber: match.blockchain?.blockNumber,
+      networkName: match.blockchain?.consensusMechanism || 'Ethereum Sepolia',
+      isTamperEvident: true,
+    });
+
+    navigateToVerification(match.id);
     onClose();
   };
 
+  const switchCamera = async (nextId: string) => {
+    const scanner = scannerRef.current;
+    if (!scanner || !scanner.isScanning || !nextId) return;
+
+    try {
+      await scanner.stop();
+      setCameraId(nextId);
+      handledRef.current = false;
+      setError('');
+      await scanner.start(
+        nextId,
+        { fps: 10, qrbox: { width: 230, height: 230 }, aspectRatio: 1 },
+        (decodedText) => {
+          if (handledRef.current) return;
+          handledRef.current = true;
+          setScanMessage(decodedText);
+          void scanner.stop().catch(() => undefined);
+          const input = document.querySelector<HTMLInputElement>('#consumer-qr-manual');
+          if (input) setManualInput(decodedText);
+          setError('QR detected. Press Verify if automatic lookup does not start.');
+        },
+        () => undefined
+      );
+    } catch {
+      setError('Could not switch cameras. Please try again.');
+    }
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Consumer QR scanner"
     >
-      <motion.div 
-        initial={{ scale: 0.95, opacity: 0, y: 10 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        transition={{ duration: 0.25, ease: 'easeOut' }}
-        className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200"
-      >
-        
-        {/* Modal Header */}
-        <div className="bg-white text-slate-900 p-4.5 flex items-center justify-between border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
-              <Camera className="w-5 h-5" />
+      <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+        <header className="flex items-center justify-between border-b border-slate-100 p-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-emerald-50 p-2 text-emerald-700">
+              <Camera className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-bold text-sm sm:text-base text-slate-900">Packaging QR Scanner</h3>
-              <p className="text-xs text-slate-500">Scan packaging label or enter Batch ID</p>
+              <h2 className="font-bold text-slate-900">Scan produce QR code</h2>
+              <p className="text-xs text-slate-500">Hold the code steady inside the frame</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition cursor-pointer"
-          >
-            <X className="w-5 h-5" />
+          <button onClick={onClose} aria-label="Close scanner" className="rounded-xl p-2 text-slate-500 hover:bg-slate-100">
+            <X className="h-5 w-5" />
           </button>
+        </header>
+
+        <div className="bg-slate-950 p-4">
+          <div id="consumer-qr-reader" className="mx-auto min-h-64 w-full max-w-sm overflow-hidden rounded-2xl" />
+          {!cameraReady && !error && (
+            <p className="flex items-center justify-center gap-2 py-3 text-sm text-slate-300">
+              <Loader2 className="h-4 w-4 animate-spin" /> Starting camera…
+            </p>
+          )}
+          {cameras.length > 1 && (
+            <label className="mt-3 flex items-center gap-2 text-sm text-white">
+              Camera
+              <select
+                value={cameraId}
+                onChange={(event) => void switchCamera(event.target.value)}
+                className="min-w-0 flex-1 rounded-lg bg-slate-800 p-2 text-white"
+              >
+                {cameras.map((camera) => (
+                  <option key={camera.id} value={camera.id}>{camera.label}</option>
+                ))}
+              </select>
+              <RefreshCw className="h-4 w-4" />
+            </label>
+          )}
+          {cameraReady && !busy && (
+            <p className="pt-3 text-center text-xs text-emerald-300">Camera active · scanning automatically</p>
+          )}
         </div>
 
-        {/* Optical Viewfinder */}
-        <div className="p-6 bg-slate-950 flex flex-col items-center justify-center text-center relative overflow-hidden">
-          
-          <div className="relative w-56 h-56 rounded-2xl border-2 border-emerald-500/40 bg-slate-900/90 flex flex-col items-center justify-center shadow-inner overflow-hidden">
-            {/* Corner reticles */}
-            <div className="absolute top-2.5 left-2.5 w-6 h-6 border-t-2 border-l-2 border-emerald-400 rounded-tl-sm"></div>
-            <div className="absolute top-2.5 right-2.5 w-6 h-6 border-t-2 border-r-2 border-emerald-400 rounded-tr-sm"></div>
-            <div className="absolute bottom-2.5 left-2.5 w-6 h-6 border-b-2 border-l-2 border-emerald-400 rounded-bl-sm"></div>
-            <div className="absolute bottom-2.5 right-2.5 w-6 h-6 border-b-2 border-r-2 border-emerald-400 rounded-br-sm"></div>
+        <div className="space-y-3 p-4">
+          {scanMessage && (
+            <p className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">
+              <CheckCircle2 className="h-4 w-4 shrink-0" /> {scanMessage}
+            </p>
+          )}
+          {error && (
+            <p role="alert" className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {error}
+            </p>
+          )}
 
-            {/* Continuous Sweeping Laser Scan Line */}
-            <motion.div 
-              animate={{ 
-                top: ['8%', '90%', '8%'] 
-              }}
-              transition={{ 
-                duration: 2.2, 
-                repeat: Infinity, 
-                ease: 'easeInOut' 
-              }}
-              className="absolute left-0 right-0 h-0.5 bg-emerald-500"
-            />
-
-            {isScanning ? (
-              <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="flex flex-col items-center text-emerald-600 space-y-2 z-10"
-              >
-                <Loader2 className="w-8 h-8 animate-spin" />
-                <span className="text-xs font-semibold">Reading QR Code...</span>
-              </motion.div>
-            ) : scanResult ? (
-              <motion.div 
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="flex flex-col items-center text-emerald-600 space-y-2 z-10"
-              >
-                <CheckCircle2 className="w-10 h-10" />
-                <span className="text-xs font-semibold">Verified Match</span>
-              </motion.div>
-            ) : (
-              <div className="flex flex-col items-center text-slate-400 space-y-2 p-4 z-10">
-                <QrCode className="w-12 h-12 text-slate-400" />
-                <span className="text-xs text-slate-500">Align QR code inside frame</span>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-3 text-xs text-slate-500 text-center">
-            <span>Point camera at QR code, or select a batch below</span>
-          </div>
-        </div>
-
-        {/* Quick sample pickers with produce thumbnails */}
-        <div className="p-4.5 bg-slate-50 border-t border-slate-200">
-          <div className="text-xs font-semibold text-slate-700 mb-2.5 flex items-center justify-between">
-            <span>Sample Produce Batches:</span>
-            <span className="text-[11px] text-emerald-700 font-medium">Select to view</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {batches.slice(0, 4).map(b => (
-              <motion.button
-                key={b.id}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleScanSample(b.id)}
-                className="p-2 text-left bg-white hover:bg-emerald-50/70 hover:border-emerald-300 border border-slate-200 rounded-xl transition text-xs group flex items-center gap-2 cursor-pointer shadow-2xs"
-              >
-                <img 
-                  src={b.imageUrl || '/assets/harvest_crates.svg'} 
-                  alt={b.name}
-                  onError={(e) => { e.currentTarget.src = '/assets/harvest_crates.svg'; }}
-                  className="w-9 h-9 rounded-lg object-cover shrink-0 border border-slate-200"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="font-bold text-slate-900 truncate group-hover:text-emerald-800 text-[11px]">{b.name}</div>
-                  <div className="font-mono text-[10px] text-slate-500 truncate">{b.batchId}</div>
-                </div>
-              </motion.button>
-            ))}
-          </div>
-
-          {/* Manual Input Fallback */}
-          <form onSubmit={handleManualSubmit} className="mt-3.5 pt-3 border-t border-slate-200 flex gap-2">
+          <form onSubmit={submitManual} className="flex gap-2">
             <input
-              type="text"
+              id="consumer-qr-manual"
               value={manualInput}
-              onChange={(e) => setManualInput(e.target.value)}
-              placeholder="Or enter Batch ID (e.g. AGRI-2026-MNG-001)"
-              className="flex-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:border-emerald-600 outline-none font-mono"
+              onChange={(event) => setManualInput(event.target.value)}
+              placeholder="Enter or paste a batch ID / QR URL"
+              className="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-emerald-600"
             />
-            <button
-              type="submit"
-              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1 transition shadow-xs cursor-pointer"
-            >
-              <span>Verify</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+            <button type="submit" disabled={busy} className="flex items-center gap-1 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
+              Verify <ArrowRight className="h-4 w-4" />
             </button>
           </form>
+          <p className="text-xs text-slate-500">
+            Camera access requires permission and a secure page (HTTPS or localhost).
+          </p>
         </div>
-
-      </motion.div>
+      </div>
     </motion.div>
   );
 };
-
