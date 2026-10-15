@@ -68,6 +68,63 @@ export function stringToBatchId(batchId: string): string {
  * Robustly resolves a human-readable or hexadecimal batch ID against the deployed
  * Sepolia smart contract to find the exact existing on-chain bytes32 batch ID.
  */
+/**
+ * Resolves an Ethereum transaction hash into its associated on-chain batch record by querying
+ * the confirmed Sepolia transaction receipt and decoding AgriTrace contract event logs.
+ */
+export async function resolveTransactionHashToBatch(txHashInput: string): Promise<{
+  batchId: string;
+  blockNumber: number;
+  txHash: string;
+  action: string;
+  cropName?: string;
+} | null> {
+  if (!txHashInput) return null;
+  const trimmed = txHashInput.trim();
+  if (!/^0x[0-9a-fA-F]{64}$/.test(trimmed)) return null;
+
+  try {
+    const provider = new JsonRpcProvider(getRpcUrl());
+    let receipt = await provider.getTransactionReceipt(trimmed);
+    if (!receipt || receipt.status !== 1) return null;
+
+    const contractAddress = getContractAddress().toLowerCase();
+    const iface = new Interface(AGRITRACE_ABI);
+    const contract = getReadOnlyContract();
+
+    for (const log of receipt.logs) {
+      if (log.address && log.address.toLowerCase() === contractAddress) {
+        try {
+          const parsed = iface.parseLog({ topics: log.topics as string[], data: log.data });
+          if (parsed?.args?.batchId) {
+            const batchId = String(parsed.args.batchId);
+            const exists = await contract.batchExists(batchId);
+            if (exists) {
+              const cropName = parsed.args?.cropName ? String(parsed.args.cropName) : undefined;
+              return {
+                batchId,
+                blockNumber: receipt.blockNumber,
+                txHash: trimmed,
+                action: parsed.name,
+                cropName
+              };
+            }
+          }
+        } catch {
+          // Skip non-AgriTrace log topics
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[resolveTransactionHashToBatch] Notice:', err);
+  }
+  return null;
+}
+
+/**
+ * Robustly resolves a human-readable, hexadecimal, or transaction hash identifier against the deployed
+ * Sepolia smart contract to find the exact existing on-chain bytes32 batch ID.
+ */
 export async function resolveBatchIdToBytes32(batchIdInput: string): Promise<string> {
   if (!batchIdInput) throw new Error('Batch ID cannot be empty');
   const trimmed = batchIdInput.trim();
@@ -82,10 +139,16 @@ export async function resolveBatchIdToBytes32(batchIdInput: string): Promise<str
   try {
     const contract = getReadOnlyContract();
     
-    // 1. If direct 66-char bytes32 hex
+    // 1. If direct 66-char bytes32 hex: check existence or resolve as transaction hash
     if (trimmed.startsWith('0x') && trimmed.length === 66) {
       const exists = await contract.batchExists(trimmed);
       if (exists) return trimmed;
+
+      // Check if this 66-char hex is a confirmed transaction hash on Sepolia
+      const txResolution = await resolveTransactionHashToBatch(trimmed);
+      if (txResolution && txResolution.batchId) {
+        return txResolution.batchId;
+      }
     }
 
     // 2. keccak256 hash of human-readable string (canonical AgriTrace on-chain format)
@@ -109,8 +172,9 @@ export async function resolveBatchIdToBytes32(batchIdInput: string): Promise<str
       const onChainId = await contract.getBatchIdAtIndex(i);
       const b = await contract.getBatch(onChainId);
       if (
-        b.cropName?.toLowerCase() === trimmed.toLowerCase() ||
-        onChainId.toLowerCase() === trimmed.toLowerCase()
+        (b.cropName && b.cropName.toLowerCase() === trimmed.toLowerCase()) ||
+        onChainId.toLowerCase() === trimmed.toLowerCase() ||
+        (trimmed.toLowerCase().includes(b.cropName?.toLowerCase() || '---'))
       ) {
         return onChainId;
       }

@@ -62,7 +62,7 @@ const UNIT_OPTIONS: ProduceUnit[] = ['kg', 'quintal', 'tonnes', 'litres', 'piece
 const GRADE_OPTIONS: QualityGrade[] = ['Grade A', 'Grade B', 'Grade C'];
 
 export const RegisterProduce: React.FC = () => {
-  const { currentUser, navigate, registerProductBatch } = useApp();
+  const { currentUser, navigate, registerProductBatch, setSelectedBatchId } = useApp();
   const { wallet, connect, isSepolia, switchToSepolia } = useWallet();
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -366,7 +366,15 @@ export const RegisterProduce: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
               id="btn-verify-on-chain"
-              onClick={() => navigate(`/verify/${registeredBatch.batchId}`)}
+              onClick={() => {
+                const targetId = registeredBatch?.batchId || registeredBatch?.blockchain?.mintTxHash || registeredBatch?.id;
+                if (targetId) {
+                  setSelectedBatchId(targetId);
+                  navigate(`/verify/${encodeURIComponent(targetId)}`);
+                } else {
+                  navigate('/verify');
+                }
+              }}
               className="w-full sm:w-auto px-6 py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
             >
               <FileCheck className="w-4 h-4" />

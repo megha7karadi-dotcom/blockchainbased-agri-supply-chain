@@ -37,6 +37,8 @@ interface WalletContextType {
   setTransactionSuccess: (hash: string, blockNumber: number, actionName: string) => void;
   setTransactionError: (errorMsg: string, actionName: string) => void;
   clearLastTx: () => void;
+  scanRecords: any[];
+  addScanRecord: (record: any) => void;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -65,6 +67,34 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     hash: null,
     status: 'idle',
   });
+
+  const [scanRecords, setScanRecords] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('agritrace_scan_records');
+        if (stored) return JSON.parse(stored);
+      } catch {
+        // ignore
+      }
+    }
+    return [];
+  });
+
+  const addScanRecord = useCallback((record: any) => {
+    if (!record || !record.batchId) return;
+    setScanRecords(prev => {
+      const filtered = prev.filter(r => r.batchId !== record.batchId);
+      const updated = [{ ...record, scannedAt: record.scannedAt || new Date().toISOString() }, ...filtered].slice(0, 50);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('agritrace_scan_records', JSON.stringify(updated));
+        } catch {
+          // ignore
+        }
+      }
+      return updated;
+    });
+  }, []);
 
   // Sync contract address from backend /api/blockchain/info if available
   useEffect(() => {
@@ -277,6 +307,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setTransactionSuccess,
         setTransactionError,
         clearLastTx,
+        scanRecords,
+        addScanRecord,
       }}
     >
       {children}

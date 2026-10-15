@@ -453,7 +453,12 @@ export async function validateTransactionMetadata(
 
     // Check target contract matches deployed AgriTrace contract
     const targetAddress = receipt.to || tx?.to;
-    if (deployedAddress && targetAddress && targetAddress.toLowerCase() !== deployedAddress.toLowerCase()) {
+    const hasLogFromDeployedContract = receipt.logs && receipt.logs.some(
+      (l: any) => l.address && deployedAddress && l.address.toLowerCase() === deployedAddress.toLowerCase()
+    );
+    const isDirectCall = Boolean(deployedAddress && targetAddress && targetAddress.toLowerCase() === deployedAddress.toLowerCase());
+
+    if (!isDirectCall && !hasLogFromDeployedContract) {
       return {
         valid: false,
         error: `Transaction recipient (${targetAddress}) does not match the deployed AgriTrace contract (${deployedAddress}).`
@@ -482,7 +487,7 @@ export async function validateTransactionMetadata(
             if (options.batchId && parsed.args && parsed.args.length > 0) {
               const expectedBatchB32 = stringToBytes32(options.batchId).toLowerCase();
               const txBatchB32 = String(parsed.args[0]).toLowerCase();
-              if (txBatchB32 !== expectedBatchB32) {
+              if (txBatchB32 !== expectedBatchB32 && options.batchId.toLowerCase() !== txBatchB32) {
                 return {
                   valid: false,
                   error: `Transaction ${txHash} target batch (${txBatchB32}) does not match the requested batch ID ${options.batchId} (${expectedBatchB32}).`
@@ -496,7 +501,7 @@ export async function validateTransactionMetadata(
         }
       }
 
-      // Method B: Reliable alternative - verify via receipt event logs if calldata was pruned or unavailable
+      // Method B: Reliable alternative - verify via receipt event logs if calldata was pruned, EntryPoint wrapped, or unavailable
       if (!actionVerified && receipt && receipt.logs && receipt.logs.length > 0 && abi) {
         try {
           const iface = new ethers.Interface(abi);
@@ -511,7 +516,13 @@ export async function validateTransactionMetadata(
               if (!parsedLog) continue;
 
               const logBatchB32 = parsedLog.args?.batchId ? String(parsedLog.args.batchId).toLowerCase() : null;
-              const batchMatches = !expectedBatchB32 || (logBatchB32 === expectedBatchB32);
+              const directBatchMatch = options.batchId ? options.batchId.toLowerCase() === logBatchB32 : false;
+              const cropMatches = Boolean(
+                options.batchId &&
+                parsedLog.args?.cropName &&
+                options.batchId.toLowerCase() === String(parsedLog.args.cropName).toLowerCase()
+              );
+              const batchMatches = !options.batchId || (logBatchB32 === expectedBatchB32) || directBatchMatch || cropMatches;
 
               if (batchMatches) {
                 if (options.expectedAction === 'updateDistributorPrice' && parsedLog.name === 'PriceUpdated') {
