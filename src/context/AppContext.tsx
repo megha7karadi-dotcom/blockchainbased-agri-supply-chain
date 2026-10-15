@@ -52,7 +52,7 @@ interface AppContextType {
   currentUser: UserProfile;
   setCurrentUser: (user: UserProfile) => void;
   currentPath: string;
-  navigate: (path: string, options?: { forceAuth?: boolean }) => void;
+  navigate: (path: string, options?: { forceAuth?: boolean; skipHistory?: boolean }) => void;
   goBack: (fallbackPath?: string) => void;
   loginUser: (emailOrRole: string, passwordOrEmail?: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   registerUser: (data: RegisterFormData) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string };
@@ -687,7 +687,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Navigate function: updates path, checks protected routes, pushes browser state
-  const navigate = (path: string, options?: { forceAuth?: boolean }) => {
+  const navigate = (path: string, options?: { forceAuth?: boolean; skipHistory?: boolean }) => {
     let target = path.startsWith('/') ? path : '/' + path;
 
     // Check for batch verification with ID
@@ -719,7 +719,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    if (currentPath && currentPath !== target) {
+    if (!options?.skipHistory && currentPath && currentPath !== target) {
       if (
         historyStackRef.current.length === 0 ||
         historyStackRef.current[historyStackRef.current.length - 1] !== currentPath
@@ -730,7 +730,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
     }
-
     setCurrentPath(target);
     setActiveTabState(pathToTab(target));
 
@@ -746,7 +745,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Safe back navigation handler with automatic parent fallback
+// Safe back navigation handler with automatic parent fallback
   const goBack = (fallbackPath?: string) => {
     while (
       historyStackRef.current.length > 0 &&
@@ -756,37 +755,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const previous = historyStackRef.current.pop();
+
     if (previous && previous !== currentPath) {
-      navigate(previous);
+      navigate(previous, { skipHistory: true });
       return;
     }
 
-    if (fallbackPath) {
-      navigate(fallbackPath);
-      return;
-    }
-
-    // Default sensible fallback based on current path and role
     const norm = currentPath.split('?')[0].replace(/\/$/, '') || '/';
-    if (norm.startsWith('/farmer/')) {
-      navigate('/farmer/dashboard');
-    } else if (norm.startsWith('/distributor/')) {
-      navigate('/distributor/dashboard');
-    } else if (norm.startsWith('/retailer/')) {
-      navigate('/retailer/dashboard');
-    } else if (norm.startsWith('/consumer/')) {
-      navigate('/consumer/dashboard');
-    } else if (norm.startsWith('/admin/')) {
-      navigate('/admin');
-    } else if (norm.startsWith('/verify') || norm === '/scan-qr') {
-      navigate('/trace-products');
-    } else if (norm === '/login' || norm === '/signup') {
-      navigate('/');
-    } else {
-      navigate('/');
-    }
-  };
+    const fallback =
+      fallbackPath ||
+      (norm.startsWith('/farmer/') ? '/farmer/dashboard' :
+      norm.startsWith('/distributor/') ? '/distributor/dashboard' :
+      norm.startsWith('/retailer/') ? '/retailer/dashboard' :
+      norm.startsWith('/consumer/') ? '/consumer/dashboard' :
+      norm.startsWith('/admin/') ? '/admin' :
+      norm.startsWith('/verify') || norm === '/scan-qr' ? '/trace-products' :
+      norm === '/login' || norm === '/signup' ? '/' : '/');
 
+    navigate(fallback, { skipHistory: true });
+  };
   // Sync with browser back/forward buttons safely without unexpected resets or redirects
   useEffect(() => {
     const handlePopState = () => {

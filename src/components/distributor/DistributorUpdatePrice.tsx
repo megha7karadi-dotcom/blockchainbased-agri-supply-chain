@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useApp } from '../../context/AppContext';
+import { BackButton } from '../common/BackButton';
 import { useWallet } from '../../context/WalletContext';
 import { ProduceBatch } from '../../types/produce';
 import { 
@@ -277,6 +278,9 @@ export const DistributorUpdatePrice: React.FC = () => {
       transition={{ duration: 0.3 }}
       className="space-y-8 pb-12"
     >
+      <div className="flex items-center justify-start">
+        <BackButton fallback="/distributor/dashboard" />
+      </div>
       
       {/* Header Banner */}
       <div className="bg-gradient-to-br from-blue-50/90 via-slate-50 to-indigo-50/50 text-slate-900 rounded-3xl p-6 sm:p-8 border border-blue-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">

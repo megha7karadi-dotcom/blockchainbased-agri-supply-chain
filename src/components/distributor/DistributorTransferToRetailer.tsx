@@ -18,6 +18,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { BackButton } from '../common/BackButton';
 import { useWallet } from '../../context/WalletContext';
 import { ProduceBatch } from '../../types/produce';
 import { 
@@ -440,6 +441,9 @@ export const DistributorTransferToRetailer: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-16">
+      <div className="flex items-center justify-start">
+        <BackButton fallback="/distributor/dashboard" />
+      </div>
       
       {/* 1. Header & Live Contract Context */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">
