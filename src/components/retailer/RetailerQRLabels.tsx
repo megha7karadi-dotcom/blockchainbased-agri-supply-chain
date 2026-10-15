@@ -37,7 +37,7 @@ export const RetailerQRLabels: React.FC = () => {
   const unit = selectedBatch?.unit || 'kg';
   const farmerPrice = selectedBatch?.pricing?.farmerPrice || selectedBatch?.farmgatePrice || 40;
   const distributorPrice = (selectedBatch?.pricing?.distributorLogisticsCost || 20) + (selectedBatch?.pricing?.distributorMargin || 15);
-  const retailerPrice = (selectedBatch?.pricing?.retailerStoreOverhead || 15) + (selectedBatch?.pricing?.retailerMargin || 20);
+  const retailerPrice = (selectedBatch?.pricing?.retailerOverhead || 15) + (selectedBatch?.pricing?.retailerMargin || 20);
   const consumerPrice = selectedBatch?.pricing?.consumerPrice || (farmerPrice + distributorPrice + retailerPrice);
 
   const handleCopy = async () => {

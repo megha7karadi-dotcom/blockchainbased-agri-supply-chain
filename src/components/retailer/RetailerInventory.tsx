@@ -116,7 +116,7 @@ export const RetailerInventory: React.FC = () => {
                   const unit = batch.unit || 'kg';
                   const farmerPrice = batch.pricing?.farmerPrice || batch.farmgatePrice || 40;
                   const wholesaleCost = farmerPrice + (batch.pricing?.distributorLogisticsCost || 20) + (batch.pricing?.distributorMargin || 15);
-                  const consumerPrice = batch.pricing?.consumerPrice || (wholesaleCost + (batch.pricing?.retailerStoreOverhead || 15) + (batch.pricing?.retailerMargin || 20));
+                  const consumerPrice = batch.pricing?.consumerPrice || (wholesaleCost + (batch.pricing?.retailerOverhead || 15) + (batch.pricing?.retailerMargin || 20));
 
                   return (
                     <tr key={batch.id} className="hover:bg-slate-50/70 transition">

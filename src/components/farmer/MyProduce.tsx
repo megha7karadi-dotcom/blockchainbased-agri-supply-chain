@@ -421,7 +421,6 @@ export const MyProduce: React.FC = () => {
       {/* QR Code Modal */}
       {activeQRBatch && (
         <QRCodeModal
-          isOpen={!!activeQRBatch}
           onClose={() => setActiveQRBatch(null)}
           batch={activeQRBatch}
         />

@@ -900,7 +900,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     notRegistered?: boolean; 
     alreadyRegistered?: boolean;
     userName?: string;
-    userRole?: string;
+    userRole?: string; cooldownSeconds?: number; provider?: string;
   }> => {
     try {
       const response = await fetch('/api/auth/otp/send', {

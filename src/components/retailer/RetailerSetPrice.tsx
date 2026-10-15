@@ -39,7 +39,7 @@ export const RetailerSetPrice: React.FC = () => {
 
   useEffect(() => {
     if (selectedBatch) {
-      setStoreOverhead(selectedBatch.pricing?.retailerStoreOverhead || 15);
+      setStoreOverhead(selectedBatch.pricing?.retailerOverhead || 15);
       setRetailMargin(selectedBatch.pricing?.retailerMargin || 20);
       setSuccessNotice(null);
       setErrorNotice(null);

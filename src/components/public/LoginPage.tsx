@@ -123,7 +123,7 @@ export const LoginPage: React.FC = () => {
 
     // Real-time detection: take mobile number as soon as 10 digits are entered
     if (cleanDigits.length === 10 && cleanDigits !== lastDispatchedPhoneRef.current && !otpLoading) {
-      setInfoMessage('⚡ 10-digit mobile number detected. Taking number in real time and sending OTP...');
+      setInfoMessage("10-digit mobile number detected. Sending OTP...");
       autoSendTimerRef.current = setTimeout(() => {
         handleSendOtp(cleanDigits);
       }, 350);
@@ -271,7 +271,7 @@ export const LoginPage: React.FC = () => {
             onClick={() => setAuthNotice(null)}
             className="text-amber-700 hover:text-amber-900 font-bold text-xs cursor-pointer"
           >
-            ✕
+            X
           </button>
         </div>
       )}
@@ -364,10 +364,10 @@ export const LoginPage: React.FC = () => {
                     disabled={otpSent}
                     className="px-2.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:border-emerald-600 focus:outline-none transition disabled:opacity-60 cursor-pointer"
                   >
-                    <option value="+91">🇮🇳 +91</option>
-                    <option value="+1">🇺🇸 +1</option>
-                    <option value="+44">🇬🇧 +44</option>
-                    <option value="+61">🇦🇺 +61</option>
+                    <option value="+91">India (+91)</option>
+                    <option value="+1">USA (+1)</option>
+                    <option value="+44">UK (+44)</option>
+                    <option value="+61">Australia (+61)</option>
                   </select>
                   <div className="relative flex-1 flex items-center">
                     <Phone className="absolute left-3.5 w-4 h-4 text-slate-400" />

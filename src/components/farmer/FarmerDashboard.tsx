@@ -399,7 +399,6 @@ export const FarmerDashboard: React.FC = () => {
       {/* QR Code Modal for Producer Packaging */}
       {selectedQRBatch && (
         <QRCodeModal
-          isOpen={!!selectedQRBatch}
           onClose={() => setSelectedQRBatch(null)}
           batch={selectedQRBatch}
         />
