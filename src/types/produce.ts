@@ -38,7 +38,6 @@ export interface PriceBreakdown {
   retailerStoreOverhead?: number; // Compatibility alias
   retailerMargin: number; // Retailer markup
 
-  retailerPrice?: number;
   finalConsumerPrice: number; // Retail shelf price per kg
   consumerPrice?: number; // Compatibility alias
   currency: string;
