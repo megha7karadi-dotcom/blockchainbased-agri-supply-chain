@@ -1,3 +1,4 @@
+import { BackButton } from '../common/BackButton';
 import React, { useState } from 'react';
 import { Star, MessageSquare, CheckCircle2, ShieldCheck, Heart } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -20,6 +21,7 @@ export const ConsumerFeedback: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 pb-12">
+      <BackButton fallback="/consumer/dashboard" />
       
       <div>
         <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">

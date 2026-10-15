@@ -1,3 +1,4 @@
+import { BackButton } from '../common/BackButton';
 import React from 'react';
 import { History, ShieldCheck, QrCode, ArrowRight, Star } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -34,6 +35,7 @@ export const ConsumerHistory: React.FC<{ onOpenQRScanner: () => void }> = ({ onO
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
+      <BackButton fallback="/consumer/dashboard" />
       
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

@@ -1,3 +1,4 @@
+import { BackButton } from '../common/BackButton';
 import React, { useState } from 'react';
 import { 
   Store, 
@@ -38,6 +39,7 @@ export const RetailerInventory: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-16">
+      <BackButton fallback="/retailer/dashboard" />
       
       {/* Header */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">

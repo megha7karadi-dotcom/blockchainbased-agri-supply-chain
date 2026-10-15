@@ -1,3 +1,4 @@
+import { BackButton } from '../common/BackButton';
 import React, { useState } from 'react';
 import {
   Handshake,
@@ -435,6 +436,7 @@ export const FarmerBids: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-16 max-w-6xl mx-auto">
+      <BackButton fallback="/farmer/dashboard" />
       {actionNotice && (
         <div className="p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 rounded-2xl flex items-center justify-between text-xs font-semibold animate-fadeIn shadow-sm">
           <div className="flex items-center gap-2">
