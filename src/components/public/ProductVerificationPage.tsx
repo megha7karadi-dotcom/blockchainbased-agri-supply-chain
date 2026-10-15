@@ -34,6 +34,7 @@ import { useWallet } from '../../context/WalletContext';
 import { SupplyChainTimeline } from '../common/SupplyChainTimeline';
 import { PriceBreakdownCard } from '../common/PriceBreakdownCard';
 import { QRCodeModal } from '../common/QRCodeModal';
+import { BackButton } from '../common/BackButton';
 import { ProduceBatch, TimelineEvent } from '../../types/produce';
 import { productService } from '../../services/productService';
 import { getContractAddress, SEPOLIA_EXPLORER_URL, isContractConfigured } from '../../lib/blockchain/config';
@@ -491,7 +492,11 @@ export const ProductVerificationPage: React.FC<{ onOpenQRScanner: () => void }> 
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-16">
+    <div className="max-w-5xl mx-auto space-y-6 pb-16">
+      {/* Top Navigation Back Button */}
+      <div className="flex items-center justify-start">
+        <BackButton fallback="/trace-products" />
+      </div>
       
       {/* Search Header */}
       <div className="bg-white rounded-xl p-5 sm:p-6 border border-[#bbf7d0] shadow-xs space-y-4">

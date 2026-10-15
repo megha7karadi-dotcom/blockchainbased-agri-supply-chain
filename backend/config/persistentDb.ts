@@ -244,12 +244,19 @@ class PersistentDatabase {
     return otpEntry;
   }
 
+  public consumeOtp(phone: string): void {
+    const digits = phone.replace(/[^0-9]/g, '').slice(-10);
+    this.data.otps = this.data.otps.filter(o => o.phone.replace(/[^0-9]/g, '').slice(-10) !== digits);
+    this.saveToDisk();
+  }
+
   public verifyOtp(phone: string, code: string): boolean {
     const digits = phone.replace(/[^0-9]/g, '').slice(-10);
-    const cleanCode = code.trim();
+    const cleanCode = code ? code.trim() : '';
 
-    // Universal test code support for convenience
-    if (cleanCode === '123456') return true;
+    if (!cleanCode || cleanCode.length !== 6 || digits.length < 10) {
+      return false;
+    }
 
     const entryIndex = this.data.otps.findIndex(o => 
       o.phone.replace(/[^0-9]/g, '').slice(-10) === digits &&
@@ -258,7 +265,7 @@ class PersistentDatabase {
     );
 
     if (entryIndex >= 0) {
-      // Consume OTP
+      // Consume OTP immediately so it cannot be reused
       this.data.otps.splice(entryIndex, 1);
       this.saveToDisk();
       return true;

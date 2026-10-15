@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-10-15T10:06:00.396Z",
+  "lastUpdated": "2026-10-15T13:39:21.438Z",
   "users": [
     {
       "id": "usr-farmer-01",
@@ -153,6 +153,19 @@
       "kycStatus": "verified",
       "trustScore": 92,
       "createdAt": "2026-10-15T10:06:00.396Z"
+    },
+    {
+      "id": "usr-m-1792071561438",
+      "userId": "usr-m-1792071561438",
+      "name": "User 9999",
+      "email": "9999999999@mobile.agritrace.org",
+      "role": "farmer",
+      "phone": "+91 9999999999",
+      "location": "India",
+      "organization": "AgriTrace Network",
+      "kycStatus": "verified",
+      "trustScore": 92,
+      "createdAt": "2026-10-15T13:39:21.438Z"
     }
   ],
   "products": [],

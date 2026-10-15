@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ProduceBatch } from '../../types/produce';
+import { BackButton } from '../common/BackButton';
 
 export const DistributorInventory: React.FC = () => {
   const { batches, navigate, setSelectedBatchId } = useApp();
@@ -39,7 +40,11 @@ export const DistributorInventory: React.FC = () => {
   });
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-16">
+    <div className="max-w-6xl mx-auto space-y-6 pb-16">
+      {/* Top Navigation Back Button */}
+      <div className="flex items-center justify-start">
+        <BackButton fallback="/distributor/dashboard" />
+      </div>
       
       {/* Header */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">

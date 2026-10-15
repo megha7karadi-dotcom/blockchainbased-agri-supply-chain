@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { RealtimeSmsNotification } from '../common/RealtimeSmsNotification';
+import { BackButton } from '../common/BackButton';
 
 export const LoginPage: React.FC = () => {
   const { loginUser, sendOtp, loginWithOtp, navigate, authNotice, setAuthNotice, isAuthenticated, currentRole } = useApp();
@@ -123,7 +124,7 @@ export const LoginPage: React.FC = () => {
 
     // Real-time detection: take mobile number as soon as 10 digits are entered
     if (cleanDigits.length === 10 && cleanDigits !== lastDispatchedPhoneRef.current && !otpLoading) {
-      setInfoMessage("10-digit mobile number detected. Sending OTP...");
+      setInfoMessage('⚡ 10-digit mobile number detected. Taking number in real time and sending OTP...');
       autoSendTimerRef.current = setTimeout(() => {
         handleSendOtp(cleanDigits);
       }, 350);
@@ -191,19 +192,31 @@ export const LoginPage: React.FC = () => {
   // Verify OTP & Sign In Handler
   const handleVerifyOtpLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading || otpLoading) return;
     setErrorMessage('');
 
-    if (!otpCode.trim() || otpCode.trim().length < 6) {
-      setErrorMessage('Please enter the complete 6-digit OTP code.');
+    const cleanDigits = phoneNumber.replace(/[^0-9]/g, '');
+    if (cleanDigits.length < 10) {
+      setErrorMessage('Please enter a valid 10-digit mobile number.');
       return;
     }
 
-    const cleanDigits = phoneNumber.replace(/[^0-9]/g, '');
+    if (!otpSent) {
+      setErrorMessage('Please request a verification code before submitting.');
+      return;
+    }
+
+    const cleanOtp = otpCode.trim();
+    if (!cleanOtp || cleanOtp.length !== 6 || !/^\d{6}$/.test(cleanOtp)) {
+      setErrorMessage('Please enter the complete 6-digit OTP verification code.');
+      return;
+    }
+
     const fullPhone = `${phoneCountryCode} ${cleanDigits}`;
     setIsLoading(true);
 
     try {
-      const result = await loginWithOtp(fullPhone, otpCode.trim(), {
+      const result = await loginWithOtp(fullPhone, cleanOtp, {
         name: newUserName.trim() || undefined,
         role: newUserRole
       });
@@ -220,6 +233,7 @@ export const LoginPage: React.FC = () => {
   // Standard Email/Password Login Handler
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setErrorMessage('');
     setInfoMessage('');
 
@@ -248,7 +262,12 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto py-12 px-4 space-y-6">
+    <div className="max-w-md mx-auto py-10 px-4 space-y-4">
+      {/* Top Navigation Back Button */}
+      <div className="flex items-center justify-start">
+        <BackButton fallback="/" />
+      </div>
+
       {/* Realtime SMS Notification Overlay */}
       <RealtimeSmsNotification 
         sms={smsNotification}
@@ -271,7 +290,7 @@ export const LoginPage: React.FC = () => {
             onClick={() => setAuthNotice(null)}
             className="text-amber-700 hover:text-amber-900 font-bold text-xs cursor-pointer"
           >
-            X
+            ✕
           </button>
         </div>
       )}
@@ -364,10 +383,10 @@ export const LoginPage: React.FC = () => {
                     disabled={otpSent}
                     className="px-2.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:border-emerald-600 focus:outline-none transition disabled:opacity-60 cursor-pointer"
                   >
-                    <option value="+91">India (+91)</option>
-                    <option value="+1">USA (+1)</option>
-                    <option value="+44">UK (+44)</option>
-                    <option value="+61">Australia (+61)</option>
+                    <option value="+91">🇮🇳 +91</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+44">🇬🇧 +44</option>
+                    <option value="+61">🇦🇺 +61</option>
                   </select>
                   <div className="relative flex-1 flex items-center">
                     <Phone className="absolute left-3.5 w-4 h-4 text-slate-400" />

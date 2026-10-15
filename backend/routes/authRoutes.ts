@@ -382,27 +382,36 @@ router.post('/otp/verify-login', async (req: Request, res: Response) => {
   try {
     const { phone, otp, name, fullName, role } = req.body;
 
-    if (!phone || !otp) {
+    const cleanPhone = String(phone || '').trim();
+    const cleanOtp = String(otp || '').trim();
+
+    if (!cleanPhone || !cleanOtp) {
       return res.status(400).json({ error: 'Mobile number and verification code are required.' });
     }
 
-    const digits = normalizePhone(phone);
+    const digits = normalizePhone(cleanPhone);
     if (digits.length < 10) {
-      return res.status(400).json({ error: 'Invalid mobile number format.' });
+      return res.status(400).json({ error: 'Invalid mobile number format. Please provide a 10-digit number.' });
+    }
+
+    if (!/^\d{6}$/.test(cleanOtp)) {
+      return res.status(400).json({ error: 'Verification code must be exactly 6 digits.' });
     }
 
     // 1. Strict validation with secure SMS service
-    const otpVerification = smsService.verifyOtp(phone.trim(), String(otp).trim());
+    const otpVerification = smsService.verifyOtp(cleanPhone, cleanOtp);
     if (!otpVerification.valid) {
       // Fallback check against persistentDb
-      const dbFallback = persistentDb.verifyOtp(phone.trim(), String(otp).trim());
+      const dbFallback = persistentDb.verifyOtp(cleanPhone, cleanOtp);
       if (!dbFallback) {
         return res.status(400).json({ 
           error: otpVerification.message || 'Invalid or expired verification code.',
           attemptsRemaining: otpVerification.attemptsRemaining,
-          errorCode: otpVerification.errorCode
+          errorCode: otpVerification.errorCode || 'INVALID_CODE'
         });
       }
+    } else {
+      persistentDb.consumeOtp(cleanPhone);
     }
 
     // Lookup user by phone
@@ -504,28 +513,37 @@ router.post('/otp/verify-signup', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Full name is required.' });
     }
 
-    if (!phone) {
-      return res.status(400).json({ error: 'Mobile number is required.' });
+    const cleanPhone = String(phone || '').trim();
+    const cleanOtp = String(otp || '').trim();
+
+    if (!cleanPhone || !cleanOtp) {
+      return res.status(400).json({ error: 'Mobile number and verification code are required.' });
     }
 
-    const digits = normalizePhone(phone);
+    const digits = normalizePhone(cleanPhone);
     if (digits.length < 10) {
       return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number.' });
+    }
+
+    if (!/^\d{6}$/.test(cleanOtp)) {
+      return res.status(400).json({ error: 'Verification code must be exactly 6 digits.' });
     }
 
     const key = digits.slice(-10);
 
     // 1. Strict validation with secure SMS service
-    const otpVerification = smsService.verifyOtp(phone.trim(), String(otp).trim());
+    const otpVerification = smsService.verifyOtp(cleanPhone, cleanOtp);
     if (!otpVerification.valid) {
-      const dbFallback = persistentDb.verifyOtp(phone.trim(), String(otp).trim());
+      const dbFallback = persistentDb.verifyOtp(cleanPhone, cleanOtp);
       if (!dbFallback) {
         return res.status(400).json({ 
           error: otpVerification.message || 'Invalid or expired verification code.',
           attemptsRemaining: otpVerification.attemptsRemaining,
-          errorCode: otpVerification.errorCode
+          errorCode: otpVerification.errorCode || 'INVALID_CODE'
         });
       }
+    } else {
+      persistentDb.consumeOtp(cleanPhone);
     }
 
     // Role validation

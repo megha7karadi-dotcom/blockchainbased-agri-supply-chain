@@ -18,6 +18,7 @@ import {
   Layers
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { BackButton } from '../common/BackButton';
 
 export interface EscrowTransaction {
   id: string;
@@ -190,7 +191,11 @@ export const FarmerTransactions: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 pb-16 max-w-6xl mx-auto">
+    <div className="space-y-6 pb-16 max-w-6xl mx-auto">
+      {/* Top Navigation Back Button */}
+      <div className="flex items-center justify-start">
+        <BackButton fallback="/farmer/dashboard" />
+      </div>
       
       {/* Toast Notice */}
       {withdrawSuccessNotice && (

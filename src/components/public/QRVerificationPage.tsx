@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { QrCode, Camera, ShieldCheck, CheckCircle2, ArrowRight, ExternalLink } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { QRCodeModal } from '../common/QRCodeModal';
+import { BackButton } from '../common/BackButton';
 
 export const QRVerificationPage: React.FC<{ onOpenQRScanner: () => void }> = ({ onOpenQRScanner }) => {
   const { batches, navigateToVerification } = useApp();
@@ -13,8 +14,12 @@ export const QRVerificationPage: React.FC<{ onOpenQRScanner: () => void }> = ({ 
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="max-w-5xl mx-auto space-y-8 pb-12"
+      className="max-w-5xl mx-auto space-y-6 pb-12"
     >
+      {/* Top Navigation Back Button */}
+      <div className="flex items-center justify-start">
+        <BackButton fallback="/trace-products" />
+      </div>
       
       {/* Hero Banner */}
       <div className="bg-gradient-to-br from-emerald-50/90 via-teal-50/40 to-slate-50 text-slate-900 rounded-3xl p-6 sm:p-10 border border-emerald-200/90 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6">

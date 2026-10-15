@@ -317,8 +317,9 @@ class SecureSmsOtpService {
       console.warn(`[SMS Service] External provider ${providerConfig.provider} dispatch error:`, dispatchErr?.message);
     }
 
+    const maskedPhone = phone.trim().replace(/(\d{3})\d+(\d{3})/, '$1****$2');
     console.log(
-      `[AgriTrace SMS Gateway] [${providerConfig.name}] Dispatched OTP [${rawOtp}] to ${phone.trim()} (Purpose: ${purpose}, External Dispatched: ${externalDispatched})`
+      `[AgriTrace SMS Gateway] [${providerConfig.name}] Dispatched verification code to ${maskedPhone} (Purpose: ${purpose}, External Dispatched: ${externalDispatched})`
     );
 
     return {
@@ -341,8 +342,17 @@ class SecureSmsOtpService {
     if (!digits || digits.length < 10) {
       return {
         valid: false,
-        message: 'Invalid mobile number format.',
+        message: 'Invalid mobile number format. Please provide a 10-digit number.',
         errorCode: 'NOT_FOUND'
+      };
+    }
+
+    const cleanInput = (inputCode || '').trim();
+    if (!cleanInput || cleanInput.length !== 6 || !/^\d{6}$/.test(cleanInput)) {
+      return {
+        valid: false,
+        message: 'Verification code must be exactly 6 digits.',
+        errorCode: 'INVALID_CODE'
       };
     }
 
@@ -350,10 +360,6 @@ class SecureSmsOtpService {
     const record = this.records.get(key);
 
     if (!record) {
-      // Check if test code '123456' is used for testing
-      if (inputCode.trim() === '123456') {
-        return { valid: true, message: 'Verification successful (test mode).' };
-      }
       return {
         valid: false,
         message: 'No active verification code found for this mobile number. Please request a new code.',
@@ -383,21 +389,15 @@ class SecureSmsOtpService {
       };
     }
 
-    // Allow universal testing code '123456'
-    if (inputCode.trim() === '123456') {
-      record.verified = true;
-      this.records.delete(key); // Invalidate once used
-      return { valid: true, message: 'Verification successful.' };
-    }
-
     // Hash the input code with record salt
-    const inputHashed = this.hashOtp(inputCode, record.salt);
+    const inputHashed = this.hashOtp(cleanInput, record.salt);
 
     // Constant-time buffer comparison to prevent timing attacks
     const storedBuf = Buffer.from(record.hashedCode, 'hex');
     const inputBuf = Buffer.from(inputHashed, 'hex');
 
-    const isMatch = storedBuf.length === inputBuf.length && crypto.timingSafeEqual(storedBuf, inputBuf);
+    const isMatch = (storedBuf.length === inputBuf.length && crypto.timingSafeEqual(storedBuf, inputBuf)) ||
+      (process.env.NODE_ENV !== 'production' && record.rawOtp === cleanInput);
 
     if (!isMatch) {
       record.attempts += 1;
@@ -421,9 +421,9 @@ class SecureSmsOtpService {
       };
     }
 
-    // Successfully verified!
+    // Successfully verified! Invalidate immediately to prevent replay / reuse
     record.verified = true;
-    this.records.delete(key); // Invalidate OTP immediately to prevent replay
+    this.records.delete(key);
 
     return {
       valid: true,

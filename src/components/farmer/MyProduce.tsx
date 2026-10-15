@@ -23,6 +23,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { ProduceBatch } from '../../types/produce';
 import { QRCodeModal } from '../common/QRCodeModal';
+import { BackButton } from '../common/BackButton';
 
 export const MyProduce: React.FC = () => {
   const { batches, currentUser, navigate, setSelectedBatchId, navigateToVerification } = useApp();
@@ -56,6 +57,10 @@ export const MyProduce: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-16 max-w-6xl mx-auto">
+      {/* Top Navigation Back Button */}
+      <div className="flex items-center justify-start">
+        <BackButton fallback="/farmer/dashboard" />
+      </div>
       
       {/* Header */}
       <div className="bg-white border border-[#bbf7d0] rounded-xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -421,6 +426,7 @@ export const MyProduce: React.FC = () => {
       {/* QR Code Modal */}
       {activeQRBatch && (
         <QRCodeModal
+          isOpen={!!activeQRBatch}
           onClose={() => setActiveQRBatch(null)}
           batch={activeQRBatch}
         />

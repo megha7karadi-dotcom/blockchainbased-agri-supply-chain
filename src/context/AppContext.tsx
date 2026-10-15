@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { 
   UserRole, 
   UserProfile, 
@@ -53,6 +53,7 @@ interface AppContextType {
   setCurrentUser: (user: UserProfile) => void;
   currentPath: string;
   navigate: (path: string, options?: { forceAuth?: boolean }) => void;
+  goBack: (fallbackPath?: string) => void;
   loginUser: (emailOrRole: string, passwordOrEmail?: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   registerUser: (data: RegisterFormData) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string };
   sendOtp: (phone: string, purpose?: 'login' | 'signup') => Promise<{ success: boolean; error?: string; otp?: string; message?: string; notRegistered?: boolean; alreadyRegistered?: boolean; userName?: string; userRole?: string; cooldownSeconds?: number; provider?: string }>;
@@ -232,6 +233,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return '/';
   });
+
+  // Track navigation history stack for back navigation
+  const historyStackRef = useRef<string[]>([]);
 
   // Batches state with LocalStorage fallback
   const [batches, setBatches] = useState<ProduceBatch[]>(() => {
@@ -715,6 +719,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
+    if (currentPath && currentPath !== target) {
+      if (
+        historyStackRef.current.length === 0 ||
+        historyStackRef.current[historyStackRef.current.length - 1] !== currentPath
+      ) {
+        historyStackRef.current.push(currentPath);
+        if (historyStackRef.current.length > 50) {
+          historyStackRef.current.shift();
+        }
+      }
+    }
+
     setCurrentPath(target);
     setActiveTabState(pathToTab(target));
 
@@ -727,6 +743,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // iframe history restriction
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Safe back navigation handler with automatic parent fallback
+  const goBack = (fallbackPath?: string) => {
+    while (
+      historyStackRef.current.length > 0 &&
+      historyStackRef.current[historyStackRef.current.length - 1] === currentPath
+    ) {
+      historyStackRef.current.pop();
+    }
+
+    const previous = historyStackRef.current.pop();
+    if (previous && previous !== currentPath) {
+      navigate(previous);
+      return;
+    }
+
+    if (fallbackPath) {
+      navigate(fallbackPath);
+      return;
+    }
+
+    // Default sensible fallback based on current path and role
+    const norm = currentPath.split('?')[0].replace(/\/$/, '') || '/';
+    if (norm.startsWith('/farmer/')) {
+      navigate('/farmer/dashboard');
+    } else if (norm.startsWith('/distributor/')) {
+      navigate('/distributor/dashboard');
+    } else if (norm.startsWith('/retailer/')) {
+      navigate('/retailer/dashboard');
+    } else if (norm.startsWith('/consumer/')) {
+      navigate('/consumer/dashboard');
+    } else if (norm.startsWith('/admin/')) {
+      navigate('/admin');
+    } else if (norm.startsWith('/verify') || norm === '/scan-qr') {
+      navigate('/trace-products');
+    } else if (norm === '/login' || norm === '/signup') {
+      navigate('/');
+    } else {
+      navigate('/');
     }
   };
 
@@ -900,7 +957,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     notRegistered?: boolean; 
     alreadyRegistered?: boolean;
     userName?: string;
-    userRole?: string; cooldownSeconds?: number; provider?: string;
+    userRole?: string;
   }> => {
     try {
       const response = await fetch('/api/auth/otp/send', {
@@ -1716,6 +1773,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCurrentUser,
         currentPath,
         navigate,
+        goBack,
         loginUser,
         registerUser,
         sendOtp,

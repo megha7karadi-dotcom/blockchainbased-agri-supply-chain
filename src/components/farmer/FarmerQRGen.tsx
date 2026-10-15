@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useApp } from '../../context/AppContext';
+import { BackButton } from '../common/BackButton';
 
 export const FarmerQRGen: React.FC = () => {
   const { batches, currentUser, selectedBatchId: appSelectedBatchId, navigate } = useApp();
@@ -216,6 +217,10 @@ export const FarmerQRGen: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-16">
+      {/* Top Navigation Back Button */}
+      <div className="flex items-center justify-start">
+        <BackButton fallback="/farmer/dashboard" />
+      </div>
       
       {/* Title & Top Action Bar */}
       <div className="bg-white border border-[#bbf7d0] rounded-xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">

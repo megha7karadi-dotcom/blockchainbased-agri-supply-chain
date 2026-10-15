@@ -392,7 +392,12 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4 space-y-6">
+    <div className="max-w-2xl mx-auto py-10 px-4 space-y-4">
+      {/* Top Navigation Back Button */}
+      <div className="flex items-center justify-start">
+        <BackButton fallback="/login" />
+      </div>
+
       {/* Realtime SMS Notification Overlay */}
       <RealtimeSmsNotification 
         sms={smsNotification}

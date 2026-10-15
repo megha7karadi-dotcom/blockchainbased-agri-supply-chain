@@ -17,6 +17,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { BackButton } from '../common/BackButton';
 
 export interface AuditLog {
   id: string;
@@ -156,7 +157,11 @@ export const FarmerTrust: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-16">
+    <div className="max-w-5xl mx-auto space-y-6 pb-16">
+      {/* Top Navigation Back Button */}
+      <div className="flex items-center justify-start">
+        <BackButton fallback="/farmer/dashboard" />
+      </div>
       
       {/* Toast Notice */}
       {requestNotice && (

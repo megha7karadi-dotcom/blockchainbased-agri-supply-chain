@@ -21,6 +21,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { useWallet } from '../../context/WalletContext';
 import { ProduceBatch, ProduceUnit, QualityGrade } from '../../types/produce';
+import { BackButton } from '../common/BackButton';
 
 interface FormState {
   // Section A: Produce Information
@@ -246,7 +247,12 @@ export const RegisterProduce: React.FC = () => {
   // =========================================================================
   if (registeredBatch) {
     return (
-      <div className="max-w-3xl mx-auto space-y-8 pb-16">
+      <div className="max-w-3xl mx-auto space-y-6 pb-16">
+        {/* Top Navigation Back Button */}
+        <div className="flex items-center justify-start">
+          <BackButton fallback="/farmer/dashboard" />
+        </div>
+
         {/* Success Banner Card */}
         <div className="bg-white border border-emerald-200 rounded-3xl p-8 sm:p-10 shadow-xs text-center space-y-6">
           <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto shadow-xs">
@@ -422,7 +428,11 @@ export const RegisterProduce: React.FC = () => {
   const displayPrice = formData.farmgatePrice.trim() ? `₹${formData.farmgatePrice}/${formData.unit}` : '—';
 
   return (
-    <div ref={formRef} className="max-w-4xl mx-auto space-y-8 pb-16">
+    <div ref={formRef} className="max-w-4xl mx-auto space-y-6 pb-16">
+      {/* Top Navigation Back Button */}
+      <div className="flex items-center justify-start">
+        <BackButton fallback="/farmer/dashboard" />
+      </div>
       
       {/* =========================================================================
           PAGE HEADER

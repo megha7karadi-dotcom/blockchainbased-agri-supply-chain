@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ProduceBatch } from '../../types/produce';
+import { BackButton } from '../common/BackButton';
 
 const DISTRIBUTOR_PARTNERS = [
   { id: 'dist-01', name: 'KisanLogix Cold Fleet Ltd', location: 'Pune Logistics Hub' },
@@ -116,6 +117,10 @@ export const FarmerTransfers: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-16">
+      {/* Top Navigation Back Button */}
+      <div className="flex items-center justify-start">
+        <BackButton fallback="/farmer/dashboard" />
+      </div>
       
       {/* Header */}
       <div className="bg-white border border-[#bbf7d0] rounded-xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">

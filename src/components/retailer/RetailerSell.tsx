@@ -58,7 +58,7 @@ export const RetailerSell: React.FC = () => {
   const unit = selectedBatch?.unit || 'kg';
   const farmerPrice = selectedBatch?.pricing?.farmerPrice || selectedBatch?.farmgatePrice || 40;
   const wholesaleCost = farmerPrice + (selectedBatch?.pricing?.distributorLogisticsCost || 20) + (selectedBatch?.pricing?.distributorMargin || 15);
-  const consumerRate = selectedBatch?.pricing?.consumerPrice || (wholesaleCost + (selectedBatch?.pricing?.retailerOverhead || 15) + (selectedBatch?.pricing?.retailerMargin || 20));
+  const consumerRate = selectedBatch?.pricing?.consumerPrice || (wholesaleCost + (selectedBatch?.pricing?.retailerStoreOverhead || 15) + (selectedBatch?.pricing?.retailerMargin || 20));
 
   const totalBill = (parseFloat(sellQuantity) || 0) * consumerRate;
   const currentStock = selectedBatch?.quantityKg || selectedBatch?.quantity || 0;

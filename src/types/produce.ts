@@ -99,9 +99,6 @@ export interface ProduceBatch {
   // Canonical Farmer Batch Registration Fields (Section 12)
   id: string;
   batchId: string; // e.g. AGRI-2026-MNG-001
-  distributorName?: string;
-  retailerName?: string;
-  distributorDetails?: { vehicleNumber?: string; temperature?: number | string };
   cropName?: string;
   cropVariety?: string;
   quantity?: number;
@@ -138,6 +135,9 @@ export interface ProduceBatch {
   sensorLogs?: IoTSensorLog[];
   imageUrl?: string;
   description?: string;
+  distributorName?: string;
+  retailerName?: string;
+  distributorDetails?: any;
 }
 
 export interface PricePrediction {

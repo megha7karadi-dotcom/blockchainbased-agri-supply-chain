@@ -1,6 +1,7 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Activity, Clock, Database, TrendingDown } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { BackButton } from '../common/BackButton';
 
 interface ModelResult {
   model: string;
@@ -66,12 +67,9 @@ export const ModelPerformance: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        <button
-          onClick={() => navigate('/farmer/price-prediction')}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-emerald-700"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to Price Prediction
-        </button>
+        <div className="flex items-center justify-start">
+          <BackButton fallback="/farmer/price-prediction" />
+        </div>
 
         <header className="rounded-3xl bg-gradient-to-r from-emerald-950 to-emerald-700 p-7 text-white sm:p-10">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">

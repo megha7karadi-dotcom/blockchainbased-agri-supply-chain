@@ -19,6 +19,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { BackButton } from './BackButton';
 
 export const ProfilePage: React.FC = () => {
   const { currentUser, currentRole, navigate, logoutUser } = useApp();
@@ -51,6 +52,11 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-16">
+      {/* Top Navigation Back Button */}
+      <div className="flex items-center justify-start">
+        <BackButton fallback={`/${currentRole}/dashboard`} />
+      </div>
+
       {/* Header Banner */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div className="flex items-center gap-4">

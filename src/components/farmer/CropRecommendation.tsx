@@ -12,6 +12,7 @@ import {
   RotateCcw,
   TrendingUp,
 } from 'lucide-react';
+import { BackButton } from '../common/BackButton';
 
 interface CropInput {
   N: string;
@@ -142,6 +143,11 @@ export const CropRecommendation: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
+      {/* Top Navigation Back Button */}
+      <div className="flex items-center justify-start">
+        <BackButton fallback="/farmer/dashboard" />
+      </div>
+
       <div className="rounded-3xl bg-gradient-to-r from-emerald-800 to-green-600 p-6 text-white sm:p-8">
         <div className="flex items-start gap-4">
           <div className="rounded-2xl bg-white/15 p-3">

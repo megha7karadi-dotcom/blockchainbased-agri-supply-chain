@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Eye,
   MapPin,
+  Building2
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ProduceBatch } from '../../types/produce';
@@ -24,6 +25,7 @@ export const RetailerIncoming: React.FC = () => {
   );
 
   const [inspectingBatch, setInspectingBatch] = useState<ProduceBatch | null>(null);
+  const [shelfAisle, setShelfAisle] = useState('Organic Fresh Produce Aisle 2 - Display Bay 4');
   const [isReceiving, setIsReceiving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -42,7 +44,10 @@ export const RetailerIncoming: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      await retailerReceiveBatch(inspectingBatch.batchId);
+      await retailerReceiveBatch(
+        inspectingBatch.batchId,
+        shelfAisle.trim() || 'Store Fresh Produce Rack 1'
+      );
 
       setSuccessMessage(`Consignment ${inspectingBatch.batchId} (${inspectingBatch.cropName || inspectingBatch.name}) has been verified and stocked onto store shelves.`);
       setInspectingBatch(null);
@@ -234,6 +239,20 @@ export const RetailerIncoming: React.FC = () => {
                   <span className="text-slate-500">Farm Origin:</span>
                   <span className="text-slate-700">{inspectingBatch.farmerName}</span>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Store Display Location / Aisle *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={shelfAisle}
+                  onChange={(e) => setShelfAisle(e.target.value)}
+                  placeholder="e.g. Organic Produce Section - Bay 3"
+                  className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-purple-600 outline-none transition text-slate-900"
+                />
               </div>
 
               <div className="flex items-center gap-3 pt-2">
