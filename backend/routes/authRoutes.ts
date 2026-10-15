@@ -339,7 +339,23 @@ router.post('/otp/send', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Mobile number must contain at least 10 digits.' });
     }
 
+    if (purpose !== 'login' && purpose !== 'signup') {
+      return res.status(400).json({ error: 'Invalid OTP purpose.' });
+    }
+
     const existingUser = await findUserByPhone(phone);
+
+    if (purpose === 'login' && !existingUser) {
+      return res.status(404).json({
+        error: 'No account found for this mobile number. Please sign up.'
+      });
+    }
+
+    if (purpose === 'signup' && existingUser) {
+      return res.status(409).json({
+        error: 'An account with this mobile number already exists. Please sign in.'
+      });
+    }
 
     // Call secure SMS service (handles rate limiting, cooldown, crypto random OTP generation & external SMS API dispatch)
     const smsResult = await smsService.sendOtp(phone.trim(), purpose as 'login' | 'signup');
@@ -360,13 +376,16 @@ router.post('/otp/send', async (req: Request, res: Response) => {
 
     return res.status(200).json({
       message: smsResult.message,
-      otp: smsResult.otp,
       phone: phone.trim(),
       provider: smsResult.provider,
       expiresIn: smsResult.expiresInSeconds,
       userFound: !!existingUser,
       userName: existingUser ? existingUser.name : undefined,
-      userRole: existingUser ? existingUser.role : undefined
+      userRole: existingUser ? existingUser.role : undefined,
+      // Local demo only: return the generated OTP for the notification overlay.
+      ...(process.env.NODE_ENV !== 'production' && smsResult.otp
+        ? { otp: smsResult.otp }
+        : {})
     });
   } catch (error: any) {
     console.error('OTP dispatch error:', error);
@@ -414,50 +433,13 @@ router.post('/otp/verify-login', async (req: Request, res: Response) => {
       persistentDb.consumeOtp(cleanPhone);
     }
 
-    // Lookup user by phone
-    let user = await findUserByPhone(phone);
+    // Login is only for existing accounts; signup has its own endpoint.
+    const user = await findUserByPhone(cleanPhone);
+
     if (!user) {
-      // Auto-register user seamlessly if mobile number is new
-      const assignedRole = (role || 'farmer').toLowerCase();
-      const assignedName = (name || fullName || '').trim() || `User ${digits.slice(-4)}`;
-      const cleanEmail = `${digits.slice(-10)}@mobile.agritrace.org`;
-
-      const customUserId = `usr-m-${Date.now()}`;
-
-      user = persistentDb.saveUser({
-        id: customUserId,
-        userId: customUserId,
-        name: assignedName,
-        email: cleanEmail,
-        role: assignedRole as any,
-        phone: phone.trim(),
-        location: req.body.location || 'India',
-        organization: req.body.organization || 'AgriTrace Network',
-        kycStatus: 'verified',
-        trustScore: 92,
-        createdAt: new Date().toISOString()
+      return res.status(401).json({
+        error: 'No account found for this mobile number. Please sign up.'
       });
-
-      if (mongoose.connection.readyState === 1) {
-        try {
-          const mongoUser = new User({
-            userId: customUserId,
-            name: assignedName,
-            email: cleanEmail,
-            role: assignedRole,
-            phone: phone.trim(),
-            password: 'mobile-verified-pass',
-            location: req.body.location || 'India',
-            organization: req.body.organization || 'AgriTrace Network'
-          });
-          const savedDoc = await mongoUser.save();
-          if (savedDoc) {
-            user._id = savedDoc._id.toString();
-          }
-        } catch (dbErr: any) {
-          console.warn('MongoDB auto-register user notice:', dbErr?.message);
-        }
-      }
     }
 
     const userId = (user._id || user.id).toString();

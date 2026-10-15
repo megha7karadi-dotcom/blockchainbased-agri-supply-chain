@@ -173,7 +173,7 @@ export const RegisterPage: React.FC = () => {
 
       // Real-time dispatch when 10 digits are reached
       if (cleanDigits.length === 10 && cleanDigits !== lastDispatchedRegisterPhoneRef.current && !otpLoading) {
-        setSuccessNotice('⚡ 10-digit mobile number detected. Taking number in real time and sending OTP...');
+        setSuccessNotice('âš¡ 10-digit mobile number detected. Taking number in real time and sending OTP...');
         autoSendRegisterTimerRef.current = setTimeout(() => {
           handleSendMobileOtp(cleanDigits);
         }, 350);
@@ -233,7 +233,7 @@ export const RegisterPage: React.FC = () => {
       } else {
         setOtpSent(true);
         setResendCountdown(30);
-        const code = result.otp || '123456';
+        const code = result.otp || '';
         setSmsNotification({
           phone: fullPhone,
           code,
@@ -553,10 +553,10 @@ export const RegisterPage: React.FC = () => {
                       disabled={otpSent}
                       className="px-2.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:border-emerald-600 focus:outline-none transition disabled:opacity-60"
                     >
-                      <option value="+91">🇮🇳 +91</option>
-                      <option value="+1">🇺🇸 +1</option>
-                      <option value="+44">🇬🇧 +44</option>
-                      <option value="+61">🇦🇺 +61</option>
+                      <option value="+91">+91 (India)</option>
+                      <option value="+1">+1 (US/Canada)</option>
+                      <option value="+44">+44 (UK)</option>
+                      <option value="+61">+61 (Australia)</option>
                     </select>
                     <div className="relative flex-1 flex items-center">
                       <Phone className="absolute left-3.5 w-4 h-4 text-slate-400" />
@@ -617,7 +617,7 @@ export const RegisterPage: React.FC = () => {
                           autoFocus
                           value={mobileData.otpCode}
                           onChange={(e) => updateMobileField('otpCode', e.target.value.replace(/[^0-9]/g, ''))}
-                          placeholder="••••••"
+                          placeholder="Enter 6-digit code"
                           className="w-full pl-10 pr-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-mono tracking-widest text-slate-900 focus:border-emerald-600 focus:outline-none transition"
                         />
                       </div>
@@ -885,7 +885,7 @@ export const RegisterPage: React.FC = () => {
                       type="password"
                       value={emailData.password}
                       onChange={(e) => updateEmailField('password', e.target.value)}
-                      placeholder="••••••••••••"
+                      placeholder="Enter 6-digit code"
                       className={`w-full pl-10 pr-3 py-2.5 bg-slate-50 border rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none transition font-mono ${
                         fieldErrors.password ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-emerald-600'
                       }`}
@@ -904,7 +904,7 @@ export const RegisterPage: React.FC = () => {
                       type="password"
                       value={emailData.confirmPassword}
                       onChange={(e) => updateEmailField('confirmPassword', e.target.value)}
-                      placeholder="••••••••••••"
+                      placeholder="Enter 6-digit code"
                       className={`w-full pl-10 pr-3 py-2.5 bg-slate-50 border rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none transition font-mono ${
                         fieldErrors.confirmPassword ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 focus:border-emerald-600'
                       }`}
@@ -1162,4 +1162,3 @@ export const RegisterPage: React.FC = () => {
     </div>
   );
 };
-

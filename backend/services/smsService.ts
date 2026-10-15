@@ -280,7 +280,8 @@ class SecureSmsOtpService {
       };
     }
 
-    // Generate random 6-digit OTP
+    // DEMO ONLY: fixed OTP for local testing.
+    // Generate a fresh random 6-digit OTP for each request.
     const rawOtp = this.generateSecureOtp();
     const salt = crypto.randomBytes(16).toString('hex');
     const hashedCode = this.hashOtp(rawOtp, salt);
