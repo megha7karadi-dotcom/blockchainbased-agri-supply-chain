@@ -1,4 +1,5 @@
-﻿import { Router } from 'express';
+
+import { Router } from 'express';
 import { predictCropPrice } from '../services/pricePredictionService';
 import { recommendCrop } from '../services/cropRecommendationService';
 
@@ -15,11 +16,16 @@ router.post('/price', async (req, res) => {
       forecast_date,
     } = req.body ?? {};
 
+    // Validate required fields
     if (
-      !state ||
-      !district ||
-      !commodity ||
-      !market ||
+      typeof state !== 'string' ||
+      !state.trim() ||
+      typeof district !== 'string' ||
+      !district.trim() ||
+      typeof commodity !== 'string' ||
+      !commodity.trim() ||
+      typeof market !== 'string' ||
+      !market.trim() ||
       !Number.isFinite(Number(current_price)) ||
       Number(current_price) <= 0
     ) {
@@ -29,54 +35,92 @@ router.post('/price', async (req, res) => {
       });
     }
 
-    const currentPrice = Number(current_price);
-    const forecastDate = forecast_date || new Date().toISOString().slice(0, 10);
+    const forecastDate =
+      forecast_date || new Date().toISOString().slice(0, 10);
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(forecastDate) ||
-        Number.isNaN(Date.parse(forecastDate + 'T00:00:00Z'))) {
+    // Validate date format and calendar date
+    if (
+      typeof forecastDate !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(forecastDate) ||
+      Number.isNaN(Date.parse(`${forecastDate}T00:00:00Z`)) ||
+      new Date(`${forecastDate}T00:00:00Z`)
+        .toISOString()
+        .slice(0, 10) !== forecastDate
+    ) {
       return res.status(400).json({
         error: 'forecast_date must be a valid date in YYYY-MM-DD format.',
       });
     }
 
-    const target = new Date(forecastDate + 'T00:00:00Z');
-    target.setUTCDate(target.getUTCDate() + 7);
-
-    return res.json({
-      commodity: String(commodity),
-      market: String(market),
+    // Call the price prediction service
+    const prediction = await predictCropPrice({
+      state: state.trim(),
+      district: district.trim(),
+      commodity: commodity.trim(),
+      market: market.trim(),
+      current_price: Number(current_price),
       forecast_date: forecastDate,
-      target_date: target.toISOString().slice(0, 10),
-      predicted_price_per_quintal: Number(currentPrice.toFixed(2)),
-      predicted_price_per_kg: Number((currentPrice / 100).toFixed(2)),
-      currency: 'INR',
-      unit: 'quintal',
-      forecast_horizon_days: 7,
-      model_name: 'Current-price baseline',
-      evaluation_mae: 334.28,
-      forecast_method: 'baseline',
     });
+
+    // Validate the response from the prediction service
+    if (
+      !prediction ||
+      !Number.isFinite(prediction.predicted_price_per_quintal) ||
+      !Number.isFinite(prediction.predicted_price_per_kg) ||
+      !prediction.target_date
+    ) {
+      console.error('Price prediction service returned an invalid response.');
+
+      return res.status(502).json({
+        error: 'The price prediction service returned an invalid response.',
+      });
+    }
+
+    return res.status(200).json(prediction);
   } catch (error) {
-    console.error('Baseline price forecast error:', error);
-    return res.status(500).json({
-      error: 'Could not calculate the baseline price forecast.',
+    console.error('Price prediction error:', error);
+
+    return res.status(502).json({
+      error: 'Could not obtain a price prediction.',
+      details:
+        error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
+
 router.post('/crop', async (req, res) => {
   try {
-    const { N, P, K, temperature, humidity, ph, rainfall } =
-      req.body ?? {};
+    const {
+      N,
+      P,
+      K,
+      temperature,
+      humidity,
+      ph,
+      rainfall,
+    } = req.body ?? {};
 
-    const values = { N, P, K, temperature, humidity, ph, rainfall };
+    const values = {
+      N,
+      P,
+      K,
+      temperature,
+      humidity,
+      ph,
+      rainfall,
+    };
+
     const required = Object.keys(values);
 
-    const missing = required.filter(
-      (key) =>
-        values[key as keyof typeof values] === undefined ||
-        values[key as keyof typeof values] === null ||
-        values[key as keyof typeof values] === ''
-    );
+    const missing = required.filter((key) => {
+      const value = values[key as keyof typeof values];
+
+      return (
+        value === undefined ||
+        value === null ||
+        value === ''
+      );
+    });
 
     if (missing.length > 0) {
       return res.status(400).json({
@@ -85,10 +129,17 @@ router.post('/crop', async (req, res) => {
     }
 
     const input = Object.fromEntries(
-      required.map((key) => [key, Number(values[key as keyof typeof values])])
+      required.map((key) => [
+        key,
+        Number(values[key as keyof typeof values]),
+      ])
     );
 
-    if (Object.values(input).some((value) => !Number.isFinite(value))) {
+    if (
+      Object.values(input).some(
+        (value) => !Number.isFinite(value)
+      )
+    ) {
       return res.status(400).json({
         error: 'All crop recommendation inputs must be valid numbers.',
       });
@@ -104,7 +155,7 @@ router.post('/crop', async (req, res) => {
       rainfall: number;
     });
 
-    return res.json(prediction);
+    return res.status(200).json(prediction);
   } catch (error) {
     console.error('Crop recommendation error:', error);
 
@@ -117,4 +168,3 @@ router.post('/crop', async (req, res) => {
 });
 
 export default router;
-
