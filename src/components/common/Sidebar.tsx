@@ -1,30 +1,28 @@
 ﻿import React from 'react';
-import { 
-  LayoutDashboard, 
-  PlusCircle, 
-  Package, 
-  TrendingUp, 
-  History, 
-  Award, 
-  QrCode, 
-  Bell, 
-  Truck, 
-  ArrowRightLeft, 
-  Store, 
-  ShieldCheck, 
-  Users, 
-  AlertTriangle, 
-  BarChart3, 
-  CheckCircle2, 
-  FileCheck2, 
-  User, 
+import {
+  LayoutDashboard,
+  PlusCircle,
+  Package,
+  TrendingUp,
+  History,
+  QrCode,
+  Truck,
+  ArrowRightLeft,
+  Store,
+  Users,
+  AlertTriangle,
+  BarChart3,
+  CheckCircle2,
+  User,
   LogOut,
   BadgePercent,
   Sprout,
-  Layers
+  Layers,
 } from 'lucide-react';
+
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types/produce';
+import { useFarmerLanguage } from '../../context/FarmerLanguageContext';
 
 interface Props {
   isMobileOpen: boolean;
@@ -38,18 +36,22 @@ interface NavItem {
   badge?: string | number;
 }
 
-export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
-  const { 
+export const Sidebar: React.FC<Props> = ({
+  isMobileOpen,
+  onCloseMobile,
+}) => {
+  const {
     isAuthenticated,
-    currentRole, 
+    currentRole,
     currentPath,
     navigate,
     logoutUser,
-    unreadNotificationCount, 
-    fraudAlerts, 
+    fraudAlerts,
     batches,
     currentUser,
   } = useApp();
+
+  const { language, setLanguage, t } = useFarmerLanguage();
 
   if (!isAuthenticated || currentRole === 'public') {
     return null;
@@ -67,95 +69,308 @@ export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
     switch (role) {
       case 'farmer':
         return [
-          { path: '/farmer/dashboard', label: 'Home', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { path: '/farmer/register-produce', label: 'Add New Crop', icon: <PlusCircle className="w-4 h-4" /> },
-          { path: '/farmer/my-produce', label: 'My Crops', icon: <Package className="w-4 h-4" />, badge: safeBatches.filter(b => b.farmerId === currentUser?.id || b.farmerId === 'usr-farmer-01').length },
-          { path: '/farmer/transfers', label: 'Transfer Produce', icon: <ArrowRightLeft className="w-4 h-4" /> },
-          { path: '/farmer/price-prediction', label: 'Check Market Prices', icon: <TrendingUp className="w-4 h-4" /> },
-          { path: '/farmer/model-performance', label: 'Model Performance', icon: <BarChart3 className="w-4 h-4" /> },
-          { path: '/farmer/crop-recommendation', label: 'Crop Recommendation', icon: <Sprout className="w-4 h-4" /> },
-          { path: '/farmer/qr-codes', label: 'View QR Code', icon: <QrCode className="w-4 h-4" /> },
-          { path: '/farmer/profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
+          {
+            path: '/farmer/dashboard',
+            label: 'Home',
+            icon: <LayoutDashboard className="w-4 h-4" />,
+          },
+          {
+            path: '/farmer/register-produce',
+            label: 'Add New Crop',
+            icon: <PlusCircle className="w-4 h-4" />,
+          },
+          {
+            path: '/farmer/my-produce',
+            label: 'My Crops',
+            icon: <Package className="w-4 h-4" />,
+            badge: safeBatches.filter(
+              (b) =>
+                b.farmerId === currentUser?.id ||
+                b.farmerId === 'usr-farmer-01'
+            ).length,
+          },
+          {
+            path: '/farmer/transfers',
+            label: 'Transfer Produce',
+            icon: <ArrowRightLeft className="w-4 h-4" />,
+          },
+          {
+            path: '/farmer/price-prediction',
+            label: 'Check Market Prices',
+            icon: <TrendingUp className="w-4 h-4" />,
+          },
+          {
+            path: '/farmer/model-performance',
+            label: 'Model Performance',
+            icon: <BarChart3 className="w-4 h-4" />,
+          },
+          {
+            path: '/farmer/crop-recommendation',
+            label: 'Crop Recommendation',
+            icon: <Sprout className="w-4 h-4" />,
+          },
+          {
+            path: '/farmer/qr-codes',
+            label: 'View QR Code',
+            icon: <QrCode className="w-4 h-4" />,
+          },
+          {
+            path: '/farmer/profile',
+            label: 'Profile',
+            icon: <User className="w-4 h-4" />,
+          },
         ];
+
       case 'distributor':
         return [
-          { path: '/distributor/dashboard', label: 'Home', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { path: '/distributor/incoming', label: 'Incoming Produce', icon: <Truck className="w-4 h-4" />, badge: safeBatches.filter(b => b.status === 'Transferred to Distributor' || b.status === 'Ready for Dispatch').length || undefined },
-          { path: '/distributor/inventory', label: 'Inventory', icon: <Package className="w-4 h-4" /> },
-          { path: '/distributor/update-price', label: 'Update Price', icon: <BadgePercent className="w-4 h-4" /> },
-          { path: '/distributor/transfer-to-retailer', label: 'Transfer to Retailer', icon: <ArrowRightLeft className="w-4 h-4" /> },
-          { path: '/distributor/history', label: 'History', icon: <History className="w-4 h-4" /> },
-          { path: '/distributor/profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
+          {
+            path: '/distributor/dashboard',
+            label: 'Home',
+            icon: <LayoutDashboard className="w-4 h-4" />,
+          },
+          {
+            path: '/distributor/incoming',
+            label: 'Incoming Produce',
+            icon: <Truck className="w-4 h-4" />,
+            badge:
+              safeBatches.filter(
+                (b) =>
+                  b.status === 'Transferred to Distributor' ||
+                  b.status === 'Ready for Dispatch'
+              ).length || undefined,
+          },
+          {
+            path: '/distributor/inventory',
+            label: 'Inventory',
+            icon: <Package className="w-4 h-4" />,
+          },
+          {
+            path: '/distributor/update-price',
+            label: 'Update Price',
+            icon: <BadgePercent className="w-4 h-4" />,
+          },
+          {
+            path: '/distributor/transfer-to-retailer',
+            label: 'Transfer to Retailer',
+            icon: <ArrowRightLeft className="w-4 h-4" />,
+          },
+          {
+            path: '/distributor/history',
+            label: 'History',
+            icon: <History className="w-4 h-4" />,
+          },
+          {
+            path: '/distributor/profile',
+            label: 'Profile',
+            icon: <User className="w-4 h-4" />,
+          },
         ];
+
       case 'retailer':
         return [
-          { path: '/retailer/dashboard', label: 'Home', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { path: '/retailer/incoming', label: 'Incoming Shipments', icon: <Truck className="w-4 h-4" />, badge: safeBatches.filter(b => b.status === 'In Transit to Retailer' || b.status === 'Delivered to Retailer').length || undefined },
-          { path: '/retailer/inventory', label: 'Store Inventory', icon: <Store className="w-4 h-4" />, badge: safeBatches.filter(b => b.status === 'On Retail Shelf' || b.status === 'Delivered to Retailer' || b.status === 'At Retailer').length || undefined },
-          { path: '/retailer/set-price', label: 'Set Final Price', icon: <BadgePercent className="w-4 h-4" /> },
-          { path: '/retailer/sell', label: 'Sell / Record Sale', icon: <CheckCircle2 className="w-4 h-4" /> },
-          { path: '/retailer/qr-labels', label: 'QR Shelf Labels', icon: <QrCode className="w-4 h-4" /> },
-          { path: '/retailer/history', label: 'History', icon: <History className="w-4 h-4" /> },
-          { path: '/retailer/profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
+          {
+            path: '/retailer/dashboard',
+            label: 'Home',
+            icon: <LayoutDashboard className="w-4 h-4" />,
+          },
+          {
+            path: '/retailer/incoming',
+            label: 'Incoming Shipments',
+            icon: <Truck className="w-4 h-4" />,
+            badge:
+              safeBatches.filter(
+                (b) =>
+                  b.status === 'In Transit to Retailer' ||
+                  b.status === 'Delivered to Retailer'
+              ).length || undefined,
+          },
+          {
+            path: '/retailer/inventory',
+            label: 'Store Inventory',
+            icon: <Store className="w-4 h-4" />,
+            badge:
+              safeBatches.filter(
+                (b) =>
+                  b.status === 'On Retail Shelf' ||
+                  b.status === 'Delivered to Retailer' ||
+                  b.status === 'At Retailer'
+              ).length || undefined,
+          },
+          {
+            path: '/retailer/set-price',
+            label: 'Set Final Price',
+            icon: <BadgePercent className="w-4 h-4" />,
+          },
+          {
+            path: '/retailer/sell',
+            label: 'Sell / Record Sale',
+            icon: <CheckCircle2 className="w-4 h-4" />,
+          },
+          {
+            path: '/retailer/qr-labels',
+            label: 'QR Shelf Labels',
+            icon: <QrCode className="w-4 h-4" />,
+          },
+          {
+            path: '/retailer/history',
+            label: 'History',
+            icon: <History className="w-4 h-4" />,
+          },
+          {
+            path: '/retailer/profile',
+            label: 'Profile',
+            icon: <User className="w-4 h-4" />,
+          },
         ];
+
       case 'consumer':
         return [
-          { path: '/consumer/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { path: '/consumer/scan', label: 'Scan Produce QR', icon: <QrCode className="w-4 h-4" /> },
-          { path: '/consumer/history', label: 'Verification History', icon: <History className="w-4 h-4" /> },
-          { path: '/consumer/profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
+          {
+            path: '/consumer/dashboard',
+            label: 'Dashboard',
+            icon: <LayoutDashboard className="w-4 h-4" />,
+          },
+          {
+            path: '/consumer/scan',
+            label: 'Scan Produce QR',
+            icon: <QrCode className="w-4 h-4" />,
+          },
+          {
+            path: '/consumer/history',
+            label: 'Verification History',
+            icon: <History className="w-4 h-4" />,
+          },
+          {
+            path: '/consumer/profile',
+            label: 'Profile',
+            icon: <User className="w-4 h-4" />,
+          },
         ];
+
       case 'admin':
         return [
-          { path: '/admin/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-          { path: '/admin/users', label: 'User Verification (KYC)', icon: <Users className="w-4 h-4" /> },
-          { path: '/admin/products', label: 'Produce Batches', icon: <Package className="w-4 h-4" />, badge: safeBatches.length },
-          { path: '/admin/transactions', label: 'Blockchain Ledger', icon: <Layers className="w-4 h-4" /> },
-          { path: '/admin/fraud-alerts', label: 'Fraud Alerts', icon: <AlertTriangle className="w-4 h-4" />, badge: safeFraudAlerts.filter(a => a.status === 'Open').length || undefined },
-          { path: '/admin/ai-analytics', label: 'AI & Price Analytics', icon: <BarChart3 className="w-4 h-4" /> },
-          { path: '/admin/profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
+          {
+            path: '/admin/dashboard',
+            label: 'Dashboard',
+            icon: <LayoutDashboard className="w-4 h-4" />,
+          },
+          {
+            path: '/admin/users',
+            label: 'User Verification (KYC)',
+            icon: <Users className="w-4 h-4" />,
+          },
+          {
+            path: '/admin/products',
+            label: 'Produce Batches',
+            icon: <Package className="w-4 h-4" />,
+            badge: safeBatches.length,
+          },
+          {
+            path: '/admin/transactions',
+            label: 'Blockchain Ledger',
+            icon: <Layers className="w-4 h-4" />,
+          },
+          {
+            path: '/admin/fraud-alerts',
+            label: 'Fraud Alerts',
+            icon: <AlertTriangle className="w-4 h-4" />,
+            badge:
+              safeFraudAlerts.filter((a) => a.status === 'Open').length ||
+              undefined,
+          },
+          {
+            path: '/admin/ai-analytics',
+            label: 'AI & Price Analytics',
+            icon: <BarChart3 className="w-4 h-4" />,
+          },
+          {
+            path: '/admin/profile',
+            label: 'Profile',
+            icon: <User className="w-4 h-4" />,
+          },
         ];
+
       default:
         return [];
     }
   };
 
-  const navItems = getNavItems(currentRole);
+  const translationKeys: Record<
+    string,
+    Parameters<typeof t>[0]
+  > = {
+    '/farmer/dashboard': 'home',
+    '/farmer/register-produce': 'addCrop',
+    '/farmer/my-produce': 'myCrops',
+    '/farmer/transfers': 'transfer',
+    '/farmer/price-prediction': 'marketPrices',
+    '/farmer/model-performance': 'modelPerformance',
+    '/farmer/crop-recommendation': 'cropRecommendation',
+    '/farmer/qr-codes': 'qrCodes',
+    '/farmer/profile': 'profile',
+  };
+
+  const navItems = getNavItems(currentRole).map((item) => {
+    if (currentRole !== 'farmer') {
+      return item;
+    }
+
+    const key = translationKeys[item.path];
+    return key ? { ...item, label: t(key) } : item;
+  });
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-white text-stone-700 border-r border-stone-200 w-64 shadow-2xs">
-      
-      {/* Header in Sidebar */}
+      {/* Sidebar Header */}
       <div className="p-4 border-b border-stone-200 bg-emerald-50/50">
         <div className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">
-          {currentRole === 'farmer' ? 'Farmer Account' : `${currentRole} Workspace`}
+          {currentRole === 'farmer'
+            ? t('farmerAccount')
+            : `${currentRole} Workspace`}
         </div>
+
         <div className="text-sm font-bold text-stone-900 capitalize truncate mt-0.5">
-          {currentUser ? currentUser.name : `${currentRole} Account`}
+          {currentUser
+            ? currentUser.name
+            : `${currentRole} Account`}
         </div>
+
         <p className="text-xs text-stone-500 truncate mt-0.5">
-          {currentUser?.organization || (currentRole === 'farmer' ? 'Farmer Member' : 'Verified Partner')}
+          {currentUser?.organization ||
+            (currentRole === 'farmer'
+              ? 'Farmer Member'
+              : 'Verified Partner')}
         </p>
       </div>
+
+      {/* Farmer-only Language Selector */}
+      {currentRole === 'farmer' && (
+        <div className="px-3 pt-3 pb-2">
+          <label
+            htmlFor="farmer-language"
+            className="block text-xs font-semibold text-stone-600 mb-1.5"
+          >
+            {t('language')}
+          </label>
+
+          <select
+            id="farmer-language"
+            value={language}
+            onChange={(event) =>
+              setLanguage(event.target.value as 'en' | 'hi' | 'kn')
+            }
+            className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            <option value="en">{t('english')}</option>
+            <option value="hi">{t('hindi')}</option>
+            <option value="kn">{t('kannada')}</option>
+          </select>
+        </div>
+      )}
 
       {/* Navigation Links */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
-          if (item.path === 'logout') {
-            return (
-              <button
-                key="logout-item"
-                onClick={handleLogout}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium text-rose-700 hover:bg-rose-50 transition cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="text-rose-600">{item.icon}</span>
-                  <span>{item.label}</span>
-                </div>
-              </button>
-            );
-          }
-
           const isActive = currentPath === item.path;
 
           return (
@@ -172,15 +387,26 @@ export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <span className={isActive ? 'text-emerald-600' : 'text-stone-400'}>{item.icon}</span>
+                <span
+                  className={
+                    isActive
+                      ? 'text-emerald-600'
+                      : 'text-stone-400'
+                  }
+                >
+                  {item.icon}
+                </span>
                 <span>{item.label}</span>
               </div>
+
               {item.badge !== undefined && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
-                  isActive 
-                    ? 'bg-emerald-100 text-emerald-800' 
-                    : 'bg-stone-100 text-stone-600'
-                }`}>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                    isActive
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-stone-100 text-stone-600'
+                  }`}
+                >
                   {item.badge}
                 </span>
               )}
@@ -189,7 +415,7 @@ export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
         })}
       </nav>
 
-      {/* Bottom Profile & Logout controls for authenticated users */}
+      {/* Profile and Logout */}
       <div className="p-3 border-t border-slate-100 bg-slate-50/50 space-y-1">
         <button
           onClick={() => {
@@ -199,23 +425,29 @@ export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
           className="w-full py-2 px-3 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-2 cursor-pointer"
         >
           <User className="w-3.5 h-3.5 text-slate-400" />
-          <span>Profile & Account</span>
+          <span>
+            {currentRole === 'farmer'
+              ? t('profileAccount')
+              : 'Profile & Account'}
+          </span>
         </button>
+
         <button
           onClick={handleLogout}
           className="w-full py-2 px-3 rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition flex items-center gap-2 cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5 text-rose-500" />
-          <span>Logout</span>
+          <span>
+            {currentRole === 'farmer' ? t('logout') : 'Logout'}
+          </span>
         </button>
       </div>
-
     </div>
   );
 
   return (
     <>
-      {/* Desktop Sidebar (hidden on mobile) */}
+      {/* Desktop Sidebar */}
       <aside className="hidden lg:block h-[calc(100vh-4rem)] sticky top-16 flex-shrink-0">
         {sidebarContent}
       </aside>
@@ -223,12 +455,11 @@ export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
       {/* Mobile Drawer */}
       {isMobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          {/* Backdrop */}
-          <div 
+          <div
             onClick={onCloseMobile}
-            className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs transition-opacity" 
+            className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs transition-opacity"
           />
-          {/* Drawer content */}
+
           <div className="relative w-64 max-w-[80vw] h-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
             {sidebarContent}
           </div>
@@ -237,4 +468,3 @@ export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
     </>
   );
 };
-

@@ -21,7 +21,7 @@ import { LoginPage } from './components/public/LoginPage';
 import { RegisterPage } from './components/public/RegisterPage';
 import { ProductVerificationPage } from './components/public/ProductVerificationPage';
 import { QRVerificationPage } from './components/public/QRVerificationPage';
-
+import { FarmerLanguageProvider } from './context/FarmerLanguageContext';
 // Farmer Views
 import { FarmerDashboard } from './components/farmer/FarmerDashboard';
 import { RegisterProduce } from './components/farmer/RegisterProduce';
@@ -295,13 +295,17 @@ if (normalizedPath === '/farmer/transfers') return <FarmerTransfers />;
   );
 };
 
+
 export default function App() {
   return (
     <WalletProvider>
       <AppProvider>
-        <MainLayout />
+        <FarmerLanguageProvider>
+          <MainLayout />
+        </FarmerLanguageProvider>
       </AppProvider>
     </WalletProvider>
   );
 }
+
 

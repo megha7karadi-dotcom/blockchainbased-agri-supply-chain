@@ -13,6 +13,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { BackButton } from '../common/BackButton';
+import { useFarmerLanguage } from '../../context/FarmerLanguageContext';
 
 interface CropInput {
   N: string;
@@ -44,25 +45,232 @@ const initialValues: CropInput = {
   rainfall: '200',
 };
 
-const fields: Array<{
-  key: keyof CropInput;
-  label: string;
-  unit: string;
-  min: number;
-  max: number;
-  step: number;
-  icon: React.ElementType;
-}> = [
-  { key: 'N', label: 'Nitrogen (N)', unit: 'kg/ha', min: 0, max: 140, step: 1, icon: FlaskConical },
-  { key: 'P', label: 'Phosphorus (P)', unit: 'kg/ha', min: 5, max: 145, step: 1, icon: FlaskConical },
-  { key: 'K', label: 'Potassium (K)', unit: 'kg/ha', min: 5, max: 205, step: 1, icon: FlaskConical },
-  { key: 'temperature', label: 'Temperature', unit: '°C', min: 0, max: 50, step: 0.1, icon: Thermometer },
-  { key: 'humidity', label: 'Humidity', unit: '%', min: 0, max: 100, step: 0.1, icon: Droplets },
-  { key: 'ph', label: 'Soil pH', unit: 'pH', min: 0, max: 14, step: 0.1, icon: Leaf },
-  { key: 'rainfall', label: 'Rainfall', unit: 'mm', min: 0, max: 500, step: 0.1, icon: CloudRain },
+const translations = {
+  en: {
+    eyebrow: 'AI-powered farming assistant',
+    title: 'Crop Recommendation',
+    description:
+      'Enter your soil nutrient levels and local weather conditions to discover which crop best matches the provided data.',
+    soil: 'Soil Nutrients',
+    soilDescription:
+      'Enter measured nitrogen, phosphorus and potassium values.',
+    weather: 'Weather & Soil Conditions',
+    weatherDescription: 'Use recent local measurements where possible.',
+    nitrogen: 'Nitrogen (N)',
+    phosphorus: 'Phosphorus (P)',
+    potassium: 'Potassium (K)',
+    temperature: 'Temperature',
+    humidity: 'Humidity',
+    ph: 'Soil pH',
+    rainfall: 'Rainfall',
+    analyse: 'Analysing conditions...',
+    recommend: 'Recommend Best Crop',
+    reset: 'Reset',
+    results: 'Recommendation Results',
+    resultsDescription: 'Generated from your submitted conditions.',
+    recommended: 'Recommended crop',
+    confidence: 'Model confidence',
+    alternatives: 'Other matching crops',
+    advice:
+      'This is a model-based suggestion, not a guarantee of yield or profitability. Consider your season, local climate, water availability and advice from an agricultural expert before planting.',
+    invalid: (label: string) => `Please enter a valid value for ${label}.`,
+    range: (label: string, min: number, max: number) =>
+      `${label} must be between ${min} and ${max}.`,
+    requestFailed: 'Crop recommendation request failed.',
+    noRecommendation: 'The model did not return a crop recommendation.',
+    connectionError:
+      'Could not connect to the crop recommendation service.',
+    unknownError: 'Something went wrong. Please try again.',
+  },
+  hi: {
+    eyebrow: 'AI-संचालित कृषि सहायक',
+    title: 'फसल की सिफारिश',
+    description:
+      'मिट्टी में पोषक तत्वों के स्तर और स्थानीय मौसम की जानकारी दर्ज करें, ताकि आपके डेटा के अनुसार उपयुक्त फसल का सुझाव मिल सके।',
+    soil: 'मिट्टी के पोषक तत्व',
+    soilDescription:
+      'नाइट्रोजन, फॉस्फोरस और पोटैशियम के मापे गए मान दर्ज करें।',
+    weather: 'मौसम और मिट्टी की स्थिति',
+    weatherDescription: 'जहाँ संभव हो, हाल के स्थानीय मापों का उपयोग करें।',
+    nitrogen: 'नाइट्रोजन (N)',
+    phosphorus: 'फॉस्फोरस (P)',
+    potassium: 'पोटैशियम (K)',
+    temperature: 'तापमान',
+    humidity: 'आर्द्रता',
+    ph: 'मिट्टी का pH',
+    rainfall: 'वर्षा',
+    analyse: 'जानकारी का विश्लेषण हो रहा है...',
+    recommend: 'सबसे उपयुक्त फसल सुझाएँ',
+    reset: 'रीसेट करें',
+    results: 'फसल सिफारिश के परिणाम',
+    resultsDescription: 'आपके द्वारा दर्ज की गई जानकारी के आधार पर।',
+    recommended: 'सुझाई गई फसल',
+    confidence: 'मॉडल का विश्वास स्तर',
+    alternatives: 'अन्य उपयुक्त फसलें',
+    advice:
+      'यह मॉडल पर आधारित सुझाव है, उपज या लाभ की गारंटी नहीं। बुवाई से पहले मौसम, स्थानीय जलवायु, पानी की उपलब्धता और कृषि विशेषज्ञ की सलाह पर विचार करें।',
+    invalid: (label: string) => `${label} के लिए सही मान दर्ज करें।`,
+    range: (label: string, min: number, max: number) =>
+      `${label} का मान ${min} से ${max} के बीच होना चाहिए।`,
+    requestFailed: 'फसल की सिफारिश का अनुरोध विफल रहा।',
+    noRecommendation: 'मॉडल कोई फसल सुझा नहीं पाया।',
+    connectionError: 'फसल सिफारिश सेवा से कनेक्ट नहीं हो सका।',
+    unknownError: 'कुछ गलत हुआ। कृपया फिर से प्रयास करें।',
+  },
+  kn: {
+    eyebrow: 'AI ಆಧಾರಿತ ಕೃಷಿ ಸಹಾಯಕ',
+    title: 'ಬೆಳೆ ಶಿಫಾರಸು',
+    description:
+      'ಮಣ್ಣಿನ ಪೋಷಕಾಂಶಗಳ ಮಟ್ಟ ಮತ್ತು ಸ್ಥಳೀಯ ಹವಾಮಾನದ ವಿವರಗಳನ್ನು ನಮೂದಿಸಿ. ನಿಮ್ಮ ಮಾಹಿತಿಗೆ ಹೊಂದುವ ಬೆಳೆಯ ಶಿಫಾರಸನ್ನು ಪಡೆಯಿರಿ.',
+    soil: 'ಮಣ್ಣಿನ ಪೋಷಕಾಂಶಗಳು',
+    soilDescription:
+      'ಅಳತೆ ಮಾಡಿದ ಸಾರಜನಕ, ರಂಜಕ ಮತ್ತು ಪೊಟ್ಯಾಸಿಯಮ್ ಮೌಲ್ಯಗಳನ್ನು ನಮೂದಿಸಿ.',
+    weather: 'ಹವಾಮಾನ ಮತ್ತು ಮಣ್ಣಿನ ಪರಿಸ್ಥಿತಿಗಳು',
+    weatherDescription: 'ಸಾಧ್ಯವಾದರೆ ಇತ್ತೀಚಿನ ಸ್ಥಳೀಯ ಅಳತೆಗಳನ್ನು ಬಳಸಿ.',
+    nitrogen: 'ಸಾರಜನಕ (N)',
+    phosphorus: 'ರಂಜಕ (P)',
+    potassium: 'ಪೊಟ್ಯಾಸಿಯಮ್ (K)',
+    temperature: 'ತಾಪಮಾನ',
+    humidity: 'ಆರ್ದ್ರತೆ',
+    ph: 'ಮಣ್ಣಿನ pH',
+    rainfall: 'ಮಳೆ',
+    analyse: 'ಪರಿಸ್ಥಿತಿಗಳನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ...',
+    recommend: 'ಉತ್ತಮ ಬೆಳೆಯನ್ನು ಶಿಫಾರಸು ಮಾಡಿ',
+    reset: 'ಮರುಹೊಂದಿಸಿ',
+    results: 'ಶಿಫಾರಸು ಫಲಿತಾಂಶಗಳು',
+    resultsDescription: 'ನೀವು ನಮೂದಿಸಿದ ಮಾಹಿತಿಯ ಆಧಾರದ ಮೇಲೆ ರಚಿಸಲಾಗಿದೆ.',
+    recommended: 'ಶಿಫಾರಸು ಮಾಡಿದ ಬೆಳೆ',
+    confidence: 'ಮಾದರಿಯ ವಿಶ್ವಾಸ ಮಟ್ಟ',
+    alternatives: 'ಇತರ ಹೊಂದುವ ಬೆಳೆಗಳು',
+    advice:
+      'ಇದು ಮಾದರಿಯ ಆಧಾರದ ಮೇಲಿನ ಸಲಹೆ ಮಾತ್ರ; ಇಳುವರಿ ಅಥವಾ ಲಾಭದ ಖಾತರಿ ಅಲ್ಲ. ಬಿತ್ತುವ ಮೊದಲು ಋತು, ಸ್ಥಳೀಯ ಹವಾಮಾನ, ನೀರಿನ ಲಭ್ಯತೆ ಮತ್ತು ಕೃಷಿ ತಜ್ಞರ ಸಲಹೆಯನ್ನು ಪರಿಗಣಿಸಿ.',
+    invalid: (label: string) => `${label}ಗೆ ಸರಿಯಾದ ಮೌಲ್ಯವನ್ನು ನಮೂದಿಸಿ.`,
+    range: (label: string, min: number, max: number) =>
+      `${label} ಮೌಲ್ಯವು ${min} ಮತ್ತು ${max}ರ ನಡುವೆ ಇರಬೇಕು.`,
+    requestFailed: 'ಬೆಳೆ ಶಿಫಾರಸು ವಿನಂತಿ ವಿಫಲವಾಗಿದೆ.',
+    noRecommendation: 'ಮಾದರಿಯಿಂದ ಯಾವುದೇ ಬೆಳೆ ಶಿಫಾರಸು ದೊರೆತಿಲ್ಲ.',
+    connectionError: 'ಬೆಳೆ ಶಿಫಾರಸು ಸೇವೆಗೆ ಸಂಪರ್ಕಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.',
+    unknownError: 'ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+  },
+};
+
+const cropNames: Record<string, { hi: string; kn: string }> = {
+  rice: { hi: 'चावल', kn: 'ಅಕ್ಕಿ' },
+  jute: { hi: 'जूट', kn: 'ಸೆಣಬು' },
+  banana: { hi: 'केला', kn: 'ಬಾಳೆಹಣ್ಣು' },
+  maize: { hi: 'मक्का', kn: 'ಮೆಕ್ಕೆಜೋಳ' },
+  chickpea: { hi: 'चना', kn: 'ಕಡಲೆ' },
+  kidneybeans: { hi: 'राजमा', kn: 'ರಾಜ್ಮಾ' },
+  kidney_beans: { hi: 'राजमा', kn: 'ರಾಜ್ಮಾ' },
+  pigeonpeas: { hi: 'अरहर', kn: 'ತೊಗರಿ' },
+  pigeon_peas: { hi: 'अरहर', kn: 'ತೊಗರಿ' },
+  mothbeans: { hi: 'मोठ दाल', kn: 'ಮಡಿಕೆಕಾಳು' },
+  moth_beans: { hi: 'मोठ दाल', kn: 'ಮಡಿಕೆಕಾಳು' },
+  mungbean: { hi: 'मूंग', kn: 'ಹೆಸರುಕಾಳು' },
+  mung_bean: { hi: 'मूंग', kn: 'ಹೆಸರುಕಾಳು' },
+  blackgram: { hi: 'उड़द', kn: 'ಉದ್ದು' },
+  black_gram: { hi: 'उड़द', kn: 'ಉದ್ದು' },
+  lentil: { hi: 'मसूर', kn: 'ಮಸೂರ' },
+  pomegranate: { hi: 'अनार', kn: 'ದಾಳಿಂಬೆ' },
+  watermelon: { hi: 'तरबूज', kn: 'ಕಲ್ಲಂಗಡಿ' },
+  muskmelon: { hi: 'खरबूजा', kn: 'ಕರಬೂಜ' },
+  apple: { hi: 'सेब', kn: 'ಸೇಬು' },
+  mango: { hi: 'आम', kn: 'ಮಾವು' },
+  grapes: { hi: 'अंगूर', kn: 'ದ್ರಾಕ್ಷಿ' },
+  orange: { hi: 'संतरा', kn: 'ಕಿತ್ತಳೆ' },
+  papaya: { hi: 'पपीता', kn: 'ಪಪ್ಪಾಯಿ' },
+  coconut: { hi: 'नारियल', kn: 'ತೆಂಗಿನಕಾಯಿ' },
+  cotton: { hi: 'कपास', kn: 'ಹತ್ತಿ' },
+  coffee: { hi: 'कॉफी', kn: 'ಕಾಫಿ' },
+  sugarcane: { hi: 'गन्ना', kn: 'ಕಬ್ಬು' },
+  tobacco: { hi: 'तंबाकू', kn: 'ತಂಬಾಕು' },
+  barley: { hi: 'जौ', kn: 'ಬಾರ್ಲಿ' },
+  wheat: { hi: 'गेहूँ', kn: 'ಗೋಧಿ' },
+};
+
+const getCropName = (crop: string, language: string): string => {
+  if (language === 'en') return crop;
+
+  const key = crop.trim().toLowerCase().replace(/[\s-]+/g, '_');
+  const normalizedKey = key.replace(/_/g, '');
+  const translated = cropNames[key] || cropNames[normalizedKey];
+
+  if (!translated) return crop;
+
+  return language === 'hi' ? translated.hi : translated.kn;
+};
+
+const getFields = (t: (typeof translations)['en']) => [
+  {
+    key: 'N' as const,
+    label: t.nitrogen,
+    unit: 'kg/ha',
+    min: 0,
+    max: 140,
+    step: 1,
+    icon: FlaskConical,
+  },
+  {
+    key: 'P' as const,
+    label: t.phosphorus,
+    unit: 'kg/ha',
+    min: 5,
+    max: 145,
+    step: 1,
+    icon: FlaskConical,
+  },
+  {
+    key: 'K' as const,
+    label: t.potassium,
+    unit: 'kg/ha',
+    min: 5,
+    max: 205,
+    step: 1,
+    icon: FlaskConical,
+  },
+  {
+    key: 'temperature' as const,
+    label: t.temperature,
+    unit: '°C',
+    min: 0,
+    max: 50,
+    step: 0.1,
+    icon: Thermometer,
+  },
+  {
+    key: 'humidity' as const,
+    label: t.humidity,
+    unit: '%',
+    min: 0,
+    max: 100,
+    step: 0.1,
+    icon: Droplets,
+  },
+  {
+    key: 'ph' as const,
+    label: t.ph,
+    unit: 'pH',
+    min: 0,
+    max: 14,
+    step: 0.1,
+    icon: Leaf,
+  },
+  {
+    key: 'rainfall' as const,
+    label: t.rainfall,
+    unit: 'mm',
+    min: 0,
+    max: 500,
+    step: 0.1,
+    icon: CloudRain,
+  },
 ];
 
 export const CropRecommendation: React.FC = () => {
+  const { language } = useFarmerLanguage();
+  const t = translations[language] || translations.en;
+  const fields = getFields(t);
+
   const [values, setValues] = useState<CropInput>(initialValues);
   const [result, setResult] = useState<CropResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -78,7 +286,9 @@ export const CropRecommendation: React.FC = () => {
     setError('');
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
     setError('');
     setResult(null);
@@ -88,14 +298,12 @@ export const CropRecommendation: React.FC = () => {
       const number = Number(value);
 
       if (value === '' || !Number.isFinite(number)) {
-        setError(`Please enter a valid value for ${field.label}.`);
+        setError(t.invalid(field.label));
         return;
       }
 
       if (number < field.min || number > field.max) {
-        setError(
-          `${field.label} must be between ${field.min} and ${field.max}.`
-        );
+        setError(t.range(field.label, field.min, field.max));
         return;
       }
     }
@@ -121,12 +329,12 @@ export const CropRecommendation: React.FC = () => {
 
       if (!response.ok) {
         throw new Error(
-          data.message || data.error || 'Crop recommendation request failed.'
+          data.message || data.error || t.requestFailed,
         );
       }
 
       if (!data.success || !data.recommended_crop) {
-        throw new Error('The model did not return a crop recommendation.');
+        throw new Error(t.noRecommendation);
       }
 
       setResult(data as CropResult);
@@ -134,7 +342,7 @@ export const CropRecommendation: React.FC = () => {
       setError(
         err instanceof Error
           ? err.message
-          : 'Could not connect to the crop recommendation service.'
+          : t.connectionError || t.unknownError,
       );
     } finally {
       setLoading(false);
@@ -143,7 +351,6 @@ export const CropRecommendation: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      {/* Top Navigation Back Button */}
       <div className="flex items-center justify-start">
         <BackButton fallback="/farmer/dashboard" />
       </div>
@@ -155,14 +362,13 @@ export const CropRecommendation: React.FC = () => {
           </div>
           <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-widest text-emerald-100">
-              AI-powered farming assistant
+              {t.eyebrow}
             </p>
             <h1 className="text-2xl font-bold sm:text-3xl">
-              Crop Recommendation
+              {t.title}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-emerald-50">
-              Enter your soil nutrient levels and local weather conditions to
-              discover which crop best matches the provided data.
+              {t.description}
             </p>
           </div>
         </div>
@@ -175,9 +381,9 @@ export const CropRecommendation: React.FC = () => {
               <FlaskConical className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900">Soil Nutrients</h2>
+              <h2 className="font-bold text-slate-900">{t.soil}</h2>
               <p className="text-sm text-slate-500">
-                Enter measured nitrogen, phosphorus and potassium values.
+                {t.soilDescription}
               </p>
             </div>
           </div>
@@ -216,11 +422,9 @@ export const CropRecommendation: React.FC = () => {
               <CloudRain className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900">
-                Weather & Soil Conditions
-              </h2>
+              <h2 className="font-bold text-slate-900">{t.weather}</h2>
               <p className="text-sm text-slate-500">
-                Use recent local measurements where possible.
+                {t.weatherDescription}
               </p>
             </div>
           </div>
@@ -272,12 +476,12 @@ export const CropRecommendation: React.FC = () => {
             {loading ? (
               <>
                 <LoaderCircle className="h-5 w-5 animate-spin" />
-                Analysing conditions...
+                {t.analyse}
               </>
             ) : (
               <>
                 <Sprout className="h-5 w-5" />
-                Recommend Best Crop
+                {t.recommend}
               </>
             )}
           </button>
@@ -289,7 +493,7 @@ export const CropRecommendation: React.FC = () => {
             className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-3.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
           >
             <RotateCcw className="h-4 w-4" />
-            Reset
+            {t.reset}
           </button>
         </div>
       </form>
@@ -305,10 +509,10 @@ export const CropRecommendation: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900">
-                Recommendation Results
+                {t.results}
               </h2>
               <p className="text-sm text-slate-500">
-                Generated from your submitted conditions.
+                {t.resultsDescription}
               </p>
             </div>
           </div>
@@ -320,13 +524,13 @@ export const CropRecommendation: React.FC = () => {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold uppercase tracking-wider text-emerald-700">
-                  Recommended crop
+                  {t.recommended}
                 </p>
                 <h3 className="mt-1 text-2xl font-bold capitalize text-slate-900">
-                  {result.recommended_crop}
+                  {getCropName(result.recommended_crop, language)}
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Model confidence: {Number(result.confidence).toFixed(2)}%
+                  {t.confidence}: {Number(result.confidence).toFixed(2)}%
                 </p>
               </div>
             </div>
@@ -335,7 +539,10 @@ export const CropRecommendation: React.FC = () => {
               <div
                 className="h-full rounded-full bg-emerald-500 transition-all"
                 style={{
-                  width: `${Math.max(0, Math.min(100, Number(result.confidence) || 0))}%`,
+                  width: `${Math.max(
+                    0,
+                    Math.min(100, Number(result.confidence) || 0),
+                  )}%`,
                 }}
               />
             </div>
@@ -344,7 +551,7 @@ export const CropRecommendation: React.FC = () => {
           {result.recommendations?.length > 0 && (
             <div>
               <h3 className="mb-3 font-bold text-slate-800">
-                Other matching crops
+                {t.alternatives}
               </h3>
               <div className="space-y-3">
                 {result.recommendations.map((item, index) => (
@@ -357,13 +564,16 @@ export const CropRecommendation: React.FC = () => {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold capitalize text-slate-800">
-                        {item.crop}
+                        {getCropName(item.crop, language)}
                       </p>
                       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
                         <div
                           className="h-full rounded-full bg-emerald-400"
                           style={{
-                            width: `${Math.max(0, Math.min(100, Number(item.confidence) || 0))}%`,
+                            width: `${Math.max(
+                              0,
+                              Math.min(100, Number(item.confidence) || 0),
+                            )}%`,
                           }}
                         />
                       </div>
@@ -377,11 +587,7 @@ export const CropRecommendation: React.FC = () => {
             </div>
           )}
 
-          <p className="text-xs leading-5 text-slate-500">
-            This is a model-based suggestion, not a guarantee of yield or
-            profitability. Consider your season, local climate, water
-            availability and advice from an agricultural expert before planting.
-          </p>
+          <p className="text-xs leading-5 text-slate-500">{t.advice}</p>
         </section>
       )}
     </div>
