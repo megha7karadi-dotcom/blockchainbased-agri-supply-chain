@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useApp, RegisterFormData, RegisterMobileFormData } from '../../context/AppContext';
 import { RealtimeSmsNotification } from '../common/RealtimeSmsNotification';
+import { BackButton } from '../common/BackButton';
 
 export const RegisterPage: React.FC = () => {
   const { registerUser, registerWithOtp, sendOtp, navigate, isAuthenticated, currentRole } = useApp();
@@ -1161,3 +1162,4 @@ export const RegisterPage: React.FC = () => {
     </div>
   );
 };
+
