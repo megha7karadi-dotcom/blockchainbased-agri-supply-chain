@@ -34,28 +34,22 @@ const pageTranslations = {
     marketAdvisory: 'MARKET ADVISORY',
     title: 'Check Market Prices & Selling Guide',
     description: 'Get a seven-day crop price forecast from the connected AgriTrace prediction API.',
-    cropDetails: 'Crop & Harvest Details',
+    cropDetails: 'Crop & Market Details',
     instructions: 'Enter your crop and market details to request a prediction.',
     cropVariety: 'Crop Variety',
-    volume: 'Volume (kg)',
-    quality: 'Quality Grade',
-    gradeA: 'Grade A (Export Quality)',
-    gradeB: 'Grade B (Premium Domestic)',
-    gradeC: 'Grade C (Standard Market)',
     districtState: 'Farm District, State',
     locationPlaceholder: 'e.g. Ludhiana, Punjab',
     locationHint: 'Enter District, State in that order.',
-    harvestDate: 'Harvest Date',
     mandiPrice: 'Current Mandi (₹/kg)',
+    validPrice: 'Enter a valid current market price.',
     calculate: 'Calculate Price Forecast',
     loading: 'Getting real model prediction...',
     failed: 'Prediction failed:',
-    validQuantity: 'Enter a valid quantity and current market price.',
     invalidLocation: 'Enter your location as District, State. For example: Ludhiana, Punjab.',
     unexpectedResponse: 'The prediction API returned an unexpected response.',
     unavailable: 'Unable to obtain a price prediction. Check that both servers are running.',
     modelInfo: 'Model information',
-    modelInfoText: 'The prediction uses the connected API. Quality grade, harvest date, and lot quantity are collected by the form but are not sent as model features by the current prediction endpoint.',
+    modelInfoText: 'The forecast uses the connected prediction API with crop, district, state, market, current price, and forecast date.',
     sevenDay: 'Seven-Day Price Prediction',
     baseline: 'Best evaluated strategy: Baseline',
     apiResult: 'API result',
@@ -64,7 +58,6 @@ const pageTranslations = {
     compared: 'compared with the entered price',
     currentPrice: 'Current price:',
     perQuintal: 'Forecast per quintal:',
-    lotValue: 'Estimated lot value:',
     forecastDetails: 'Forecast details',
     commodity: 'Commodity',
     market: 'Market',
@@ -88,28 +81,22 @@ const pageTranslations = {
     marketAdvisory: 'बाज़ार सलाह',
     title: 'बाज़ार भाव और बिक्री मार्गदर्शिका',
     description: 'AgriTrace प्रेडिक्शन API से सात दिनों का फसल मूल्य पूर्वानुमान प्राप्त करें।',
-    cropDetails: 'फसल और कटाई का विवरण',
+    cropDetails: 'फसल और बाज़ार का विवरण',
     instructions: 'पूर्वानुमान पाने के लिए फसल और बाज़ार का विवरण दर्ज करें।',
     cropVariety: 'फसल की किस्म',
-    volume: 'मात्रा (किग्रा)',
-    quality: 'गुणवत्ता श्रेणी',
-    gradeA: 'श्रेणी A (निर्यात गुणवत्ता)',
-    gradeB: 'श्रेणी B (प्रीमियम घरेलू)',
-    gradeC: 'श्रेणी C (सामान्य बाज़ार)',
     districtState: 'खेती का जिला, राज्य',
     locationPlaceholder: 'जैसे लुधियाना, पंजाब',
     locationHint: 'पहले जिला और फिर राज्य दर्ज करें।',
-    harvestDate: 'कटाई की तारीख',
     mandiPrice: 'वर्तमान मंडी भाव (₹/किग्रा)',
+    validPrice: 'सही वर्तमान बाज़ार भाव दर्ज करें।',
     calculate: 'मूल्य पूर्वानुमान निकालें',
     loading: 'मॉडल से पूर्वानुमान प्राप्त हो रहा है...',
     failed: 'पूर्वानुमान विफल:',
-    validQuantity: 'सही मात्रा और वर्तमान बाज़ार भाव दर्ज करें।',
     invalidLocation: 'जिला, राज्य के प्रारूप में स्थान दर्ज करें। उदाहरण: लुधियाना, पंजाब।',
     unexpectedResponse: 'प्रेडिक्शन API से अप्रत्याशित परिणाम मिला।',
     unavailable: 'मूल्य पूर्वानुमान प्राप्त नहीं हुआ। जाँचें कि दोनों सर्वर चल रहे हैं।',
     modelInfo: 'मॉडल की जानकारी',
-    modelInfoText: 'पूर्वानुमान कनेक्टेड API से प्राप्त होता है। गुणवत्ता श्रेणी, कटाई की तारीख और मात्रा फ़ॉर्म में दर्ज होते हैं, लेकिन वर्तमान API इन्हें मॉडल की विशेषताओं के रूप में नहीं भेजती।',
+    modelInfoText: 'पूर्वानुमान कनेक्टेड API से फसल, जिला, राज्य, बाज़ार, वर्तमान भाव और पूर्वानुमान तारीख के आधार पर प्राप्त होता है।',
     sevenDay: 'सात दिनों का मूल्य पूर्वानुमान',
     baseline: 'सबसे अच्छा मूल्यांकित तरीका: बेसलाइन',
     apiResult: 'API परिणाम',
@@ -118,7 +105,6 @@ const pageTranslations = {
     compared: 'दर्ज किए गए भाव की तुलना में',
     currentPrice: 'वर्तमान भाव:',
     perQuintal: 'प्रति क्विंटल अनुमान:',
-    lotValue: 'अनुमानित कुल मूल्य:',
     forecastDetails: 'पूर्वानुमान का विवरण',
     commodity: 'वस्तु',
     market: 'बाज़ार',
@@ -142,28 +128,22 @@ const pageTranslations = {
     marketAdvisory: 'ಮಾರುಕಟ್ಟೆ ಸಲಹೆ',
     title: 'ಮಾರುಕಟ್ಟೆ ಬೆಲೆಗಳು ಮತ್ತು ಮಾರಾಟ ಮಾರ್ಗದರ್ಶಿ',
     description: 'AgriTrace ಭವಿಷ್ಯವಾಣಿ API ಮೂಲಕ ಏಳು ದಿನಗಳ ಬೆಳೆ ಬೆಲೆ ಮುನ್ಸೂಚನೆ ಪಡೆಯಿರಿ.',
-    cropDetails: 'ಬೆಳೆ ಮತ್ತು ಕೊಯ್ಲಿನ ವಿವರಗಳು',
+    cropDetails: 'ಬೆಳೆ ಮತ್ತು ಮಾರುಕಟ್ಟೆಯ ವಿವರಗಳು',
     instructions: 'ಮುನ್ಸೂಚನೆ ಪಡೆಯಲು ನಿಮ್ಮ ಬೆಳೆ ಮತ್ತು ಮಾರುಕಟ್ಟೆ ವಿವರಗಳನ್ನು ನಮೂದಿಸಿ.',
     cropVariety: 'ಬೆಳೆಯ ತಳಿ',
-    volume: 'ಪ್ರಮಾಣ (ಕೆಜಿ)',
-    quality: 'ಗುಣಮಟ್ಟದ ವರ್ಗ',
-    gradeA: 'ವರ್ಗ A (ರಫ್ತು ಗುಣಮಟ್ಟ)',
-    gradeB: 'ವರ್ಗ B (ಉತ್ತಮ ದೇಶೀಯ ಗುಣಮಟ್ಟ)',
-    gradeC: 'ವರ್ಗ C (ಸಾಮಾನ್ಯ ಮಾರುಕಟ್ಟೆ)',
     districtState: 'ಕೃಷಿ ಜಿಲ್ಲೆ, ರಾಜ್ಯ',
     locationPlaceholder: 'ಉದಾ. ಲುಧಿಯಾನ, ಪಂಜಾಬ್',
     locationHint: 'ಮೊದಲು ಜಿಲ್ಲೆ, ನಂತರ ರಾಜ್ಯ ನಮೂದಿಸಿ.',
-    harvestDate: 'ಕೊಯ್ಲಿನ ದಿನಾಂಕ',
     mandiPrice: 'ಪ್ರಸ್ತುತ ಮಂಡಿ ಬೆಲೆ (₹/ಕೆಜಿ)',
+    validPrice: 'ಸರಿಯಾದ ಪ್ರಸ್ತುತ ಮಾರುಕಟ್ಟೆ ಬೆಲೆಯನ್ನು ನಮೂದಿಸಿ.',
     calculate: 'ಬೆಲೆ ಮುನ್ಸೂಚನೆ ಲೆಕ್ಕಿಸಿ',
     loading: 'ಮಾದರಿಯಿಂದ ಮುನ್ಸೂಚನೆ ಪಡೆಯಲಾಗುತ್ತಿದೆ...',
     failed: 'ಮುನ್ಸೂಚನೆ ವಿಫಲವಾಗಿದೆ:',
-    validQuantity: 'ಸರಿಯಾದ ಪ್ರಮಾಣ ಮತ್ತು ಪ್ರಸ್ತುತ ಮಾರುಕಟ್ಟೆ ಬೆಲೆಯನ್ನು ನಮೂದಿಸಿ.',
     invalidLocation: 'ಜಿಲ್ಲೆ, ರಾಜ್ಯ ಎಂಬ ಕ್ರಮದಲ್ಲಿ ಸ್ಥಳವನ್ನು ನಮೂದಿಸಿ. ಉದಾಹರಣೆ: ಲುಧಿಯಾನ, ಪಂಜಾಬ್.',
     unexpectedResponse: 'ಮುನ್ಸೂಚನೆ API ನಿರೀಕ್ಷಿಸದ ಫಲಿತಾಂಶವನ್ನು ನೀಡಿದೆ.',
     unavailable: 'ಬೆಲೆ ಮುನ್ಸೂಚನೆ ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಎರಡೂ ಸರ್ವರ್‌ಗಳು ಚಾಲನೆಯಲ್ಲಿವೆಯೇ ಎಂದು ಪರಿಶೀಲಿಸಿ.',
     modelInfo: 'ಮಾದರಿಯ ಮಾಹಿತಿ',
-    modelInfoText: 'ಮುನ್ಸೂಚನೆಯನ್ನು ಸಂಪರ್ಕಿತ API ಒದಗಿಸುತ್ತದೆ. ಗುಣಮಟ್ಟದ ವರ್ಗ, ಕೊಯ್ಲಿನ ದಿನಾಂಕ ಮತ್ತು ಪ್ರಮಾಣವನ್ನು ಫಾರ್ಮ್‌ನಲ್ಲಿ ಸಂಗ್ರಹಿಸಲಾಗುತ್ತದೆ; ಆದರೆ ಪ್ರಸ್ತುತ API ಇವುಗಳನ್ನು ಮಾದರಿಯ ವೈಶಿಷ್ಟ್ಯಗಳಾಗಿ ಕಳುಹಿಸುವುದಿಲ್ಲ.',
+    modelInfoText: 'ಮುನ್ಸೂಚನೆಯನ್ನು ಸಂಪರ್ಕಿತ API ಬೆಳೆ, ಜಿಲ್ಲೆ, ರಾಜ್ಯ, ಮಾರುಕಟ್ಟೆ, ಪ್ರಸ್ತುತ ಬೆಲೆ ಮತ್ತು ಮುನ್ಸೂಚನೆ ದಿನಾಂಕದ ಆಧಾರದ ಮೇಲೆ ಒದಗಿಸುತ್ತದೆ.',
     sevenDay: 'ಏಳು ದಿನಗಳ ಬೆಲೆ ಮುನ್ಸೂಚನೆ',
     baseline: 'ಉತ್ತಮವಾಗಿ ಮೌಲ್ಯಮಾಪನಗೊಂಡ ವಿಧಾನ: ಬೇಸ್‌ಲೈನ್',
     apiResult: 'API ಫಲಿತಾಂಶ',
@@ -172,7 +152,6 @@ const pageTranslations = {
     compared: 'ನಮೂದಿಸಿದ ಬೆಲೆಯೊಂದಿಗೆ ಹೋಲಿಕೆ',
     currentPrice: 'ಪ್ರಸ್ತುತ ಬೆಲೆ:',
     perQuintal: 'ಪ್ರತಿ ಕ್ವಿಂಟಾಲ್ ಮುನ್ಸೂಚನೆ:',
-    lotValue: 'ಅಂದಾಜು ಒಟ್ಟು ಮೌಲ್ಯ:',
     forecastDetails: 'ಮುನ್ಸೂಚನೆಯ ವಿವರಗಳು',
     commodity: 'ಸರಕು',
     market: 'ಮಾರುಕಟ್ಟೆ',
@@ -200,21 +179,13 @@ export const PricePrediction: React.FC = () => {
   const tx = pageTranslations[language];
 
   const [crop, setCrop] = useState('Alphonso Mango');
-  const [quantity, setQuantity] = useState('1200');
-  const [qualityGrade, setQualityGrade] = useState(
-    'Grade A (Export Quality)'
-  );
   const [location, setLocation] = useState('Ratnagiri, Maharashtra');
-  const [harvestDate, setHarvestDate] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
   const [currentMarketPrice, setCurrentMarketPrice] = useState('120');
 
   const [isAssessing, setIsAssessing] = useState(false);
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
   const [error, setError] = useState('');
 
-  const quantityNum = Number(quantity);
   const currentPriceNum = Number(currentMarketPrice);
 
   const formatPrice = (value: number) =>
@@ -228,13 +199,8 @@ export const PricePrediction: React.FC = () => {
     setError('');
     setPrediction(null);
 
-    if (
-      !Number.isFinite(quantityNum) ||
-      quantityNum <= 0 ||
-      !Number.isFinite(currentPriceNum) ||
-      currentPriceNum <= 0
-    ) {
-      setError(tx.validQuantity);
+    if (!Number.isFinite(currentPriceNum) || currentPriceNum <= 0) {
+      setError(tx.validPrice);
       return;
     }
 
@@ -302,11 +268,7 @@ export const PricePrediction: React.FC = () => {
 
       setPrediction(data as PredictionResult);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : tx.unavailable
-      );
+      setError(err instanceof Error ? err.message : tx.unavailable);
     } finally {
       setIsAssessing(false);
     }
@@ -314,7 +276,6 @@ export const PricePrediction: React.FC = () => {
 
   const predictedPrice = prediction?.predicted_price_per_kg ?? 0;
   const priceDelta = predictedPrice - currentPriceNum;
-  const totalLotRevenue = quantityNum * predictedPrice;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-16">
@@ -370,36 +331,6 @@ export const PricePrediction: React.FC = () => {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold mb-1">
-                    {tx.volume} *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-stone-50 border border-[#bbf7d0] rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1">
-                    {tx.quality}
-                  </label>
-                  <select
-                    value={qualityGrade}
-                    onChange={(e) => setQualityGrade(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-stone-50 border border-[#bbf7d0] rounded-lg"
-                  >
-                    <option value="Grade A (Export Quality)">{tx.gradeA}</option>
-                    <option value="Grade B (Premium Domestic)">{tx.gradeB}</option>
-                    <option value="Grade C (Standard Market)">{tx.gradeC}</option>
-                  </select>
-                </div>
-              </div>
-
               <div>
                 <label className="block text-xs font-semibold mb-1">
                   {tx.districtState} *
@@ -420,32 +351,19 @@ export const PricePrediction: React.FC = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold mb-1">
-                    {tx.harvestDate}
-                  </label>
-                  <input
-                    type="date"
-                    value={harvestDate}
-                    onChange={(e) => setHarvestDate(e.target.value)}
-                    className="w-full px-2 py-2 text-xs bg-stone-50 border border-[#bbf7d0] rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1">
-                    {tx.mandiPrice} *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="0.01"
-                    step="0.01"
-                    value={currentMarketPrice}
-                    onChange={(e) => setCurrentMarketPrice(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-stone-50 border border-[#bbf7d0] rounded-lg"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold mb-1">
+                  {tx.mandiPrice} *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0.01"
+                  step="0.01"
+                  value={currentMarketPrice}
+                  onChange={(e) => setCurrentMarketPrice(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-stone-50 border border-[#bbf7d0] rounded-lg"
+                />
               </div>
 
               <button
@@ -519,7 +437,11 @@ export const PricePrediction: React.FC = () => {
                         / kg
                       </span>
                     </div>
-                    <div className={`text-xs font-semibold mt-2 flex items-center gap-1 ${priceDelta >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                    <div
+                      className={`text-xs font-semibold mt-2 flex items-center gap-1 ${
+                        priceDelta >= 0 ? 'text-green-700' : 'text-red-600'
+                      }`}
+                    >
                       <ArrowUpRight className="w-4 h-4" />
                       {priceDelta >= 0 ? '+' : ''}
                       ₹{formatPrice(priceDelta)}/kg {tx.compared}
@@ -533,16 +455,9 @@ export const PricePrediction: React.FC = () => {
                     </div>
                     <div className="flex justify-between gap-2">
                       <span className="text-stone-600">{tx.perQuintal}</span>
-                      <strong>₹{formatPrice(prediction.predicted_price_per_quintal)}</strong>
-                    </div>
-                    <div className="flex justify-between gap-2 border-t border-green-200 pt-2">
-                      <span className="text-stone-600">{tx.lotValue}</span>
-                      <strong className="text-green-700">
-                        ₹{Math.round(totalLotRevenue).toLocaleString('en-IN')}
+                      <strong>
+                        ₹{formatPrice(prediction.predicted_price_per_quintal)}
                       </strong>
-                    </div>
-                    <div className="text-[10px] text-stone-500 text-right">
-                      {quantityNum.toLocaleString('en-IN')} kg
                     </div>
                   </div>
                 </div>
@@ -562,7 +477,9 @@ export const PricePrediction: React.FC = () => {
                     </div>
                     <div className="bg-stone-50 border rounded-lg p-3">
                       <span className="block text-stone-500">{tx.horizon}</span>
-                      <strong>{prediction.forecast_horizon_days} {tx.days}</strong>
+                      <strong>
+                        {prediction.forecast_horizon_days} {tx.days}
+                      </strong>
                     </div>
                     <div className="bg-stone-50 border rounded-lg p-3">
                       <span className="block text-stone-500">{tx.targetDate}</span>
