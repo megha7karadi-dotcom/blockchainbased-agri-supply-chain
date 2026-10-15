@@ -6,3 +6,18 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Python virtual environments and generated files
+# Python environments and generated files
+.venv/
+**/.venv/
+venv/
+**/venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.bak
+*.baseline-backup
+
+# Large generated training datasets
+price-api/agritrace_prices_with_historical_weather.csv

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Sparkles } from 'lucide-react';
 import { AppProvider, useApp } from './context/AppContext';
 import { WalletProvider } from './context/WalletContext';
@@ -32,7 +32,8 @@ import { FarmerTransactions } from './components/farmer/FarmerTransactions';
 import { FarmerTrust } from './components/farmer/FarmerTrust';
 import { FarmerQRGen } from './components/farmer/FarmerQRGen';
 import { FarmerNotifications } from './components/farmer/FarmerNotifications';
-
+import { CropRecommendation } from './components/farmer/CropRecommendation';
+import { ModelPerformance } from './components/farmer/ModelPerformance';
 // Distributor Views
 import { DistributorDashboard } from './components/distributor/DistributorDashboard';
 import { DistributorIncoming } from './components/distributor/DistributorIncoming';
@@ -196,7 +197,11 @@ const MainLayout: React.FC = () => {
     if (normalizedPath === '/farmer/register-produce' || normalizedPath === '/farmer/add-produce') return <RegisterProduce />;
     if (normalizedPath === '/farmer/my-produce' || normalizedPath === '/farmer/supply-chain') return <MyProduce />;
     if (normalizedPath === '/farmer/price-prediction') return <PricePrediction />;
-    if (normalizedPath === '/farmer/transfers') return <FarmerTransfers />;
+    if (normalizedPath === '/farmer/model-performance') return <ModelPerformance />;
+    if (normalizedPath === '/farmer/crop-recommendation') {
+  return <CropRecommendation />;
+}
+if (normalizedPath === '/farmer/transfers') return <FarmerTransfers />;
     if (normalizedPath === '/farmer/transactions') return <FarmerTransactions />;
     if (normalizedPath === '/farmer/qr-codes') return <FarmerQRGen />;
     if (normalizedPath === '/farmer/trust') return <FarmerTrust />;
@@ -299,3 +304,4 @@ export default function App() {
     </WalletProvider>
   );
 }
+

@@ -1,0 +1,30 @@
+[
+  {
+    "model":"Current-price baseline",
+    "test_rows":171077,
+    "MAE_Rs_per_quintal":334.28,
+    "RMSE_Rs_per_quintal":722.13,
+    "training_seconds":0.0
+  },
+  {
+    "model":"CatBoost",
+    "test_rows":171077,
+    "MAE_Rs_per_quintal":374.73,
+    "RMSE_Rs_per_quintal":736.27,
+    "training_seconds":202.11
+  },
+  {
+    "model":"XGBoost",
+    "test_rows":171077,
+    "MAE_Rs_per_quintal":375.04,
+    "RMSE_Rs_per_quintal":730.26,
+    "training_seconds":14.5
+  },
+  {
+    "model":"Random Forest",
+    "test_rows":171077,
+    "MAE_Rs_per_quintal":392.28,
+    "RMSE_Rs_per_quintal":764.07,
+    "training_seconds":64.44
+  }
+]

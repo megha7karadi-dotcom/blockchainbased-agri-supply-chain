@@ -1,0 +1,5 @@
+model,test_rows,MAE_Rs_per_quintal,RMSE_Rs_per_quintal,training_seconds
+Current-price baseline,171077,334.28,722.13,0.0
+CatBoost,171077,374.73,736.27,202.11
+XGBoost,171077,375.04,730.26,14.5
+Random Forest,171077,392.28,764.07,64.44

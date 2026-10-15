@@ -57,6 +57,7 @@ if (!isTsx) {
     const productRoutes = (await import('./backend/routes/productRoutes')).default;
     const blockchainRoutes = (await import('./backend/routes/blockchainRoutes')).default;
     const predictionRoutes = (await import('./backend/routes/predictionRoutes')).default;
+    const modelPerformanceRoutes = (await import('./backend/routes/modelPerformanceRoutes')).default;
 
     const app = express();
     const PORT = 3000;
@@ -98,6 +99,7 @@ if (!isTsx) {
     app.use('/api/products', getRouter(productRoutes));
     app.use('/api/blockchain', getRouter(blockchainRoutes));
     app.use('/api/predict', getRouter(predictionRoutes));
+    app.use('/api/model-performance', getRouter(modelPerformanceRoutes));
 
     // Database offline error middleware fallback
     app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

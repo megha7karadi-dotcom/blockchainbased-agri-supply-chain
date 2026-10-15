@@ -161,6 +161,13 @@ export const FarmerDashboard: React.FC = () => {
               <span>Check Market Prices</span>
             </button>
             <button
+  onClick={() => navigate('/farmer/crop-recommendation')}
+  className="px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-semibold text-xs sm:text-sm rounded-md transition flex items-center gap-1.5 cursor-pointer"
+>
+  <Sprout className="w-4 h-4" />
+  <span>Crop Recommendation</span>
+</button>
+            <button
               onClick={() => navigate('/farmer/qr-codes')}
               className="px-3.5 py-2.5 bg-white hover:bg-stone-50 border border-stone-300 text-stone-800 font-semibold text-xs sm:text-sm rounded-md transition flex items-center gap-1.5 cursor-pointer"
             >

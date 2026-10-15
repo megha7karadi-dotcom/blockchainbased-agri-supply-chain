@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { 
   LayoutDashboard, 
   PlusCircle, 
@@ -20,6 +20,7 @@ import {
   User, 
   LogOut,
   BadgePercent,
+  Sprout,
   Layers
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -71,6 +72,8 @@ export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
           { path: '/farmer/my-produce', label: 'My Crops', icon: <Package className="w-4 h-4" />, badge: safeBatches.filter(b => b.farmerId === currentUser?.id || b.farmerId === 'usr-farmer-01').length },
           { path: '/farmer/transfers', label: 'Transfer Produce', icon: <ArrowRightLeft className="w-4 h-4" /> },
           { path: '/farmer/price-prediction', label: 'Check Market Prices', icon: <TrendingUp className="w-4 h-4" /> },
+          { path: '/farmer/model-performance', label: 'Model Performance', icon: <BarChart3 className="w-4 h-4" /> },
+          { path: '/farmer/crop-recommendation', label: 'Crop Recommendation', icon: <Sprout className="w-4 h-4" /> },
           { path: '/farmer/qr-codes', label: 'View QR Code', icon: <QrCode className="w-4 h-4" /> },
           { path: '/farmer/profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
         ];
@@ -234,3 +237,4 @@ export const Sidebar: React.FC<Props> = ({ isMobileOpen, onCloseMobile }) => {
     </>
   );
 };
+

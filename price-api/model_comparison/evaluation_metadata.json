@@ -1,0 +1,25 @@
+{
+  "dataset": "agritrace_prices_with_historical_weather.csv",
+  "target": "Observed price exactly 7 calendar days after Price Date",
+  "split_method": "Chronological split by distinct Price Date",
+  "split_date": "2025-05-28",
+  "train_rows": 658396,
+  "test_rows": 171077,
+  "train_start": "2024-08-15",
+  "train_end": "2025-05-27",
+  "test_start": "2025-05-28",
+  "test_end": "2025-08-07",
+  "features": [
+    "State",
+    "District Name",
+    "Market Name",
+    "Commodity",
+    "Variety",
+    "Grade",
+    "Modal Price (Rs./Quintal)",
+    "month",
+    "day_of_week",
+    "day_of_year"
+  ],
+  "weather_features_used": false
+}

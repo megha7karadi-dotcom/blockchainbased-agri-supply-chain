@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState } from 'react';
 import {
   TrendingUp,
@@ -22,6 +22,9 @@ interface PredictionResult {
   currency: string;
   unit: string;
   forecast_horizon_days: number;
+  model_name?: string;
+  evaluation_mae?: number;
+  forecast_method?: string;
 }
 
 export const PricePrediction: React.FC = () => {
@@ -321,7 +324,7 @@ export const PricePrediction: React.FC = () => {
               {prediction && (
                 <span className="text-xs text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">
                   <CheckCircle2 className="w-3 h-3 inline mr-1" />
-                  API result
+                  {prediction.forecast_method === 'baseline' ? 'Best evaluated strategy: Baseline' : 'API result'}
                 </span>
               )}
             </div>
@@ -426,3 +429,5 @@ export const PricePrediction: React.FC = () => {
     </div>
   );
 };
+
+
