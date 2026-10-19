@@ -10,15 +10,19 @@ import {
   Calendar,
   IndianRupee,
   Eye,
-  Filter
+  Filter,
+  Download,
+  Check
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { BackButton } from '../common/BackButton';
+import { downloadCsv } from '../../lib/csvExport';
 
 export const DistributorHistory: React.FC = () => {
   const { batches, navigate, setSelectedBatchId } = useApp();
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'intake' | 'dispatch'>('all');
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   // Build real history from batches
   const historyEvents = batches.flatMap(batch => {
@@ -29,6 +33,7 @@ export const DistributorHistory: React.FC = () => {
 
     // Intake event
     if (batch.status !== 'Harvested & Tokenized' && batch.status !== 'Ready for Dispatch') {
+      const farmerPrice = batch.pricing?.farmerPrice || batch.farmgatePrice || 40;
       events.push({
         id: `${batch.id}-intake`,
         batchId: batch.batchId,
@@ -38,10 +43,15 @@ export const DistributorHistory: React.FC = () => {
         role: 'Farmer / Producer',
         crop,
         quantity: `${qty} ${unit}`,
-        amount: (batch.pricing?.farmerPrice || batch.farmgatePrice || 40) * qty,
-        unitPrice: `₹${batch.pricing?.farmerPrice || batch.farmgatePrice || 40}/${unit}`,
+        quantityNum: qty,
+        unit,
+        amount: farmerPrice * qty,
+        unitPriceNum: farmerPrice,
+        unitPrice: `₹${farmerPrice}/${unit}`,
         category: 'intake',
-        status: 'Received & Verified'
+        status: 'Received & Verified',
+        location: batch.farmLocation || 'Farm Gate Hub',
+        txHash: batch.blockchain?.mintTxHash || batch.blockchain?.txHash || '0x...'
       });
     }
 
@@ -57,10 +67,15 @@ export const DistributorHistory: React.FC = () => {
         role: 'Retail Partner',
         crop,
         quantity: `${qty} ${unit}`,
+        quantityNum: qty,
+        unit,
         amount: wholesalePrice * qty,
+        unitPriceNum: wholesalePrice,
         unitPrice: `₹${wholesalePrice}/${unit}`,
         category: 'dispatch',
-        status: 'Delivered'
+        status: 'Delivered',
+        location: 'Regional Logistics Center',
+        txHash: batch.blockchain?.txHash || '0x...'
       });
     }
 
@@ -76,6 +91,38 @@ export const DistributorHistory: React.FC = () => {
       ev.party.toLowerCase().includes(query);
     return matchesCategory && matchesSearch;
   });
+
+  const handleDownloadCsv = () => {
+    const recordsToExport = filtered.length > 0 ? filtered : historyEvents;
+    if (recordsToExport.length === 0) return;
+
+    downloadCsv({
+      filename: `distributor_consignment_ledger_${new Date().toISOString().slice(0, 10)}.csv`,
+      data: recordsToExport,
+      columns: [
+        { header: 'Transaction Reference', accessor: (r) => r.id },
+        { header: 'Event Date', accessor: (r) => r.date },
+        { header: 'Operation Type', accessor: (r) => r.type },
+        { header: 'Flow Category', accessor: (r) => r.category === 'intake' ? 'Inbound Farm Intake' : 'Outbound Retail Dispatch' },
+        { header: 'Batch ID', accessor: (r) => r.batchId },
+        { header: 'Produce Name', accessor: (r) => r.crop },
+        { header: 'Quantity (Numeric)', accessor: (r) => r.quantityNum },
+        { header: 'Unit of Measure', accessor: (r) => r.unit },
+        { header: 'Quantity with Unit', accessor: (r) => r.quantity },
+        { header: 'Unit Price (INR)', accessor: (r) => r.unitPriceNum },
+        { header: 'Total Transaction Value (INR)', accessor: (r) => r.amount },
+        { header: 'Counterparty Name', accessor: (r) => r.party },
+        { header: 'Counterparty Role', accessor: (r) => r.role },
+        { header: 'Fulfillment Status', accessor: (r) => r.status },
+        { header: 'Facility / Location', accessor: (r) => r.location },
+        { header: 'Accounting Classification', accessor: (r) => r.category === 'intake' ? 'COGS - Direct Farm Procurement' : 'Wholesale Consignment Revenue' },
+        { header: 'Blockchain Verification Hash', accessor: (r) => r.txHash },
+      ]
+    });
+
+    setDownloadSuccess(true);
+    setTimeout(() => setDownloadSuccess(false), 2500);
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-16">
@@ -96,7 +143,24 @@ export const DistributorHistory: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={handleDownloadCsv}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+              title="Download shipment and intake transaction history as CSV"
+            >
+              {downloadSuccess ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-100" />
+                  <span>Downloaded!</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  <span>Download CSV</span>
+                </>
+              )}
+            </button>
             <button
               onClick={() => navigate('/distributor/incoming')}
               className="px-4 py-2 bg-blue-50 text-blue-800 border border-blue-200 font-semibold text-xs rounded-xl transition cursor-pointer"
@@ -126,7 +190,7 @@ export const DistributorHistory: React.FC = () => {
           />
         </div>
 
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
           <button
             onClick={() => setFilterType('all')}
             className={`px-3 py-1.5 rounded-xl font-semibold transition cursor-pointer ${
@@ -152,6 +216,15 @@ export const DistributorHistory: React.FC = () => {
           >
             <ArrowUpRight className="w-3.5 h-3.5 text-purple-500" />
             <span>Retail Dispatches</span>
+          </button>
+
+          <button
+            onClick={handleDownloadCsv}
+            className="ml-auto sm:ml-2 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+            title="Download currently filtered records as CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-600" />
+            <span>Export CSV ({filtered.length})</span>
           </button>
         </div>
       </div>

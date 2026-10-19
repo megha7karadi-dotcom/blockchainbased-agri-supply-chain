@@ -9,14 +9,18 @@ import {
   Eye, 
   Calendar,
   IndianRupee,
-  CheckCircle2
+  CheckCircle2,
+  Download,
+  Check
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { downloadCsv } from '../../lib/csvExport';
 
 export const RetailerHistory: React.FC = () => {
   const { batches, navigate, setSelectedBatchId } = useApp();
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'receipt' | 'sale'>('all');
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   // Build events
   const historyEvents = batches.flatMap(batch => {
@@ -26,29 +30,58 @@ export const RetailerHistory: React.FC = () => {
     const qty = batch.quantityKg || batch.quantity;
 
     // Delivery receipt event
-    if (batch.status === 'On Retail Shelf' || batch.status === 'Delivered to Retailer' || batch.status === 'Sold to Consumer' || batch.status === 'Partially Sold') {
+    if (batch.status === 'On Retail Shelf' || batch.status === 'Delivered to Retailer' || batch.status === 'Sold to Consumer' || batch.status === 'Partially Sold' || batch.currentCustodianRole === 'retailer') {
       const wholesalePrice = (batch.pricing?.farmerPrice || batch.farmgatePrice || 40) + (batch.pricing?.distributorLogisticsCost || 20) + (batch.pricing?.distributorMargin || 15);
       events.push({
         id: `${batch.id}-recv`,
         batchId: batch.batchId,
-        date: '2026-05-16',
+        date: batch.harvestDate ? new Date(batch.harvestDate).toLocaleDateString('en-CA') : '2026-05-16',
         type: 'Delivery Intake',
-        party: batch.currentCustodianName || 'Maha-Agro Logistics',
+        party: batch.currentCustodianName || 'Maha-Agro Logistics Fleet',
         role: 'Distributor',
         crop,
         quantity: `${qty} ${unit}`,
+        quantityNum: qty,
+        unit,
         amount: wholesalePrice * qty,
+        unitPriceNum: wholesalePrice,
         unitPrice: `₹${wholesalePrice}/${unit}`,
         category: 'receipt',
-        status: 'Stocked on Shelf'
+        status: 'Stocked on Shelf',
+        txHash: batch.blockchain?.txHash || '0x...'
       });
     }
 
-    // Consumer sale event
-    if (batch.status === 'Sold to Consumer' || batch.status === 'Partially Sold') {
+    // Dynamic sales from batch timeline if present
+    const posTimelineEvents = (batch.timeline || []).filter(t => t.title?.includes('Point of Sale') || t.stage === 'Consumer');
+    if (posTimelineEvents.length > 0) {
+      posTimelineEvents.forEach((tl, idx) => {
+        const consumerPrice = batch.pricing?.consumerPrice || 120;
+        const matchQty = tl.description?.match(/Sold\s+([\d.]+)/i);
+        const soldQty = matchQty ? parseFloat(matchQty[1]) : 25;
+        events.push({
+          id: `${batch.id}-sale-${idx}`,
+          batchId: batch.batchId,
+          date: tl.timestamp && tl.timestamp.includes('-') ? tl.timestamp : '2026-05-17',
+          type: 'Consumer POS Sale',
+          party: 'Retail Shopper (Counter POS)',
+          role: 'Consumer',
+          crop,
+          quantity: `${soldQty} ${unit}`,
+          quantityNum: soldQty,
+          unit,
+          amount: consumerPrice * soldQty,
+          unitPriceNum: consumerPrice,
+          unitPrice: `₹${consumerPrice}/${unit}`,
+          category: 'sale',
+          status: 'Completed',
+          txHash: tl.txHash || batch.blockchain?.txHash || '0x...'
+        });
+      });
+    } else if (batch.status === 'Sold to Consumer' || batch.status === 'Partially Sold') {
       const consumerPrice = batch.pricing?.consumerPrice || 120;
       events.push({
-        id: `${batch.id}-sale`,
+        id: `${batch.id}-sale-default`,
         batchId: batch.batchId,
         date: '2026-05-17',
         type: 'Consumer POS Sale',
@@ -56,10 +89,14 @@ export const RetailerHistory: React.FC = () => {
         role: 'Consumer',
         crop,
         quantity: `25 ${unit}`,
+        quantityNum: 25,
+        unit,
         amount: consumerPrice * 25,
+        unitPriceNum: consumerPrice,
         unitPrice: `₹${consumerPrice}/${unit}`,
         category: 'sale',
-        status: 'Completed'
+        status: 'Completed',
+        txHash: batch.blockchain?.txHash || '0x...'
       });
     }
 
@@ -75,6 +112,37 @@ export const RetailerHistory: React.FC = () => {
       ev.party.toLowerCase().includes(query);
     return matchesCategory && matchesSearch;
   });
+
+  const handleDownloadCsv = () => {
+    const recordsToExport = filtered.length > 0 ? filtered : historyEvents;
+    if (recordsToExport.length === 0) return;
+
+    downloadCsv({
+      filename: `retailer_sales_and_shipments_ledger_${new Date().toISOString().slice(0, 10)}.csv`,
+      data: recordsToExport,
+      columns: [
+        { header: 'Transaction Reference', accessor: (r) => r.id },
+        { header: 'Date', accessor: (r) => r.date },
+        { header: 'Event Type', accessor: (r) => r.type },
+        { header: 'Ledger Category', accessor: (r) => r.category === 'receipt' ? 'Inbound Store Receipt' : 'Consumer Retail Sale' },
+        { header: 'Batch ID', accessor: (r) => r.batchId },
+        { header: 'Produce Name', accessor: (r) => r.crop },
+        { header: 'Quantity (Numeric)', accessor: (r) => r.quantityNum },
+        { header: 'Unit of Measure', accessor: (r) => r.unit },
+        { header: 'Quantity Volume', accessor: (r) => r.quantity },
+        { header: 'Rate Per Unit (INR)', accessor: (r) => r.unitPriceNum },
+        { header: 'Total Settlement Value (INR)', accessor: (r) => r.amount },
+        { header: 'Counterparty / Customer', accessor: (r) => r.party },
+        { header: 'Counterparty Type', accessor: (r) => r.role },
+        { header: 'Transaction Status', accessor: (r) => r.status },
+        { header: 'Accounting Classification', accessor: (r) => r.category === 'receipt' ? 'COGS - Inbound Wholesale Intake' : 'Sales Revenue - Customer POS' },
+        { header: 'Blockchain Verification Hash', accessor: (r) => r.txHash },
+      ]
+    });
+
+    setDownloadSuccess(true);
+    setTimeout(() => setDownloadSuccess(false), 2500);
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-16">
@@ -93,7 +161,24 @@ export const RetailerHistory: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={handleDownloadCsv}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+              title="Download store receipts and sales history as CSV"
+            >
+              {downloadSuccess ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-100" />
+                  <span>Downloaded!</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  <span>Download CSV</span>
+                </>
+              )}
+            </button>
             <button
               onClick={() => navigate('/retailer/inventory')}
               className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition cursor-pointer"
@@ -102,7 +187,7 @@ export const RetailerHistory: React.FC = () => {
             </button>
             <button
               onClick={() => navigate('/retailer/sell')}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl transition cursor-pointer shadow-xs"
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs rounded-xl transition cursor-pointer shadow-xs"
             >
               Record New Sale
             </button>
@@ -123,7 +208,7 @@ export const RetailerHistory: React.FC = () => {
           />
         </div>
 
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
           <button
             onClick={() => setFilterType('all')}
             className={`px-3 py-1.5 rounded-xl font-semibold transition cursor-pointer ${
@@ -149,6 +234,15 @@ export const RetailerHistory: React.FC = () => {
           >
             <ShoppingCart className="w-3.5 h-3.5 text-emerald-500" />
             <span>Consumer Sales</span>
+          </button>
+
+          <button
+            onClick={handleDownloadCsv}
+            className="ml-auto sm:ml-2 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+            title="Download currently filtered sales and receipts as CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-600" />
+            <span>Export CSV ({filtered.length})</span>
           </button>
         </div>
       </div>

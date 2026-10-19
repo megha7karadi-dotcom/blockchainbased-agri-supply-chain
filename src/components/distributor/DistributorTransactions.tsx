@@ -14,10 +14,12 @@ import {
   Receipt,
   Truck,
   Building2,
-  Calendar
+  Calendar,
+  Check
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useApp } from '../../context/AppContext';
+import { downloadCsv } from '../../lib/csvExport';
 
 interface DistributorLedgerEntry {
   id: string;
@@ -134,6 +136,7 @@ export const DistributorTransactions: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('All');
   const [selectedReceipt, setSelectedReceipt] = useState<DistributorLedgerEntry | null>(null);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   const filteredTxs = INITIAL_DISTRIBUTOR_TXS.filter(tx => {
     const matchesSearch = 
@@ -148,6 +151,34 @@ export const DistributorTransactions: React.FC = () => {
     if (filterType === 'Outflow') return tx.category === 'outflow';
     return true;
   });
+
+  const handleDownloadCsv = () => {
+    const recordsToExport = filteredTxs.length > 0 ? filteredTxs : INITIAL_DISTRIBUTOR_TXS;
+    if (recordsToExport.length === 0) return;
+
+    downloadCsv({
+      filename: `distributor_settlement_ledger_${new Date().toISOString().slice(0, 10)}.csv`,
+      data: recordsToExport,
+      columns: [
+        { header: 'Ledger Reference', accessor: (tx) => tx.id },
+        { header: 'Settlement Date', accessor: (tx) => tx.date },
+        { header: 'Transaction Type', accessor: (tx) => tx.type },
+        { header: 'Cashflow Direction', accessor: (tx) => tx.category === 'inflow' ? 'Inflow (+)' : 'Outflow (-)' },
+        { header: 'Batch ID', accessor: (tx) => tx.batchId },
+        { header: 'Crop / Produce', accessor: (tx) => tx.cropName },
+        { header: 'Amount (INR)', accessor: (tx) => tx.amount },
+        { header: 'Counterparty Entity', accessor: (tx) => tx.counterparty },
+        { header: 'Counterparty Stakeholder Role', accessor: (tx) => tx.counterpartyRole },
+        { header: 'Settlement Status', accessor: (tx) => tx.status },
+        { header: 'Gas Subsidized / Incurred', accessor: (tx) => tx.gasUsed },
+        { header: 'Ethereum Block Number', accessor: (tx) => tx.blockNumber },
+        { header: 'Cryptographic Transaction Hash', accessor: (tx) => tx.txHash },
+      ]
+    });
+
+    setDownloadSuccess(true);
+    setTimeout(() => setDownloadSuccess(false), 2500);
+  };
 
   const totalInflow = INITIAL_DISTRIBUTOR_TXS
     .filter(t => t.category === 'inflow')
@@ -183,11 +214,21 @@ export const DistributorTransactions: React.FC = () => {
         </div>
 
         <button 
-          onClick={() => alert('Exporting signed distributor audit ledger (CSV + Cryptographic Proofs)...')}
-          className="px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-2xl border border-slate-300 shadow-2xs transition flex items-center gap-2 cursor-pointer flex-shrink-0"
+          onClick={handleDownloadCsv}
+          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer flex-shrink-0"
+          title="Download complete transaction ledger as CSV"
         >
-          <Download className="w-4 h-4 text-blue-600" />
-          <span>Export Ledger CSV</span>
+          {downloadSuccess ? (
+            <>
+              <Check className="w-4 h-4 text-emerald-100" />
+              <span>Downloaded!</span>
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4 text-white" />
+              <span>Download CSV</span>
+            </>
+          )}
         </button>
       </div>
 

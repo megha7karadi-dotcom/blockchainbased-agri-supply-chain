@@ -4,7 +4,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
-
+const predictionRoutes = require('./routes/predictionRoutes');
 // Load environment variables from backend/.env (override: true ensures PORT=5000 is used)
 dotenv.config({ path: path.join(__dirname, '.env'), override: true });
 
@@ -16,7 +16,7 @@ app.use(cors());
 
 // Enable express.json()
 app.use(express.json());
-
+app.use('/api/predict', predictionRoutes);
 // Health endpoint
 app.get('/api/health', async (req, res) => {
   if (mongoose.connection.readyState === 0) {

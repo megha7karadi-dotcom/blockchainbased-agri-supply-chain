@@ -12,11 +12,14 @@ import {
   ArrowRight,
   Phone,
   Navigation,
-  CheckCircle2
+  CheckCircle2,
+  Download,
+  Check
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useApp } from '../../context/AppContext';
 import { ProduceBatch } from '../../types/produce';
+import { downloadCsv } from '../../lib/csvExport';
 
 interface ShipmentRouteStage {
   name: string;
@@ -60,6 +63,52 @@ export const DistributorShipments: React.FC = () => {
     return true;
   });
 
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
+
+  const handleDownloadCsv = () => {
+    const recordsToExport = filteredBatches.length > 0 ? filteredBatches : shipmentBatches;
+    if (recordsToExport.length === 0) return;
+
+    downloadCsv({
+      filename: `distributor_shipments_tracking_${new Date().toISOString().slice(0, 10)}.csv`,
+      data: recordsToExport,
+      columns: [
+        { header: 'Batch ID', accessor: (b) => b.batchId },
+        { header: 'Produce Name', accessor: (b) => b.cropName || b.name },
+        { header: 'Shipment Status', accessor: (b) => b.status },
+        { header: 'Quantity (Numeric)', accessor: (b) => b.quantityKg || b.quantity || 0 },
+        { header: 'Unit', accessor: (b) => b.unit || 'kg' },
+        { header: 'Current Custodian', accessor: (b) => b.currentCustodianName || 'Maha-Agro Logistics Fleet' },
+        { header: 'Custodian Role', accessor: (b) => b.currentCustodianRole || 'distributor' },
+        { header: 'Origin Producer', accessor: (b) => b.farmerName || 'Registered Producer' },
+        { header: 'Farm Location', accessor: (b) => b.farmLocation || 'Farm Gate' },
+        { header: 'Harvest Date', accessor: (b) => b.harvestDate || 'N/A' },
+        { header: 'Farmer Floor Price (INR)', accessor: (b) => b.pricing?.farmerPrice || b.farmgatePrice || 40 },
+        { header: 'Freight Logistics Cost (INR)', accessor: (b) => b.pricing?.distributorLogisticsCost || 20 },
+        { header: 'Distributor Margin (INR)', accessor: (b) => b.pricing?.distributorMargin || 15 },
+        { 
+          header: 'Wholesale Invoice Price (INR)', 
+          accessor: (b) => (b.pricing?.farmerPrice || b.farmgatePrice || 40) + (b.pricing?.distributorLogisticsCost || 20) + (b.pricing?.distributorMargin || 15)
+        },
+        { 
+          header: 'Estimated Consignment Value (INR)', 
+          accessor: (b) => ((b.pricing?.farmerPrice || b.farmgatePrice || 40) + (b.pricing?.distributorLogisticsCost || 20) + (b.pricing?.distributorMargin || 15)) * (b.quantityKg || b.quantity || 0)
+        },
+        { 
+          header: 'Latest Cold Storage Temp (C)', 
+          accessor: (b) => {
+            const logs = Array.isArray(b.sensorLogs) ? b.sensorLogs : [];
+            return logs.length > 0 ? logs[logs.length - 1].temperature : 12;
+          }
+        },
+        { header: 'Blockchain Mint Tx Hash', accessor: (b) => b.blockchain?.mintTxHash || b.blockchain?.txHash || '0x...' },
+      ]
+    });
+
+    setDownloadSuccess(true);
+    setTimeout(() => setDownloadSuccess(false), 2500);
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
@@ -79,18 +128,38 @@ export const DistributorShipments: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 flex-shrink-0">
-          <div className="bg-white p-3.5 rounded-2xl border border-blue-200 shadow-2xs text-center">
-            <span className="text-[11px] text-slate-500 font-semibold block">Active in Transit</span>
-            <span className="text-xl font-black text-blue-700">
-              {batches.filter(b => b.status === 'In Transit').length}
-            </span>
-          </div>
-          <div className="bg-white p-3.5 rounded-2xl border border-blue-200 shadow-2xs text-center">
-            <span className="text-[11px] text-slate-500 font-semibold block">Delivered to Stores</span>
-            <span className="text-xl font-black text-emerald-700">
-              {batches.filter(b => b.status === 'Delivered to Retailer').length}
-            </span>
+        <div className="flex flex-wrap items-center gap-3 flex-shrink-0">
+          <button
+            onClick={handleDownloadCsv}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer"
+            title="Download complete shipment consignment records as CSV for accounting"
+          >
+            {downloadSuccess ? (
+              <>
+                <Check className="w-4 h-4 text-emerald-100" />
+                <span>Downloaded!</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 text-white" />
+                <span>Download CSV</span>
+              </>
+            )}
+          </button>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white p-3.5 rounded-2xl border border-blue-200 shadow-2xs text-center">
+              <span className="text-[11px] text-slate-500 font-semibold block">Active in Transit</span>
+              <span className="text-xl font-black text-blue-700">
+                {batches.filter(b => b.status === 'In Transit').length}
+              </span>
+            </div>
+            <div className="bg-white p-3.5 rounded-2xl border border-blue-200 shadow-2xs text-center">
+              <span className="text-[11px] text-slate-500 font-semibold block">Delivered to Stores</span>
+              <span className="text-xl font-black text-emerald-700">
+                {batches.filter(b => b.status === 'Delivered to Retailer').length}
+              </span>
+            </div>
           </div>
         </div>
       </div>
